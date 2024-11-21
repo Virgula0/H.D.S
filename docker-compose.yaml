@@ -1,0 +1,8 @@
+services:
+  hashcat-client:
+    build:
+      context: client
+      dockerfile: Dockerfile
+    volumes:
+      # - ./client:/app/client
+      - /usr/share/seclists/Passwords:/usr/share/seclists/Passwords
