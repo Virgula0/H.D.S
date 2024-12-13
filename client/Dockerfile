@@ -13,7 +13,10 @@ RUN apt update -y && \
     git \
     dumb-init \
     ca-certificates \
-    libz-dev
+    libz-dev \
+    # Graphic libraries for raylib
+    libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
+
 
 # Set ENV
 ENV HASHCAT_SRC_PATH=/app/hashcat
@@ -42,7 +45,7 @@ RUN git clone https://github.com/mandiant/gocat . && \
     cp gocat.test /usr/local/share/hashcat && \
     cp -r testdata /usr/local/share/hashcat
 
-# EVENTUALLY YOU CAN SKIP TESTS
+# IMPORTANT! RUN TEST IN ORDER TO LET HASHCAT TO CREATE KERNELS
 RUN /usr/local/share/hashcat/gocat.test 
 
 COPY . /app/client
@@ -51,6 +54,13 @@ WORKDIR /app/client
 RUN useradd -ms /bin/bash client && \
     chown -R client:client /app/client && \
     chown -R client:client /usr/local/share/hashcat && \
+    # Symlinking necessary files from installed hashcat for running the client. We could have update PATH env var instead
+    ln -s /usr/local/share/hashcat/hashcat.hcstat2 /app/client/hashcat.hcstat2 && \
+    ln -s /usr/local/share/hashcat/hashcat.hctune /app/client/hashcat.hctune && \
+    ln -s /usr/local/share/hashcat/OpenCL /app/client/OpenCL && \
+    ln -s /usr/local/share/hashcat/kernels /app/client/kernels && \
+    ln -s /usr/local/share/hashcat/modules /app/client/modules && \
+    # give permissions to run go on client
     chown -R client:client /go 
 
 USER client

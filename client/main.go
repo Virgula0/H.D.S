@@ -9,6 +9,7 @@ import (
 )
 
 const wordlistExample = "/usr/share/seclists/Passwords/darkc0de.txt"
+const fileToCrack = "output.hashcat"
 const DebugTest = true
 
 func callbackForTests(resultsmap map[string]*string) gocat.EventCallback {
@@ -42,6 +43,22 @@ func callbackForTests(resultsmap map[string]*string) gocat.EventCallback {
 }
 
 func main() {
+	/*
+		rl.InitWindow(1200, 800, "raylib [core] example - basic window")
+		defer rl.CloseWindow()
+
+		rl.SetTargetFPS(60)
+
+		for !rl.WindowShouldClose() {
+			rl.BeginDrawing()
+
+			rl.ClearBackground(rl.RayWhite)
+			rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LightGray)
+
+			rl.EndDrawing()
+		}
+	*/
+
 	crackedHashes := map[string]*string{}
 
 	tt := gocat.Options{
@@ -58,9 +75,8 @@ func main() {
 		return
 	}
 
-	// 5d41402abc4b2a76b9719d911017c592:hello
-
-	err = hashcat.RunJob("-O", "-a", "0", "-m", "0", "--potfile-disable", "--logfile-disable", "5d41402abc4b2a76b9719d911017c592", wordlistExample)
+	// potfile remembers cracked hashcat
+	err = hashcat.RunJob("-a", "3", "-m", "22000", "--potfile-disable", "--logfile-disable", fileToCrack, "okok")
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -68,4 +84,5 @@ func main() {
 	}
 
 	fmt.Println(crackedHashes)
+
 }

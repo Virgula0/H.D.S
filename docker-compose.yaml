@@ -1,8 +1,34 @@
 services:
   hashcat-client:
+    container_name: dp-client
     build:
       context: client
       dockerfile: Dockerfile
+      args:
+        DISPLAY: ${DISPLAY} # Pass display variable from terminal 
+    environment:
+      - DISPLAY=${DISPLAY} # Pass display variable from terminal
     volumes:
       # - ./client:/app/client
+      - /tmp/.X11-unix:/tmp/.X11-unix # X11 forwarding
       - /usr/share/seclists/Passwords:/usr/share/seclists/Passwords
+
+  database:
+    build: database
+    container_name: dp-database
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-uagent",
+          "-pSUPERSECUREUNCRACKABLEPASSWORD",
+        ]
+      timeout: 20s
+      retries: 10
