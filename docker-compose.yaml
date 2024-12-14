@@ -20,6 +20,14 @@ services:
       dockerfile: backend/Dockerfile
     depends_on:
       - database
+    environment:
+      - BACKEND_HOST=0.0.0.0 # Not need to change
+      - BACKEND_PORT=4747    # Not need to change
+      - DB_USER=agent
+      - DB_PASSWORD=SUPERSECUREUNCRACKABLEPASSWORD
+      - DB_HOST=dp-database
+      - DB_PORT=3306
+      - DB_NAME=dp_hashcat
 
   database:
     build: database
