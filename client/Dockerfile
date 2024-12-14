@@ -18,7 +18,7 @@ RUN apt update -y && \
     libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
 
 
-# Set ENV
+# Set some ENV
 ENV HASHCAT_SRC_PATH=/app/hashcat
 ENV CGO_CFLAGS="-I$HASHCAT_SRC_PATH/OpenCL -I$HASHCAT_SRC_PATH/deps/LZMA-SDK/C -I$HASHCAT_SRC_PATH/deps/zlib -I$HASHCAT_SRC_PATH/deps/zlib/contrib -I$HASHCAT_SRC_PATH/deps/OpenCL-Headers $CGO_CFLAGS"
 ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
