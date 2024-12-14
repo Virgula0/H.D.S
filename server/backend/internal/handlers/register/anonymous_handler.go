@@ -26,7 +26,16 @@ func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	c := response.ResponseInitializer{ResponseWriter: w}
 	var request Request
 
-	// Validate the request struct (assuming you have a utility function for validation)
+	if constants.AllowRegistrations == "" {
+		statusCode := http.StatusUnauthorized
+		c.JSON(statusCode, response.UniformResponse{
+			StatusCode: statusCode,
+			Details:    errors.ErrRegistrationNotEnabled.Error(),
+		})
+		return
+	}
+
+	// Validate the request
 	if err := utils.ValidateJSON(&request, r); err != nil {
 		statusCode := http.StatusBadRequest
 		c.JSON(statusCode, response.UniformResponse{
@@ -36,7 +45,7 @@ func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate username and password (assuming utility functions are available)
+	// Validate username and password
 	if !utils.IsValidUsername(request.Username) {
 		statusCode := http.StatusBadRequest
 		c.JSON(statusCode, response.UniformResponse{

@@ -28,6 +28,7 @@ services:
       - DB_HOST=dp-database
       - DB_PORT=3306
       - DB_NAME=dp_hashcat
+      - ALLOW_REGISTRATIONS=True # Disable if needed
 
   database:
     build: database

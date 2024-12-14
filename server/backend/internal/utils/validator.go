@@ -14,6 +14,8 @@ import (
 // Initialize the validator
 var validate = validator.New()
 
+// Gets a struct with JSON annotations fields and validate it using validator
+// http.Request is passed for checking if it is actually JSON
 func ValidateJSON(request any, r *http.Request) error {
 
 	// Check if request is a pointer.

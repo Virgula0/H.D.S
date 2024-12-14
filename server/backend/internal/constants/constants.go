@@ -17,13 +17,15 @@ const Limit = 5
 
 const DateTimeExample = "2006-01-02 15:04:05"
 
-// Database variables
+// Database variables + Config variables
 var (
 	DBUser     = os.Getenv("DB_USER")
 	DBPassword = os.Getenv("DB_PASSWORD")
 	DBPort     = os.Getenv("DB_PORT")
 	DBHost     = os.Getenv("DB_HOST")
 	DBName     = os.Getenv("DB_NAME")
+
+	AllowRegistrations = os.Getenv("ALLOW_REGISTRATIONS")
 )
 
 var HashCost = 12

@@ -24,16 +24,14 @@ func (w *ResponseInitializer) JSON(statusCode int, toMarshal any) {
 	w.Header().Set("Content-Type", constants.JSON_CONTENT_TYPE)
 	w.WriteHeader(statusCode)
 
-	var response = toMarshal
-
-	// Parse DataType and apply changes
+	// Check Responses structure types and sanitize.
 	switch v := toMarshal.(type) {
 	case UniformResponse:
-		// If it's a value, modify it
 		v.Details = html.EscapeString(v.Details)
+		toMarshal = v // v is a shallow copy of toMarshal need re-assignment after changes
 	}
 
-	marshaled, err := json.Marshal(&response)
+	marshaled, err := json.Marshal(toMarshal)
 
 	if err != nil {
 		log.Printf("[ERROR] While marshaling -> %s", err.Error())

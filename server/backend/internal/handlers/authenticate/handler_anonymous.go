@@ -69,7 +69,6 @@ func (u Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the token in response
-
 	c.JSON(http.StatusOK, rr.UniformResponse{
 		StatusCode: http.StatusOK,
 		Details:    token,

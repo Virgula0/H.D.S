@@ -12,3 +12,4 @@ var ErrInternalServerError = errors.New("ops, an internal server error occurred,
 var ErrUnableToGetDataFromToken = errors.New("unable to get data from token")
 var ErrElementNotFound = errors.New("not found")
 var ErrInvalidJSON = errors.New("invalid JSON: ")
+var ErrRegistrationNotEnabled = errors.New("registration are not enabled")
