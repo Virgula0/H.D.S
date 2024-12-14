@@ -18,23 +18,6 @@ type Repository struct {
 
 // Dependency Injection Pattern for injecting db instance within Repository
 func NewRepository(db *infrastructure.Database, reset bool) (*Repository, error) {
-
-	// TODO: remove , this should not be here
-	if reset {
-		// wipe tables first, if requested
-
-		cleanTables := []string{
-			fmt.Sprintf("DELETE FROM %s", entities.UserTableName),
-		}
-
-		for _, query := range cleanTables {
-			_, err := db.Exec(query)
-			if err != nil {
-				return nil, fmt.Errorf("unable to exec delete query %s ERROR: %v", query, err)
-			}
-		}
-	}
-
 	return &Repository{
 		db.DB,
 	}, nil

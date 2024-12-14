@@ -10,7 +10,7 @@ import (
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 )
 
-// UniformResponse is used to provide a uniform correct message structure
+// UniformResponse is used to provide a uniform correct message structure from API
 type UniformResponse struct {
 	StatusCode int    `json:"status_code"`
 	Details    string `json:"details"`

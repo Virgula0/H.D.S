@@ -1,7 +1,6 @@
 package register
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
@@ -27,19 +26,8 @@ func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	c := response.ResponseInitializer{ResponseWriter: w}
 	var request Request
 
-	// Decode JSON from the request body
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&request); err != nil {
-		statusCode := http.StatusBadRequest
-		c.JSON(statusCode, response.UniformResponse{
-			StatusCode: statusCode,
-			Details:    err.Error(),
-		})
-		return
-	}
-
 	// Validate the request struct (assuming you have a utility function for validation)
-	if err := utils.Validate(request); err != nil {
+	if err := utils.ValidateJSON(&request, r); err != nil {
 		statusCode := http.StatusBadRequest
 		c.JSON(statusCode, response.UniformResponse{
 			StatusCode: statusCode,

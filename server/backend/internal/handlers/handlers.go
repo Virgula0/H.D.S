@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Virgula0/progetto-dp/server/backend/internal/entities"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/repository"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/seed"
@@ -25,6 +26,19 @@ func NewServiceHandler(db *infrastructure.Database, reset bool) (ServiceHandler,
 	}
 
 	if reset {
+
+		// wipe tables first, if requested
+
+		cleanTables := []string{
+			fmt.Sprintf("DELETE FROM %s", entities.UserTableName),
+		}
+
+		for _, query := range cleanTables {
+			_, err := db.Exec(query)
+			if err != nil {
+				return ServiceHandler{}, fmt.Errorf("unable to exec delete query %s ERROR: %v", query, err)
+			}
+		}
 
 		// tables have been wiped, needs a seed
 		seedArray := []error{

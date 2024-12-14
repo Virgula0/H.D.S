@@ -1,11 +1,9 @@
 package authenticate
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/response"
 	rr "github.com/Virgula0/progetto-dp/server/backend/internal/response"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
@@ -26,21 +24,10 @@ func (u Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request AuthRequest
 
-	// Decode JSON from the request body
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&request); err != nil {
-		statusCode := http.StatusBadRequest
-		c.JSON(statusCode, rr.UniformResponse{
-			StatusCode: statusCode,
-			Details:    err.Error(),
-		})
-		return
-	}
-
-	err := utils.Validate(request)
+	err := utils.ValidateJSON(&request, r)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, response.UniformResponse{
+		c.JSON(http.StatusBadRequest, rr.UniformResponse{
 			StatusCode: http.StatusBadRequest,
 			Details:    err.Error(),
 		})

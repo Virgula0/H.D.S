@@ -19,14 +19,14 @@ var ServerPort = os.Getenv("BACKEND_PORT")
 
 const WipeTables = true
 
-func runService(mux *mux.Router, database *infrastructure.Database) error {
+func runService(m *mux.Router, database *infrastructure.Database) error {
 	ms, err := handlers.NewServiceHandler(database, WipeTables)
 	if err != nil {
 		return fmt.Errorf("fail handlers.Handlers: %s", err.Error())
 	}
 
 	// Initialize routes on the default HTTP server mux
-	ms.InitRoutes(mux)
+	ms.InitRoutes(m)
 	return nil
 }
 
