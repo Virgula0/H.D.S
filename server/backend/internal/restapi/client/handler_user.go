@@ -31,7 +31,7 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	clientsInstalled, len, err := u.Usecase.GetClientsInstalledByUser(userID.String(), 1) // TODO: handle offset from request
+	clientsInstalled, len, err := u.Usecase.GetClientsInstalled(userID.String(), 1) // TODO: handle offset from request
 
 	if len <= 0 {
 		c.JSON(http.StatusNotFound, response.UniformResponse{

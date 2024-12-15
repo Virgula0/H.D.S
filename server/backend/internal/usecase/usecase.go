@@ -97,7 +97,7 @@ func (uc *Usecase) CreateUser(userEntity *entities.User, role constants.Role) er
 	return uc.repo.CreateUser(userEntity, role)
 }
 
-func (uc *Usecase) GetClientsInstalledByUser(userUUID string, offset uint) ([]*entities.Client, int, error) {
+func (uc *Usecase) GetClientsInstalled(userUUID string, offset uint) ([]*entities.Client, int, error) {
 	return uc.repo.GetClientsInstalled(userUUID, offset)
 }
 
