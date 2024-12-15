@@ -1,7 +1,6 @@
 package logout
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -14,10 +13,6 @@ type Handler struct {
 	Usecase *usecase.Usecase
 }
 
-type Token struct {
-	Authorization string `header:"authorization" binding:"required"`
-}
-
 func (u Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	c := response.ResponseInitializer{ResponseWriter: w}
 
@@ -28,7 +23,7 @@ func (u Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) != 2 || parts[0] != "Bearer" {
 		statusCode := http.StatusBadRequest
-		json.NewEncoder(w).Encode(response.UniformResponse{
+		c.JSON(statusCode, response.UniformResponse{
 			StatusCode: statusCode,
 			Details:    "Invalid authorization header format",
 		})

@@ -13,10 +13,6 @@ type TokenAuth struct {
 	Usecase *usecase.Usecase
 }
 
-type Token struct {
-	Token string `header:"authorization" binding:"required"`
-}
-
 func (u *TokenAuth) TokenValidation(r *http.Request, w http.ResponseWriter) string {
 	// Extract the Authorization header
 	authHeader := r.Header.Get("Authorization")

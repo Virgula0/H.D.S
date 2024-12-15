@@ -1,6 +1,7 @@
 package seed
 
 import (
+	"crypto/md5"
 	"fmt"
 	"log"
 
@@ -41,15 +42,15 @@ func loadUsers(repo *repository.Repository) error {
 			return e
 		}
 
-		/*
-			_, err = repo.CreatePost(UserUUID, adminPost.Title, adminPost.Content)
+		randomHash := fmt.Sprintf("%x", md5.Sum([]byte("test")))
 
-			if err != nil {
-				e := fmt.Errorf("failed to seed post table: %v", err)
-				log.Println(e)
-				return e
-			}
-		*/
+		_, err = repo.CreateClient(UserUUID, string(randomHash[:]), "127.0.0.1", "TestAdmin")
+
+		if err != nil {
+			e := fmt.Errorf("failed to seed client table: %v", err)
+			log.Println(e)
+			return e
+		}
 	}
 	return nil
 }

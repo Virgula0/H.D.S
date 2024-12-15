@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/entities"
 )
 
 // UniformResponse is used to provide a uniform correct message structure from API
@@ -29,6 +30,12 @@ func (w *ResponseInitializer) JSON(statusCode int, toMarshal any) {
 	case UniformResponse:
 		v.Details = html.EscapeString(v.Details)
 		toMarshal = v // v is a shallow copy of toMarshal need re-assignment after changes
+	case []*entities.Client:
+		for _, c := range v {
+			c.Name = html.EscapeString(c.Name)
+			c.LatestIP = html.EscapeString(c.LatestIP)
+		}
+		toMarshal = v
 	}
 
 	marshaled, err := json.Marshal(toMarshal)

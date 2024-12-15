@@ -1,4 +1,4 @@
-package handlers
+package restapi
 
 import (
 	"fmt"
@@ -28,7 +28,6 @@ func NewServiceHandler(db *infrastructure.Database, reset bool) (ServiceHandler,
 	if reset {
 
 		// wipe tables first, if requested
-
 		cleanTables := []string{
 			fmt.Sprintf("DELETE FROM %s", entities.UserTableName),
 		}

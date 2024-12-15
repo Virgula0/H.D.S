@@ -1,10 +1,12 @@
 package usecase
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/entities"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/repository"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
@@ -16,6 +18,7 @@ type Usecase struct {
 
 var blacklistedTokens = make(map[string]bool)
 
+// Dep. injection for usecase. Injecting db -> repo -> usecase
 func NewUsecase(repo *repository.Repository) *Usecase {
 	return &Usecase{
 		repo: repo,
@@ -36,15 +39,15 @@ func (uc *Usecase) GetDataFromToken(tokenInput string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-/*
-func (uc *Usecase) GetUserIDFromToken(c *gin.Context) (uuid.UUID, error) {
-	token, exists := c.Get(constants.TokenConstant)
+func (uc *Usecase) GetUserIDFromToken(r *http.Request) (uuid.UUID, error) {
+	ctx := r.Context()
+	token, ok := ctx.Value(constants.TokenConstant).(string)
 
-	if !exists {
+	if !ok {
 		return uuid.UUID{}, errors.ErrUnableToGetDataFromToken
 	}
 
-	data, err := uc.GetDataFromToken(token.(string))
+	data, err := uc.GetDataFromToken(token)
 
 	if err != nil {
 		return uuid.UUID{}, err
@@ -52,7 +55,6 @@ func (uc *Usecase) GetUserIDFromToken(c *gin.Context) (uuid.UUID, error) {
 
 	return uuid.Parse(data["userID"].(string))
 }
-*/
 
 func (uc *Usecase) InvalidateToken(token string) {
 	blacklistedTokens[token] = true
@@ -93,4 +95,12 @@ func (uc *Usecase) GetUserByUsername(username string) (*entities.User, *entities
 
 func (uc *Usecase) CreateUser(userEntity *entities.User, role constants.Role) error {
 	return uc.repo.CreateUser(userEntity, role)
+}
+
+func (uc *Usecase) GetClientsInstalledByUser(userUUID string, offset uint) ([]*entities.Client, int, error) {
+	return uc.repo.GetClientsInstalledByUser(userUUID, offset)
+}
+
+func (uc *Usecase) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
+	return uc.repo.CreateClient(userUUID, machineID, latestIP, name)
 }

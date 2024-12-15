@@ -3,12 +3,14 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/entities"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -80,6 +82,86 @@ func (repo *Repository) GetUserByUsername(username string) (*entities.User, *ent
 	}
 
 	return &user, &role, nil
+}
+
+// countQueryResults function to count results
+func (repo *Repository) countQueryResults(query string, args ...any) (int, error) {
+
+	var count int
+	// Query for a value based on a single row.
+	if err := repo.db.QueryRow(query, args...).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+
+}
+
+func (repo *Repository) queryClients(query string, columns []any, client *entities.Client, args ...any) ([]*entities.Client, error) {
+	var clients []*entities.Client
+
+	rows, err := repo.db.Query(query, args...)
+	if err != nil {
+		return nil, errors.ErrInternalServerError
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		//var client entities.Client
+		if err = rows.Scan(columns...); err != nil {
+			return nil, errors.ErrInternalServerError
+		}
+		clients = append(clients, client)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, errors.ErrInternalServerError
+	}
+
+	return clients, nil
+}
+
+// REST-API GetClientsInstalledByUser
+func (repo *Repository) GetClientsInstalledByUser(userUUID string, offset uint) ([]*entities.Client, int, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.ClientTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
+	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.ClientTableName)
+
+	var client entities.Client
+
+	columns := []any{
+		&client.UserUUID,
+		&client.ClientUUID,
+		&client.Name,
+		&client.LatestIP,
+		&client.CreationTime,
+		&client.LatestConnectionTime,
+		&client.MachineID,
+	}
+
+	clients, err := repo.queryClients(query, columns, &client, userUUID, (offset-1)*constants.Limit)
+
+	if err != nil {
+		return nil, -1, err
+	}
+
+	count, err := repo.countQueryResults(queryCount, userUUID)
+
+	return clients, count, err
+}
+
+// GRPC - CreatePost creates a new record in the post table
+func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
+	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, name, latest_ip, creation_datetime, latest_connection, machine_id) VALUES(?,?,?,?,?,?,?)",
+		entities.ClientTableName)
+
+	formattedDateTime := time.Now().Format(constants.DateTimeExample)
+	clientNewID := uuid.New().String()
+	_, err := repo.db.Exec(query, userUUID, clientNewID, name, latestIP, formattedDateTime, formattedDateTime, machineID)
+
+	if err != nil {
+		return "", err
+	}
+
+	return clientNewID, nil
 }
 
 // TODO: remove these commented

@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Virgula0/progetto-dp/server/backend/internal/handlers"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
+	handlers "github.com/Virgula0/progetto-dp/server/backend/internal/restapi"
 	"github.com/gorilla/mux"
 )
 
