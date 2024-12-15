@@ -1,6 +1,7 @@
 package authenticate
 
 import (
+	"github.com/Virgula0/progetto-dp/server/entities"
 	"net/http"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
@@ -20,14 +21,14 @@ type AuthRequest struct {
 }
 
 func (u Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	c := rr.ResponseInitializer{ResponseWriter: w}
+	c := rr.Initializer{ResponseWriter: w}
 
 	var request AuthRequest
 
 	err := utils.ValidateJSON(&request, r)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, rr.UniformResponse{
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
 			StatusCode: http.StatusBadRequest,
 			Details:    err.Error(),
 		})
@@ -38,7 +39,7 @@ func (u Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	user, role, err := u.Usecase.GetUserByUsername(request.Username)
 	if err != nil {
 		statusCode := http.StatusUnauthorized
-		c.JSON(statusCode, rr.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
 			Details:    err.Error(),
 		})
@@ -49,9 +50,9 @@ func (u Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
 	if err != nil {
 		statusCode := http.StatusUnauthorized
-		c.JSON(statusCode, rr.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
-			Details:    errors.ErrInvalidCreds.Error(),
+			Details:    errors.ErrInvalidCredentials.Error(),
 		})
 		return
 	}
@@ -61,7 +62,7 @@ func (u Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		statusCode := http.StatusInternalServerError
 
-		c.JSON(statusCode, rr.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
 			Details:    err.Error(),
 		})
@@ -69,7 +70,7 @@ func (u Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Send the token in response
-	c.JSON(http.StatusOK, rr.UniformResponse{
+	c.JSON(http.StatusOK, entities.UniformResponse{
 		StatusCode: http.StatusOK,
 		Details:    token,
 	})

@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"github.com/Virgula0/progetto-dp/server/entities"
 	"net/http"
 	"strings"
 
@@ -49,8 +50,8 @@ func (u *TokenAuth) TokenValidation(r *http.Request, w http.ResponseWriter) stri
 
 // Helper function to respond with an error message
 func ResponseWithError(w http.ResponseWriter, statusCode int, message string) {
-	c := response.ResponseInitializer{ResponseWriter: w}
-	c.JSON(statusCode, response.UniformResponse{
+	c := response.Initializer{ResponseWriter: w}
+	c.JSON(statusCode, entities.UniformResponse{
 		StatusCode: statusCode,
 		Details:    message,
 	})

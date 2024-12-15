@@ -1,16 +1,17 @@
 package authenticate
 
 import (
+	"github.com/Virgula0/progetto-dp/server/entities"
 	"net/http"
 
 	rr "github.com/Virgula0/progetto-dp/server/backend/internal/response"
 )
 
-func (u Handler) ChekTokenValidity(w http.ResponseWriter, r *http.Request) {
+func (u Handler) CheckTokenValidity(w http.ResponseWriter, r *http.Request) {
 
-	c := rr.ResponseInitializer{ResponseWriter: w}
+	c := rr.Initializer{ResponseWriter: w}
 
-	c.JSON(http.StatusOK, rr.UniformResponse{
+	c.JSON(http.StatusOK, entities.UniformResponse{
 		StatusCode: http.StatusOK,
 		Details:    "valid",
 	})

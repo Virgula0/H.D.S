@@ -18,7 +18,7 @@ type ServiceHandler struct {
 // NewServiceHandler main microservice entrypoint; creates repository, seeds database and exposes usecase
 func NewServiceHandler(db *infrastructure.Database, reset bool) (ServiceHandler, error) {
 
-	repo, err := repository.NewRepository(db, reset)
+	repo, err := repository.NewRepository(db)
 	if err != nil {
 		e := fmt.Errorf("fail NewRepository: %s", err.Error())
 		log.Println(e)

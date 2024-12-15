@@ -18,7 +18,7 @@ type Usecase struct {
 
 var blacklistedTokens = make(map[string]bool)
 
-// Dep. injection for usecase. Injecting db -> repo -> usecase
+// NewUsecase Dep. injection for usecase. Injecting db -> repo -> usecase
 func NewUsecase(repo *repository.Repository) *Usecase {
 	return &Usecase{
 		repo: repo,

@@ -19,22 +19,22 @@ type GetHandshakeResponse struct {
 }
 
 func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
-	c := response.ResponseInitializer{ResponseWriter: w}
+	c := response.Initializer{ResponseWriter: w}
 
 	userID, err := u.Usecase.GetUserIDFromToken(r)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, response.UniformResponse{
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
 			StatusCode: http.StatusInternalServerError,
 			Details:    err.Error(),
 		})
 		return
 	}
 
-	handshakes, len, err := u.Usecase.GetHandshakes(userID.String(), 1) // TODO: handle offset from request
+	handshakes, counted, err := u.Usecase.GetHandshakes(userID.String(), 1) // TODO: handle offset from request
 
-	if len == 0 {
-		c.JSON(http.StatusNotFound, response.UniformResponse{
+	if counted == 0 {
+		c.JSON(http.StatusNotFound, entities.UniformResponse{
 			StatusCode: http.StatusNotFound,
 			Details:    errors.ErrElementNotFound.Error(),
 		})
@@ -42,7 +42,7 @@ func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, response.UniformResponse{
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
 			StatusCode: http.StatusInternalServerError,
 			Details:    err.Error(),
 		})
@@ -50,7 +50,7 @@ func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.JSON(http.StatusOK, GetHandshakeResponse{
-		Length:     len,
+		Length:     counted,
 		Handshakes: handshakes,
 	})
 }

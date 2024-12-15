@@ -20,7 +20,7 @@ type Repository struct {
 }
 
 // Dependency Injection Pattern for injecting db instance within Repository
-func NewRepository(db *infrastructure.Database, reset bool) (*Repository, error) {
+func NewRepository(db *infrastructure.Database) (*Repository, error) {
 	return &Repository{
 		db.DB,
 	}, nil
@@ -65,7 +65,7 @@ func (repo *Repository) GetUserByUsername(username string) (*entities.User, *ent
 	rows, err := repo.db.Query(query, username)
 
 	if err != nil {
-		return nil, nil, errors.ErrInvalidCreds
+		return nil, nil, errors.ErrInvalidCredentials
 	}
 
 	defer rows.Close()
@@ -73,13 +73,13 @@ func (repo *Repository) GetUserByUsername(username string) (*entities.User, *ent
 	hasNext := rows.Next()
 
 	if !hasNext {
-		return nil, nil, errors.ErrInvalidCreds
+		return nil, nil, errors.ErrInvalidCredentials
 	}
 
 	err = rows.Scan(&user.UserUUID, &user.Username, &user.Password, &role.RoleString)
 
 	if err != nil {
-		return nil, nil, errors.ErrInvalidCreds
+		return nil, nil, errors.ErrInvalidCredentials
 	}
 
 	return &user, &role, nil
@@ -254,12 +254,12 @@ func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string)
 }
 
 // TCP/IP - CreateHandshake creates a new record in the handshake table
-func (repo *Repository) CreateHandshake(userUUID, RaspberryPIUUID, ssid, bssid, status, handshake_pcap string) (string, error) {
+func (repo *Repository) CreateHandshake(userUUID, RaspberryPIUUID, ssid, bssid, status, handshakePcap string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid_assigned_raspberry_pi, uuid, ssid, bssid, status, handshake_pcap) VALUES(?,?,?,?,?,?,?)",
 		entities.HandshakeTableName)
 
 	handshakeID := uuid.New().String()
-	_, err := repo.db.Exec(query, userUUID, RaspberryPIUUID, RaspberryPIUUID, ssid, bssid, status, handshake_pcap)
+	_, err := repo.db.Exec(query, userUUID, RaspberryPIUUID, RaspberryPIUUID, ssid, bssid, status, handshakePcap)
 
 	if err != nil {
 		return "", err

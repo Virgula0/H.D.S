@@ -3,7 +3,7 @@
 # Dependencies
 
 Since `client` within docker runs a GUI using `raylib`, we need to forward the desktop environment to docker.
-So, an utility called `xhost` is needed (`xorg-xhost` package on arch).
+So, a utility called `xhost` is needed (`xorg-xhost` package on arch).
 
 Then run 
 
@@ -18,7 +18,7 @@ docker compose up --build -d
 > Tested on Raspberry-Pi 5 Model B Rev. 2
 
 > [!TIP]
-> Change `wlan1` interface with your interface accordingly. Make sure your wifi card supports monitor mode and packet injection first.
+> Change `wlan1` interface with your interface accordingly. Make sure your Wi-Fi card supports monitor mode and packet injection first.
 
 ## Set-Up monitor mode
 

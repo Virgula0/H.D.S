@@ -47,7 +47,7 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
 	// VERIFY -- AUTHENTICATED --
 	verifyRouter := router.PathPrefix(RouteIndex).Subrouter()
-	verifyRouter.HandleFunc(RouteTokenVerifier, authenticateHandler.ChekTokenValidity).Methods("GET")
+	verifyRouter.HandleFunc(RouteTokenVerifier, authenticateHandler.CheckTokenValidity).Methods("GET")
 	verifyRouter.Use(authMiddleware.EnsureTokenIsValid)
 
 	// LOGOUT -- AUTHENTICATED --

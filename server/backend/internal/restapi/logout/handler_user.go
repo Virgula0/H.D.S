@@ -1,6 +1,7 @@
 package logout
 
 import (
+	"github.com/Virgula0/progetto-dp/server/entities"
 	"net/http"
 	"strings"
 
@@ -14,7 +15,7 @@ type Handler struct {
 }
 
 func (u Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
-	c := response.ResponseInitializer{ResponseWriter: w}
+	c := response.Initializer{ResponseWriter: w}
 
 	// Get the authorization header
 	authHeader := r.Header.Get("Authorization")
@@ -23,7 +24,7 @@ func (u Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) != 2 || parts[0] != "Bearer" {
 		statusCode := http.StatusBadRequest
-		c.JSON(statusCode, response.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
 			Details:    "Invalid authorization header format",
 		})
@@ -36,7 +37,7 @@ func (u Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	// Check if the token is a valid JWT
 	if !utils.IsJWT(token) {
 		statusCode := http.StatusUnauthorized
-		c.JSON(statusCode, response.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
 			Details:    "Invalid token: token is not in valid JWT format",
 		})
@@ -47,7 +48,7 @@ func (u Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	isValid, err := u.Usecase.ValidateToken(token)
 	if err != nil || !isValid {
 		statusCode := http.StatusUnauthorized
-		c.JSON(statusCode, response.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
 			Details:    "Invalid or expired token",
 		})
@@ -58,7 +59,7 @@ func (u Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	u.Usecase.InvalidateToken(token)
 
 	// Respond with success
-	c.JSON(http.StatusOK, response.UniformResponse{
+	c.JSON(http.StatusOK, entities.UniformResponse{
 		StatusCode: http.StatusOK,
 		Details:    "Logged out successfully",
 	})

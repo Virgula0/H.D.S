@@ -23,12 +23,12 @@ type Request struct {
 }
 
 func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	c := response.ResponseInitializer{ResponseWriter: w}
+	c := response.Initializer{ResponseWriter: w}
 	var request Request
 
 	if constants.AllowRegistrations == "" {
 		statusCode := http.StatusUnauthorized
-		c.JSON(statusCode, response.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
 			Details:    errors.ErrRegistrationNotEnabled.Error(),
 		})
@@ -38,7 +38,7 @@ func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	// Validate the request
 	if err := utils.ValidateJSON(&request, r); err != nil {
 		statusCode := http.StatusBadRequest
-		c.JSON(statusCode, response.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
 			Details:    err.Error(),
 		})
@@ -48,7 +48,7 @@ func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	// Validate username and password
 	if !utils.IsValidUsername(request.Username) {
 		statusCode := http.StatusBadRequest
-		c.JSON(statusCode, response.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
 			Details:    errors.ErrBadPUsernameCriteria.Error(),
 		})
@@ -57,7 +57,7 @@ func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !utils.IsValidPassword(request.Password) {
 		statusCode := http.StatusBadRequest
-		c.JSON(statusCode, response.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
 			Details:    errors.ErrBadPasswordCriteria.Error(),
 		})
@@ -67,9 +67,9 @@ func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if password and confirmation match
 	if request.Password != request.PasswordConfirm {
 		statusCode := http.StatusBadRequest
-		c.JSON(statusCode, response.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
-			Details:    errors.ErrPaswwordAndConfirmationMismatch.Error(),
+			Details:    errors.ErrPasswordAndConfirmationMismatch.Error(),
 		})
 		return
 	}
@@ -85,7 +85,7 @@ func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	err := u.Usecase.CreateUser(userEntity, constants.USER)
 	if err != nil {
 		statusCode := http.StatusBadRequest
-		c.JSON(statusCode, response.UniformResponse{
+		c.JSON(statusCode, entities.UniformResponse{
 			StatusCode: statusCode,
 			Details:    errors.ErrUsernameAlreadyTaken.Error(),
 		})
@@ -93,7 +93,7 @@ func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Respond with success
-	c.JSON(http.StatusOK, response.UniformResponse{
+	c.JSON(http.StatusOK, entities.UniformResponse{
 		StatusCode: http.StatusOK,
 		Details:    "registered",
 	})

@@ -40,7 +40,7 @@ services:
       MYSQL_RANDOM_ROOT_PASSWORD: "yes"
     restart: unless-stopped
     ports: 
-      - 3306:3306
+      - "3306:3306"
     healthcheck:
       test:
         [

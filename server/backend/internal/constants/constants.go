@@ -6,7 +6,7 @@ import (
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 )
 
-var JSON_CONTENT_TYPE = "application/json"
+var JsonContentType = "application/json"
 
 var JwtSecretKey = []byte(utils.GenerateToken(128))
 

@@ -1,6 +1,7 @@
 package raspberrypi
 
 import (
+	"github.com/Virgula0/progetto-dp/server/entities"
 	"net/http"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
@@ -25,22 +26,22 @@ type ReturnRaspberryPiDevicesResponse struct {
 }
 
 func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
-	c := response.ResponseInitializer{ResponseWriter: w}
+	c := response.Initializer{ResponseWriter: w}
 
 	userID, err := u.Usecase.GetUserIDFromToken(r)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, response.UniformResponse{
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
 			StatusCode: http.StatusInternalServerError,
 			Details:    err.Error(),
 		})
 		return
 	}
 
-	rspDevices, len, err := u.Usecase.GetRaspberryPI(userID.String(), 1) // TODO: handle offset from request
+	rspDevices, counted, err := u.Usecase.GetRaspberryPI(userID.String(), 1) // TODO: handle offset from request
 
-	if len == 0 {
-		c.JSON(http.StatusNotFound, response.UniformResponse{
+	if counted == 0 {
+		c.JSON(http.StatusNotFound, entities.UniformResponse{
 			StatusCode: http.StatusNotFound,
 			Details:    errors.ErrElementNotFound.Error(),
 		})
@@ -48,7 +49,7 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, response.UniformResponse{
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
 			StatusCode: http.StatusInternalServerError,
 			Details:    err.Error(),
 		})
@@ -68,7 +69,7 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.JSON(http.StatusOK, ReturnRaspberryPiDevicesResponse{
-		Length:  len,
+		Length:  counted,
 		Devices: temp,
 	})
 
