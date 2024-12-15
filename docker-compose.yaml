@@ -13,16 +13,18 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix # X11 forwarding
       - /usr/share/seclists/Passwords:/usr/share/seclists/Passwords
 
-  backend:
-    container_name: dp-backend
+  server:
+    container_name: server
     build:
       context: server
-      dockerfile: backend/Dockerfile
+      dockerfile: server/Dockerfile
     depends_on:
       - database
     environment:
       - BACKEND_HOST=0.0.0.0 # Not need to change
       - BACKEND_PORT=4747    # Not need to change
+      - FRONTEND_HOST=0.0.0.0
+      - FRONTEND_PORT=4748
       - DB_USER=agent
       - DB_PASSWORD=SUPERSECUREUNCRACKABLEPASSWORD
       - DB_HOST=dp-database
