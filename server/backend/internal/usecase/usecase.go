@@ -108,3 +108,7 @@ func (uc *Usecase) CreateClient(userUUID, machineID, latestIP, name string) (str
 func (uc *Usecase) GetRaspberryPI(userUUID string, offset uint) ([]*entities.RaspberryPI, int, error) {
 	return uc.repo.GetRaspberryPI(userUUID, offset)
 }
+
+func (uc *Usecase) GetHandshakes(userUUID string, offset uint) ([]*entities.Handshake, int, error) {
+	return uc.repo.GetHandshakes(userUUID, offset)
+}

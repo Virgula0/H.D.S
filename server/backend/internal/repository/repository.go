@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
@@ -102,6 +103,7 @@ func (repo *Repository) queryEntities(query string, columns []any, entity any, a
 	rows, err := repo.db.Query(query, args...)
 
 	if err != nil {
+		log.Println(err.Error())
 		return nil, errors.ErrInternalServerError
 	}
 	defer rows.Close()
@@ -109,12 +111,14 @@ func (repo *Repository) queryEntities(query string, columns []any, entity any, a
 	// Loop through the rows and scan into the provided entity
 	for rows.Next() {
 		if err := rows.Scan(columns...); err != nil {
+			log.Println(err.Error())
 			return nil, errors.ErrInternalServerError
 		}
 		entities = append(entities, entity)
 	}
 
 	if err := rows.Err(); err != nil {
+		log.Println(err.Error())
 		return nil, errors.ErrInternalServerError
 	}
 
@@ -190,6 +194,49 @@ func (repo *Repository) GetRaspberryPI(userUUID string, offset uint) (rsps []*en
 	return rsps, count, err
 }
 
+// REST-API GetClientsInstalledByUser
+func (repo *Repository) GetHandshakes(userUUID string, offset uint) (handshakes []*entities.Handshake, length int, e error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.HandshakeTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
+	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.HandshakeTableName)
+
+	var handshake entities.Handshake
+
+	columnsToBind := []any{
+		&handshake.UserUUID,
+		&handshake.ClientUUID,
+		&handshake.RaspberryPIUUID,
+		&handshake.UUID,
+		&handshake.SSID,
+		&handshake.BSSID,
+		&handshake.UploadedDate,
+		&handshake.Status,
+		&handshake.CrackedDate,
+		&handshake.HashcatOptions,
+		&handshake.HashcatLogs,
+		&handshake.CrackedHandshake,
+		&handshake.HandshakePCAP,
+	}
+
+	results, err := repo.queryEntities(query, columnsToBind, &handshake, userUUID, (offset-1)*constants.Limit)
+
+	if err != nil {
+		log.Println(err.Error())
+		return nil, -1, err
+	}
+
+	for _, item := range results {
+		hdk, ok := item.(*entities.Handshake)
+		if !ok {
+			return nil, 0, fmt.Errorf("%w *entities.Handshake", errors.ErrInvalidType)
+		}
+		handshakes = append(handshakes, hdk)
+	}
+
+	count, err := repo.countQueryResults(queryCount, userUUID)
+
+	return handshakes, count, err
+}
+
 // GRPC - CreatePost creates a new record in the post table
 func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, name, latest_ip, creation_datetime, latest_connection, machine_id) VALUES(?,?,?,?,?,?,?)",
@@ -206,8 +253,23 @@ func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string)
 	return clientNewID, nil
 }
 
-// TCP/IP Server - CreatePost creates a new record in the post table
-func (repo *Repository) CerateRaspberryPI(userUUID, machineID, encryptionKey string) (string, error) {
+// TCP/IP - CreateHandshake creates a new record in the handshake table
+func (repo *Repository) CreateHandshake(userUUID, RaspberryPIUUID, ssid, bssid, status, handshake_pcap string) (string, error) {
+	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid_assigned_raspberry_pi, uuid, ssid, bssid, status, handshake_pcap) VALUES(?,?,?,?,?,?,?)",
+		entities.HandshakeTableName)
+
+	handshakeID := uuid.New().String()
+	_, err := repo.db.Exec(query, userUUID, RaspberryPIUUID, RaspberryPIUUID, ssid, bssid, status, handshake_pcap)
+
+	if err != nil {
+		return "", err
+	}
+
+	return handshakeID, nil
+}
+
+// TCP/IP Server - CreateRaspberryPI creates a new raspberry-pi device entry
+func (repo *Repository) CreateRaspberryPI(userUUID, machineID, encryptionKey string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, machine_id, encryption_key) VALUES(?,?,?,?)",
 		entities.RaspberryPiTableName)
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/authenticate"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/client"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/handshake"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/logout"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/middlewares"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/raspberrypi"
@@ -18,6 +19,7 @@ const RouteRegister = "/register"
 const RouteLogout = "/logout"
 const GetClients = "/clients"
 const GetDevices = "/devices"
+const GetHandshakes = "/handshakes"
 
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
@@ -27,6 +29,7 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	logoutHandler := logout.Handler{Usecase: h.Usecase}
 	installedClientsHandler := client.Handler{Usecase: h.Usecase}
 	installedDevicesHandler := raspberrypi.Handler{Usecase: h.Usecase}
+	handshakesHandler := handshake.Handler{Usecase: h.Usecase}
 
 	// Global middleware for loggin requests
 	router.Use(middlewares.LogginMiddlware)
@@ -61,4 +64,9 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	installedDevicesRouter := router.PathPrefix(RouteIndex).Subrouter()
 	installedDevicesRouter.HandleFunc(GetDevices, installedDevicesHandler.GetRaspberryPIDevices).Methods("GET")
 	installedDevicesRouter.Use(authMiddleware.EnsureTokenIsValid)
+
+	// Get handshake by user -- AUTHENTICATED --
+	handshakesRouter := router.PathPrefix(RouteIndex).Subrouter()
+	handshakesRouter.HandleFunc(GetHandshakes, handshakesHandler.GetHandshakes).Methods("GET")
+	handshakesRouter.Use(authMiddleware.EnsureTokenIsValid)
 }

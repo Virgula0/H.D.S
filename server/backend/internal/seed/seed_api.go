@@ -55,10 +55,18 @@ func loadUsers(repo *repository.Repository) error {
 				return e
 			}
 
-			_, err = repo.CerateRaspberryPI(user.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), fmt.Sprintf("%x%x", md5.Sum([]byte(utils.GenerateToken(10))), md5.Sum([]byte(utils.GenerateToken(10)))))
+			rspID, err := repo.CreateRaspberryPI(user.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), fmt.Sprintf("%x%x", md5.Sum([]byte(utils.GenerateToken(10))), md5.Sum([]byte(utils.GenerateToken(10)))))
 
 			if err != nil {
 				e := fmt.Errorf("failed to seed rsp table: %v", err)
+				log.Println(e)
+				return e
+			}
+
+			_, err = repo.CreateHandshake(user.UserUUID, rspID, "TEST", "XX:XX:XX:XX:XX:XX", "Uncracked", utils.StringToBase64String("test.pcap"))
+
+			if err != nil {
+				e := fmt.Errorf("failed to seed handshake table: %v", err)
 				log.Println(e)
 				return e
 			}

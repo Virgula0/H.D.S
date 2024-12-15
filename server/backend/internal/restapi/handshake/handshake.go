@@ -1,4 +1,4 @@
-package client
+package handshake
 
 import (
 	"net/http"
@@ -13,12 +13,12 @@ type Handler struct {
 	Usecase *usecase.Usecase
 }
 
-type ReturnClientsInstalledResponse struct {
-	Length  int                `json:"length"`
-	Clients []*entities.Client `json:"clients"`
+type GetHandshakeResponse struct {
+	Length     int `json:"length"`
+	Handshakes []*entities.Handshake
 }
 
-func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) {
+func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
 	c := response.ResponseInitializer{ResponseWriter: w}
 
 	userID, err := u.Usecase.GetUserIDFromToken(r)
@@ -31,7 +31,7 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	clientsInstalled, len, err := u.Usecase.GetClientsInstalled(userID.String(), 1) // TODO: handle offset from request
+	handshakes, len, err := u.Usecase.GetHandshakes(userID.String(), 1) // TODO: handle offset from request
 
 	if len == 0 {
 		c.JSON(http.StatusNotFound, response.UniformResponse{
@@ -49,8 +49,8 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.JSON(http.StatusOK, ReturnClientsInstalledResponse{
-		Length:  len,
-		Clients: clientsInstalled,
+	c.JSON(http.StatusOK, GetHandshakeResponse{
+		Length:     len,
+		Handshakes: handshakes,
 	})
 }

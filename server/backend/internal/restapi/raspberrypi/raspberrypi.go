@@ -39,7 +39,7 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 
 	rspDevices, len, err := u.Usecase.GetRaspberryPI(userID.String(), 1) // TODO: handle offset from request
 
-	if len <= 0 {
+	if len == 0 {
 		c.JSON(http.StatusNotFound, response.UniformResponse{
 			StatusCode: http.StatusNotFound,
 			Details:    errors.ErrElementNotFound.Error(),
