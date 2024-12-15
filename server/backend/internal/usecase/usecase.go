@@ -98,9 +98,13 @@ func (uc *Usecase) CreateUser(userEntity *entities.User, role constants.Role) er
 }
 
 func (uc *Usecase) GetClientsInstalledByUser(userUUID string, offset uint) ([]*entities.Client, int, error) {
-	return uc.repo.GetClientsInstalledByUser(userUUID, offset)
+	return uc.repo.GetClientsInstalled(userUUID, offset)
 }
 
 func (uc *Usecase) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
 	return uc.repo.CreateClient(userUUID, machineID, latestIP, name)
+}
+
+func (uc *Usecase) GetRaspberryPI(userUUID string, offset uint) ([]*entities.RaspberryPI, int, error) {
+	return uc.repo.GetRaspberryPI(userUUID, offset)
 }

@@ -26,6 +26,7 @@ var (
 	DBName     = os.Getenv("DB_NAME")
 
 	AllowRegistrations = os.Getenv("ALLOW_REGISTRATIONS")
+	DebugEnabled       = os.Getenv("DEBUG")
 )
 
 var HashCost = 12

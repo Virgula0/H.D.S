@@ -96,38 +96,39 @@ func (repo *Repository) countQueryResults(query string, args ...any) (int, error
 
 }
 
-func (repo *Repository) queryClients(query string, columns []any, client *entities.Client, args ...any) ([]*entities.Client, error) {
-	var clients []*entities.Client
+func (repo *Repository) queryEntities(query string, columns []any, entity any, args ...any) ([]any, error) {
+	var entities []any
 
 	rows, err := repo.db.Query(query, args...)
+
 	if err != nil {
 		return nil, errors.ErrInternalServerError
 	}
 	defer rows.Close()
 
+	// Loop through the rows and scan into the provided entity
 	for rows.Next() {
-		//var client entities.Client
-		if err = rows.Scan(columns...); err != nil {
+		if err := rows.Scan(columns...); err != nil {
 			return nil, errors.ErrInternalServerError
 		}
-		clients = append(clients, client)
+		entities = append(entities, entity)
 	}
 
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, errors.ErrInternalServerError
 	}
 
-	return clients, nil
+	return entities, nil
 }
 
-// REST-API GetClientsInstalledByUser
-func (repo *Repository) GetClientsInstalledByUser(userUUID string, offset uint) ([]*entities.Client, int, error) {
+// REST-API GetClientsInstalled
+func (repo *Repository) GetClientsInstalled(userUUID string, offset uint) (clients []*entities.Client, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.ClientTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.ClientTableName)
 
 	var client entities.Client
 
-	columns := []any{
+	columnsToBind := []any{
 		&client.UserUUID,
 		&client.ClientUUID,
 		&client.Name,
@@ -137,15 +138,56 @@ func (repo *Repository) GetClientsInstalledByUser(userUUID string, offset uint) 
 		&client.MachineID,
 	}
 
-	clients, err := repo.queryClients(query, columns, &client, userUUID, (offset-1)*constants.Limit)
+	results, err := repo.queryEntities(query, columnsToBind, &client, userUUID, (offset-1)*constants.Limit)
 
 	if err != nil {
 		return nil, -1, err
 	}
 
+	for _, item := range results {
+		client, ok := item.(*entities.Client)
+		if !ok {
+			return nil, 0, fmt.Errorf("%w *entities.Client", errors.ErrInvalidType)
+		}
+		clients = append(clients, client)
+	}
+
 	count, err := repo.countQueryResults(queryCount, userUUID)
 
 	return clients, count, err
+}
+
+// REST-API GetClientsInstalledByUser
+func (repo *Repository) GetRaspberryPI(userUUID string, offset uint) (rsps []*entities.RaspberryPI, length int, e error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.RaspberryPiTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
+	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.RaspberryPiTableName)
+
+	var rsp entities.RaspberryPI
+
+	columnsToBind := []any{
+		&rsp.UserUUID,
+		&rsp.RaspberryPIUUID,
+		&rsp.MachineID,
+		&rsp.EncryptionKey,
+	}
+
+	results, err := repo.queryEntities(query, columnsToBind, &rsp, userUUID, (offset-1)*constants.Limit)
+
+	if err != nil {
+		return nil, -1, err
+	}
+
+	for _, item := range results {
+		rsp, ok := item.(*entities.RaspberryPI)
+		if !ok {
+			return nil, 0, fmt.Errorf("%w *entities.RaspberryPI", errors.ErrInvalidType)
+		}
+		rsps = append(rsps, rsp)
+	}
+
+	count, err := repo.countQueryResults(queryCount, userUUID)
+
+	return rsps, count, err
 }
 
 // GRPC - CreatePost creates a new record in the post table
@@ -162,6 +204,21 @@ func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string)
 	}
 
 	return clientNewID, nil
+}
+
+// TCP/IP Server - CreatePost creates a new record in the post table
+func (repo *Repository) CerateRaspberryPI(userUUID, machineID, encryptionKey string) (string, error) {
+	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, machine_id, encryption_key) VALUES(?,?,?,?)",
+		entities.RaspberryPiTableName)
+
+	rspNewID := uuid.New().String()
+	_, err := repo.db.Exec(query, userUUID, rspNewID, machineID, encryptionKey)
+
+	if err != nil {
+		return "", err
+	}
+
+	return rspNewID, nil
 }
 
 // TODO: remove these commented

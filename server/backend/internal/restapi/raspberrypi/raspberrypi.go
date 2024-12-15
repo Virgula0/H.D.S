@@ -1,9 +1,8 @@
-package client
+package raspberrypi
 
 import (
 	"net/http"
 
-	"github.com/Virgula0/progetto-dp/server/backend/internal/entities"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/response"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
@@ -13,12 +12,19 @@ type Handler struct {
 	Usecase *usecase.Usecase
 }
 
-type ReturnClientsInstalledResponse struct {
-	Length  int                `json:"length"`
-	Clients []*entities.Client `json:"clients"`
+// Needed to avoid to display encryption key
+type CustomRaspberryPIResponse struct {
+	UserUUID        string
+	RaspberryPIUUID string
+	MachineID       string
 }
 
-func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) {
+type ReturnRaspberryPiDevicesResponse struct {
+	Length  int                          `json:"length"`
+	Devices []*CustomRaspberryPIResponse `json:"devices"`
+}
+
+func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 	c := response.ResponseInitializer{ResponseWriter: w}
 
 	userID, err := u.Usecase.GetUserIDFromToken(r)
@@ -31,7 +37,7 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	clientsInstalled, len, err := u.Usecase.GetClientsInstalledByUser(userID.String(), 1) // TODO: handle offset from request
+	rspDevices, len, err := u.Usecase.GetRaspberryPI(userID.String(), 1) // TODO: handle offset from request
 
 	if len <= 0 {
 		c.JSON(http.StatusNotFound, response.UniformResponse{
@@ -49,8 +55,21 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.JSON(http.StatusOK, ReturnClientsInstalledResponse{
+	temp := make([]*CustomRaspberryPIResponse, 0)
+
+	for _, dev := range rspDevices {
+		tt := CustomRaspberryPIResponse{
+			UserUUID:        dev.UserUUID,
+			RaspberryPIUUID: dev.RaspberryPIUUID,
+			MachineID:       dev.MachineID,
+		}
+
+		temp = append(temp, &tt)
+	}
+
+	c.JSON(http.StatusOK, ReturnRaspberryPiDevicesResponse{
 		Length:  len,
-		Clients: clientsInstalled,
+		Devices: temp,
 	})
+
 }
