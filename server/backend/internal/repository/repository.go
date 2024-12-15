@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/entities"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
+	"github.com/Virgula0/progetto-dp/server/entities"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -98,7 +98,7 @@ func (repo *Repository) countQueryResults(query string, args ...any) (int, error
 }
 
 func (repo *Repository) queryEntities(query string, columns []any, entity any, args ...any) ([]any, error) {
-	var entities []any
+	var ent []any
 
 	rows, err := repo.db.Query(query, args...)
 
@@ -114,7 +114,7 @@ func (repo *Repository) queryEntities(query string, columns []any, entity any, a
 			log.Println(err.Error())
 			return nil, errors.ErrInternalServerError
 		}
-		entities = append(entities, entity)
+		ent = append(ent, entity)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -122,7 +122,7 @@ func (repo *Repository) queryEntities(query string, columns []any, entity any, a
 		return nil, errors.ErrInternalServerError
 	}
 
-	return entities, nil
+	return ent, nil
 }
 
 // REST-API GetClientsInstalled

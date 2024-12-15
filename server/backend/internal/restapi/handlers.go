@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Virgula0/progetto-dp/server/backend/internal/entities"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/repository"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/seed"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
+	"github.com/Virgula0/progetto-dp/server/entities"
 )
 
 type ServiceHandler struct {

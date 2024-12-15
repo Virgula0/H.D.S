@@ -35,11 +35,11 @@ jobs:
       # Step 4: Install dependencies
       - name: Install dependencies
         run: |
-          cd server/backend
+          cd server
           go mod tidy
 
       # Step 5: Run the linter
       - name: Run golangci-lint
         run: |
-          cd server/backend
+          cd server
           make lint

@@ -3,10 +3,10 @@ package client
 import (
 	"net/http"
 
-	"github.com/Virgula0/progetto-dp/server/backend/internal/entities"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/response"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
+	"github.com/Virgula0/progetto-dp/server/entities"
 )
 
 type Handler struct {

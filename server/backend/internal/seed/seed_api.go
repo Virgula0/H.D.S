@@ -6,9 +6,9 @@ import (
 	"log"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/entities"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/repository"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
+	"github.com/Virgula0/progetto-dp/server/entities"
 	"github.com/google/uuid"
 )
 

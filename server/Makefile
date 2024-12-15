@@ -8,7 +8,7 @@ install-linter:
 .PHONY: install-linter
 
 run:
-	go run ./...
+	go run main.go
 .PHONY: run
 
 go-vuln:

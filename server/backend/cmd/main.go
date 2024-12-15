@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"errors"
@@ -40,7 +40,7 @@ func createServer(handler http.Handler, host, port string) *http.Server {
 	}
 }
 
-func main() {
+func RunBackend() {
 	// ---- SETUP REST API SERVER -> FOR FE AND RASPBERRY PI COMMUNICATIONS-----
 	runtime.GOMAXPROCS(runtime.NumCPU())
 

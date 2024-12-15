@@ -8,7 +8,7 @@ import (
 	"log"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/entities"
+	"github.com/Virgula0/progetto-dp/server/entities"
 )
 
 // UniformResponse is used to provide a uniform correct message structure from API
