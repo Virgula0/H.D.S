@@ -40,20 +40,15 @@ jobs:
           # Ensure the bin directory is in PATH for protoc-gen-go and protoc-gen-go-grpc
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      # Step 4: Install dependencies
-      - name: Install Go dependencies
-        run: |
-          cd server
-          go mod tidy
-
-      # Step 5: Compile .proto files using Make
+      # Step 4: Compile .proto files using Make
       - name: Compile proto files
         run: |
           cd server
           make proto  # Make sure your Makefile has the 'proto' target that generates the Go code
 
-      # Step 6: Run the linter
+      # Step 5: Run the linter
       - name: Run golangci-lint
         run: |
           cd server
+          go mod tidy
           make lint 
