@@ -2,4 +2,4 @@ hashcat.dictstat*
 hashcat.pid
 hashcat.induct
 .idea
-.pb.go
+*.pb.go
