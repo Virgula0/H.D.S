@@ -1,0 +1,6 @@
+syntax = "proto3";
+package hds;
+
+message HelloResponse {
+  string message = 1;
+}

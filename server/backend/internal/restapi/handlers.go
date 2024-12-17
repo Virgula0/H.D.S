@@ -2,6 +2,7 @@ package restapi
 
 import (
 	"fmt"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"log"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
@@ -16,7 +17,7 @@ type ServiceHandler struct {
 }
 
 // NewServiceHandler main microservice entrypoint; creates repository, seeds database and exposes usecase
-func NewServiceHandler(db *infrastructure.Database, reset bool) (ServiceHandler, error) {
+func NewServiceHandler(db *infrastructure.Database) (ServiceHandler, error) {
 
 	repo, err := repository.NewRepository(db)
 	if err != nil {
@@ -25,7 +26,7 @@ func NewServiceHandler(db *infrastructure.Database, reset bool) (ServiceHandler,
 		return ServiceHandler{}, e
 	}
 
-	if reset {
+	if constants.WipeTables != "" {
 
 		// wipe tables first, if requested
 		cleanTables := []string{

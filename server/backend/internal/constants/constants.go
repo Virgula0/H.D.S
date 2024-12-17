@@ -2,6 +2,7 @@ package constants
 
 import (
 	"os"
+	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 )
@@ -27,6 +28,11 @@ var (
 
 	AllowRegistrations = os.Getenv("ALLOW_REGISTRATIONS")
 	DebugEnabled       = os.Getenv("DEBUG")
+	WipeTables         = os.Getenv("RESET")
+
+	// GRPC
+	GRPC_URL                               = os.Getenv("GRPC_URL")
+	GRPC_TIMEOUT, GRPC_TIMEOUT_PARSE_ERROR = time.ParseDuration(os.Getenv("GRPC_TIMEOUT"))
 )
 
 var HashCost = 12
