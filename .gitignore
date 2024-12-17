@@ -21,7 +21,7 @@
 go.work
 build/*
 .vscode
-.idea/
+.idea
 *.log
 server/protobuf
 
