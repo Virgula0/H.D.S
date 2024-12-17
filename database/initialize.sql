@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS client (
         -- YYYY-MM-DD HH:MM:SS
         LATEST_CONNECTION DATETIME,
         -- YYYY-MM-DD HH:MM:SS
-        MACHINE_ID varchar(32),
+        MACHINE_ID varchar(32) UNIQUE,
         -- md5 format
         PRIMARY KEY(UUID),
         FOREIGN KEY (`UUID_USER`) REFERENCES `user` (`UUID`) ON DELETE CASCADE

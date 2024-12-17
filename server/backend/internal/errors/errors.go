@@ -14,3 +14,6 @@ var ErrElementNotFound = errors.New("not found")
 var ErrInvalidJSON = errors.New("invalid JSON: ")
 var ErrRegistrationNotEnabled = errors.New("registration are not enabled")
 var ErrInvalidType = errors.New("failed conversion while fetching db for type: ")
+
+var ErrNoClientFound = errors.New("no client found")
+var ErrNotValidClientIP = errors.New("not valid client IP")

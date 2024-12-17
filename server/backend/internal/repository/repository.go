@@ -238,7 +238,7 @@ func (repo *Repository) GetHandshakes(userUUID string, offset uint) (handshakes 
 	return handshakes, count, err
 }
 
-// CreateClient GRPC - CreatePost creates a new record in the post table
+// CreateClient GRPC - CreateClient creates a new record in the client table
 func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, name, latest_ip, creation_datetime, latest_connection, machine_id) VALUES(?,?,?,?,?,?,?)",
 		entities.ClientTableName)
@@ -252,6 +252,46 @@ func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string)
 	}
 
 	return clientNewID, nil
+}
+
+// GetClientInfo GRPC - GetClientInfo get client info by userID and machineID
+func (repo *Repository) GetClientInfo(userUUID, machineID string) (*entities.Client, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? and machine_id = ?", entities.ClientTableName)
+
+	var client entities.Client
+
+	columnsToBind := []any{
+		&client.UserUUID,
+		&client.ClientUUID,
+		&client.Name,
+		&client.LatestIP,
+		&client.CreationTime,
+		&client.LatestConnectionTime,
+		&client.MachineID,
+	}
+
+	// Execute the query expecting a single row.
+	rows, err := repo.db.Query(query, userUUID, machineID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	hasNext := rows.Next()
+
+	if !hasNext {
+		return nil, errors.ErrNoClientFound
+	}
+
+	err = rows.Scan(columnsToBind...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &client, nil
 }
 
 // CreateHandshake TCP/IP - CreateHandshake creates a new record in the handshake table

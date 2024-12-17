@@ -4,3 +4,14 @@ package hds;
 message HelloResponse {
   string message = 1;
 }
+
+message GetClientInfoResponse {
+  bool is_registered = 1;
+  string user_uuid = 2;
+  string client_uuid = 3;
+  string name = 4;
+  string latest_ip = 5;
+  string creation_time = 6;
+  string last_connection_time = 7;
+  string machine_id = 8;
+}

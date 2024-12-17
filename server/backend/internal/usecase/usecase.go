@@ -53,7 +53,7 @@ func (uc *Usecase) GetUserIDFromToken(r *http.Request) (uuid.UUID, error) {
 		return uuid.UUID{}, err
 	}
 
-	return uuid.Parse(data["userID"].(string))
+	return uuid.Parse(data[constants.UserIDKey].(string))
 }
 
 func (uc *Usecase) InvalidateToken(token string) {
@@ -111,4 +111,7 @@ func (uc *Usecase) GetRaspberryPI(userUUID string, offset uint) ([]*entities.Ras
 
 func (uc *Usecase) GetHandshakes(userUUID string, offset uint) ([]*entities.Handshake, int, error) {
 	return uc.repo.GetHandshakes(userUUID, offset)
+}
+func (uc *Usecase) GetClientInfo(userUUID, machineID string) (*entities.Client, error) {
+	return uc.repo.GetClientInfo(userUUID, machineID)
 }

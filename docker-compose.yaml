@@ -17,7 +17,7 @@ services:
     container_name: server
     build:
       context: server
-      dockerfile: server/Dockerfile
+      dockerfile: Dockerfile
     depends_on:
       - database
     environment:

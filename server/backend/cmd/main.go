@@ -7,7 +7,6 @@ import (
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"log"
 	"net/http"
-	"os"
 	"runtime"
 	"strconv"
 	"time"
@@ -17,9 +16,6 @@ import (
 	handlers "github.com/Virgula0/progetto-dp/server/backend/internal/restapi"
 	"github.com/gorilla/mux"
 )
-
-var ServerHost = os.Getenv("BACKEND_HOST")
-var ServerPort = os.Getenv("BACKEND_PORT")
 
 func runService(m *mux.Router, database *infrastructure.Database) (*handlers.ServiceHandler, error) {
 	ms, err := handlers.NewServiceHandler(database)
@@ -79,13 +75,13 @@ func RunBackend() {
 		log.Fatalf("%s", err.Error())
 	}
 
-	srv := createServer(gorillaMux, ServerHost, ServerPort)
+	srv := createServer(gorillaMux, constants.ServerHost, constants.ServerPort)
 
 	// Go Routine for the REST-API server
 	go func() {
 		go database.DBPinger()
 
-		log.Printf("Server running on %s:%s", ServerHost, ServerPort)
+		log.Printf("[REST-API] Server running on %s:%s", constants.ServerHost, constants.ServerPort)
 		if restErr := srv.ListenAndServe(); restErr != nil && !errors.Is(restErr, http.ErrServerClosed) {
 			log.Fatalf("listen: %v", restErr)
 		}
