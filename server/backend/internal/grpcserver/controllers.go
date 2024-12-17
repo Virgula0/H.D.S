@@ -1,4 +1,4 @@
-package grpc_server
+package grpcserver
 
 import (
 	usecaseHandler "github.com/Virgula0/progetto-dp/server/backend/internal/usecase"

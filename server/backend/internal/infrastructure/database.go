@@ -42,7 +42,7 @@ func NewDatabaseConnection() (*Database, error) {
 func (db Database) DBPinger() {
 	for {
 		if err := db.DB.Ping(); err != nil {
-			log.Fatalf(fmt.Sprintf("unable to connect to the database anymore %s", err.Error()))
+			log.Fatalf("unable to connect to the database anymore %s", err.Error())
 		}
 		time.Sleep(time.Second * 10)
 	}

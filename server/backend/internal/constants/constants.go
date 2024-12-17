@@ -7,11 +7,14 @@ import (
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 )
 
-var JsonContentType = "application/json"
+var JSONContentType = "application/json"
 
 var JwtSecretKey = []byte(utils.GenerateToken(128))
 
-const TokenConstant = "token"
+type TokenKey string
+
+var TokenConstant = TokenKey("token")
+
 const Limit = 5
 
 // const for DateTime Format YYYY-MM-DD HH:MM:SS
@@ -31,8 +34,8 @@ var (
 	WipeTables         = os.Getenv("RESET")
 
 	// GRPC
-	GRPC_URL                               = os.Getenv("GRPC_URL")
-	GRPC_TIMEOUT, GRPC_TIMEOUT_PARSE_ERROR = time.ParseDuration(os.Getenv("GRPC_TIMEOUT"))
+	GrpcURL                            = os.Getenv("GrpcURL")
+	GrpcTimeout, GrpcTimeoutParseError = time.ParseDuration(os.Getenv("GrpcTimeout"))
 )
 
 var HashCost = 12

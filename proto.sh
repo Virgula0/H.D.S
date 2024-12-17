@@ -22,7 +22,7 @@ build_microservice() {
     imports=""
     for proto in $protos; do
         base_proto=$(basename "$proto")
-        # generate the go_opt and grpc_server imports for each one
+        # generate the go_opt and grpcserver imports for each one
         imports+="\
             --go_opt=M$1/$base_proto=$GO_IMPORT \
             --go-grpc_opt=M$1/$base_proto=$GO_IMPORT \

@@ -16,7 +16,7 @@ type Initializer struct {
 }
 
 func (w *Initializer) JSON(statusCode int, toMarshal any) {
-	w.Header().Set("Content-Type", constants.JsonContentType)
+	w.Header().Set("Content-Type", constants.JSONContentType)
 	w.WriteHeader(statusCode)
 
 	// Check Responses structure types and sanitize.

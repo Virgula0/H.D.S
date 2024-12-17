@@ -1,7 +1,7 @@
 package seed
 
 import (
-	"crypto/md5"
+	"crypto/md5" // #nosec G501 disable weak hash alert, it is not used for crypto stuff
 	"fmt"
 	"log"
 
@@ -45,9 +45,9 @@ func loadUsers(repo *repository.Repository) error {
 		}
 
 		if constants.DebugEnabled != "" {
-			randomHash := fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10))))
+			randomHash := fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))) // #nosec G401 disable weak hash alert, it is not used for crypto stuff
 
-			_, err = repo.CreateClient(user.UserUUID, string(randomHash[:]), "127.0.0.1", "TestAdmin")
+			_, err = repo.CreateClient(user.UserUUID, randomHash, "127.0.0.1", "TestAdmin")
 
 			if err != nil {
 				e := fmt.Errorf("failed to seed client table: %v", err)
@@ -55,6 +55,7 @@ func loadUsers(repo *repository.Repository) error {
 				return e
 			}
 
+			// #nosec G401 disable weak hash alert, it is not used for crypto stuff
 			rspID, err := repo.CreateRaspberryPI(user.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), fmt.Sprintf("%x%x", md5.Sum([]byte(utils.GenerateToken(10))), md5.Sum([]byte(utils.GenerateToken(10)))))
 
 			if err != nil {

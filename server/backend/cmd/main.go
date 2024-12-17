@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Virgula0/progetto-dp/server/backend/internal/grpc_server"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/grpcserver"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
 	handlers "github.com/Virgula0/progetto-dp/server/backend/internal/restapi"
 	"github.com/gorilla/mux"
@@ -44,16 +44,16 @@ func createServer(handler http.Handler, host, port string) *http.Server {
 
 // StartAsGRPC start the grpc_server server-grpc_server with the required business logic usecases
 func startGRPC(service *handlers.ServiceHandler) error {
-	grpc := grpc_server.New(grpc_server.NewServerContext(service.Usecase))
+	grpc := grpcserver.New(grpcserver.NewServerContext(service.Usecase))
 
-	timeout := constants.GRPC_TIMEOUT
+	timeout := constants.GrpcTimeout
 
-	if constants.GRPC_TIMEOUT_PARSE_ERROR != nil {
-		return constants.GRPC_TIMEOUT_PARSE_ERROR
+	if constants.GrpcTimeoutParseError != nil {
+		return constants.GrpcTimeoutParseError
 	}
 
-	err := grpc.Run(context.Background(), &grpc_server.Option{
-		GrpcURL:         constants.GRPC_URL,
+	err := grpc.Run(context.Background(), &grpcserver.Option{
+		GrpcURL:         constants.GrpcURL,
 		GrpcConnTimeout: timeout,
 		Debug: func() bool {
 			parsed, _ := strconv.ParseBool(constants.DebugEnabled)
@@ -86,8 +86,8 @@ func RunBackend() {
 		go database.DBPinger()
 
 		log.Printf("Server running on %s:%s", ServerHost, ServerPort)
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("listen: %v", err)
+		if restErr := srv.ListenAndServe(); restErr != nil && !errors.Is(restErr, http.ErrServerClosed) {
+			log.Fatalf("listen: %v", restErr)
 		}
 	}()
 

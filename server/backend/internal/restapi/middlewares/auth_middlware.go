@@ -7,7 +7,7 @@ import (
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 )
 
-// Middleware function to ensure the token is valid
+// EnsureTokenIsValid Middleware function to ensure the token is valid
 func (u *TokenAuth) EnsureTokenIsValid(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := u.TokenValidation(r, w)

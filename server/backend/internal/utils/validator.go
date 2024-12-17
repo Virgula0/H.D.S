@@ -31,8 +31,8 @@ func ValidateJSON(request any, r *http.Request) error {
 	}
 	defer r.Body.Close()
 
-	if err := json.Unmarshal(body, request); err != nil {
-		return fmt.Errorf("%s: %w", backendErrors.ErrInvalidJSON, err)
+	if unmarshalErr := json.Unmarshal(body, request); unmarshalErr != nil {
+		return fmt.Errorf("%s: %w", backendErrors.ErrInvalidJSON, unmarshalErr)
 	}
 
 	// Validate the unmarshalled struct

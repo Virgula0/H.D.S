@@ -1,3 +1,4 @@
+// #nosec G201 disable this rule because names of tables are statically defined as costants
 package repository
 
 import (
@@ -19,7 +20,7 @@ type Repository struct {
 	db *sql.DB
 }
 
-// Dependency Injection Pattern for injecting db instance within Repository
+// NewRepository Dependency Injection Pattern for injecting db instance within Repository
 func NewRepository(db *infrastructure.Database) (*Repository, error) {
 	return &Repository{
 		db.DB,
@@ -53,7 +54,7 @@ func (repo *Repository) CreateUser(userEntity *entities.User, role constants.Rol
 	return nil
 }
 
-// CreateUser creates a new record in the user table
+// GetUserByUsername CreateUser creates a new record in the user table
 func (repo *Repository) GetUserByUsername(username string) (*entities.User, *entities.Role, error) {
 
 	var user entities.User
@@ -125,7 +126,7 @@ func (repo *Repository) queryEntities(query string, columns []any, entity any, a
 	return ent, nil
 }
 
-// REST-API GetClientsInstalled
+// GetClientsInstalled REST-API GetClientsInstalled
 func (repo *Repository) GetClientsInstalled(userUUID string, offset uint) (clients []*entities.Client, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.ClientTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.ClientTableName)
@@ -161,7 +162,7 @@ func (repo *Repository) GetClientsInstalled(userUUID string, offset uint) (clien
 	return clients, count, err
 }
 
-// REST-API GetClientsInstalledByUser
+// GetRaspberryPI REST-API GetClientsInstalledByUser
 func (repo *Repository) GetRaspberryPI(userUUID string, offset uint) (rsps []*entities.RaspberryPI, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.RaspberryPiTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.RaspberryPiTableName)
@@ -194,7 +195,7 @@ func (repo *Repository) GetRaspberryPI(userUUID string, offset uint) (rsps []*en
 	return rsps, count, err
 }
 
-// REST-API GetClientsInstalledByUser
+// GetHandshakes REST-API GetClientsInstalledByUser
 func (repo *Repository) GetHandshakes(userUUID string, offset uint) (handshakes []*entities.Handshake, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.HandshakeTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.HandshakeTableName)
@@ -237,7 +238,7 @@ func (repo *Repository) GetHandshakes(userUUID string, offset uint) (handshakes 
 	return handshakes, count, err
 }
 
-// GRPC - CreatePost creates a new record in the post table
+// CreateClient GRPC - CreatePost creates a new record in the post table
 func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, name, latest_ip, creation_datetime, latest_connection, machine_id) VALUES(?,?,?,?,?,?,?)",
 		entities.ClientTableName)
@@ -253,13 +254,13 @@ func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string)
 	return clientNewID, nil
 }
 
-// TCP/IP - CreateHandshake creates a new record in the handshake table
-func (repo *Repository) CreateHandshake(userUUID, RaspberryPIUUID, ssid, bssid, status, handshakePcap string) (string, error) {
+// CreateHandshake TCP/IP - CreateHandshake creates a new record in the handshake table
+func (repo *Repository) CreateHandshake(userUUID, raspberryPIUUID, ssid, bssid, status, handshakePcap string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid_assigned_raspberry_pi, uuid, ssid, bssid, status, handshake_pcap) VALUES(?,?,?,?,?,?,?)",
 		entities.HandshakeTableName)
 
 	handshakeID := uuid.New().String()
-	_, err := repo.db.Exec(query, userUUID, RaspberryPIUUID, RaspberryPIUUID, ssid, bssid, status, handshakePcap)
+	_, err := repo.db.Exec(query, userUUID, raspberryPIUUID, raspberryPIUUID, ssid, bssid, status, handshakePcap)
 
 	if err != nil {
 		return "", err
@@ -268,7 +269,7 @@ func (repo *Repository) CreateHandshake(userUUID, RaspberryPIUUID, ssid, bssid, 
 	return handshakeID, nil
 }
 
-// TCP/IP Server - CreateRaspberryPI creates a new raspberry-pi device entry
+// CreateRaspberryPI TCP/IP Server - CreateRaspberryPI creates a new raspberry-pi device entry
 func (repo *Repository) CreateRaspberryPI(userUUID, machineID, encryptionKey string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, machine_id, encryption_key) VALUES(?,?,?,?)",
 		entities.RaspberryPiTableName)
