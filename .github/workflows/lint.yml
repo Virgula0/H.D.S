@@ -42,4 +42,5 @@ jobs:
       - name: Run golangci-lint
         run: |
           cd server
+          make proto
           make lint
