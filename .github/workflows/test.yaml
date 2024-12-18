@@ -40,7 +40,7 @@ jobs:
       # Step 2: Copy `initialize.sql` to the workspace
       - name: Copy initialization script
         run: |
-          cp /path/to/your/initialize.sql ./initialize.sql
+          cp ./database/initialize.sql ./initialize.sql
 
       # Step 3: Set up Go
       - name: Set up Go
@@ -68,7 +68,7 @@ jobs:
       # Step 6: Initialize the database with your SQL script
       - name: Initialize database with SQL script
         run: |
-          mysql -h 127.0.0.1 -u agent -p$SUPERSECUREUNCRACKABLEPASSWORD dp_hashcat < ./database/initialize.sql
+          mysql -h 127.0.0.1 -u agent -p$SUPERSECUREUNCRACKABLEPASSWORD dp_hashcat < ./initialize.sql
 
       # Step 7: Compile .proto files using Make for the server
       - name: Compile proto files
