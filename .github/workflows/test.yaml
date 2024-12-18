@@ -68,7 +68,7 @@ jobs:
       # Step 6: Initialize the database with your SQL script
       - name: Initialize database with SQL script
         run: |
-          mysql -h localhost -u agent -pSUPERSECUREUNCRACKABLEPASSWORD dp_hashcat --skip-ssl-verify-server-cert
+          mysql -h localhost -u agent -pSUPERSECUREUNCRACKABLEPASSWORD dp_hashcat
 
       # Step 7: Compile .proto files using Make for the server
       - name: Compile proto files
