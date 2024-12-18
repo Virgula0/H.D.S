@@ -62,13 +62,12 @@ jobs:
         with:
           mariadb version: 10.9
           mysql database: 'dp_hashcat'
-          mysql user: 'agent'
-          mysql password: 'SUPERSECUREUNCRACKABLEPASSWORD'
+          mysql root password: SUPERSECUREUNCRACKABLEPASSWORD
 
       # Step 6: Initialize the database with your SQL script
       - name: Initialize database with SQL script
         run: |
-          mysql -h localhost -u agent -pSUPERSECUREUNCRACKABLEPASSWORD dp_hashcat
+          mysql -h 127.0.0.1 -u root -pSUPERSECUREUNCRACKABLEPASSWORD dp_hashcat < initialize.sql
 
       # Step 7: Compile .proto files using Make for the server
       - name: Compile proto files
