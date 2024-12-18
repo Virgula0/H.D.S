@@ -32,24 +32,6 @@ jobs:
       GRPC_URL: 0.0.0.0:7777
       GRPC_TIMEOUT: 10s
 
-    services:
-      mysql:
-        image: mariadb:10.9
-        env:
-          MYSQL_ROOT_PASSWORD: SUPERSECUREUNCRACKABLEPASSWORD
-          MYSQL_DATABASE: dp_hashcat
-          MYSQL_USER: agent
-          MYSQL_PASSWORD: SUPERSECUREUNCRACKABLEPASSWORD
-        ports:
-          - 3306:3306
-        options: |
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-        volumes:
-          - ./database/initialize.sql:/docker-entrypoint-initdb.d/initialize.sql:ro
-
     steps:
       # Step 1: Checkout the code
       - name: Checkout repository
@@ -74,13 +56,27 @@ jobs:
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      # Step 5: Compile .proto files using Make for the server
+      # Step 5: Set up MariaDB using mariadb-action
+      - name: Set up MariaDB
+        uses: getong/mariadb-action@v1.11
+        with:
+          mariadb version: 10.9
+          mysql database: 'dp_hashcat'
+          mysql user: 'agent'
+          mysql password: 'SUPERSECUREUNCRACKABLEPASSWORD'
+
+      # Step 6: Initialize the database with your SQL script
+      - name: Initialize database with SQL script
+        run: |
+          mysql -h 127.0.0.1 -u agent -p$SUPERSECUREUNCRACKABLEPASSWORD dp_hashcat < ./database/initialize.sql
+
+      # Step 7: Compile .proto files using Make for the server
       - name: Compile proto files
         run: |
           cd server
           make proto 
 
-      # Step 6: Run tests for the server
+      # Step 8: Run tests for the server
       - name: Run tests
         run: |
           cd server
