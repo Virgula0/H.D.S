@@ -42,39 +42,45 @@ jobs:
           MYSQL_PASSWORD: SUPERSECUREUNCRACKABLEPASSWORD
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=5
+        options: >
+          --health-cmd="mysqladmin ping --silent" 
+          --health-interval=10s 
+          --health-timeout=5s 
+          --health-retries=5
+        volumes:
+          - ./database/initialize.sql:/docker-entrypoint-initdb.d/initialize.sql:ro
 
     steps:
       # Step 1: Checkout the code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Go
+      # Step 2: Copy `initialize.sql` to the workspace
+      - name: Copy initialization script
+        run: |
+          cp /path/to/your/initialize.sql ./initialize.sql
+
+      # Step 3: Set up Go
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: 1.23.4
 
-      # Step 3: Install protoc and Go plugins for protobuf
+      # Step 4: Install protoc and Go plugins for protobuf
       - name: Install protoc and dependencies
         run: |
-          # Install protoc (Protocol Buffers Compiler)
           sudo apt-get install -y protobuf-compiler
-
-          # Install Go plugin for protoc
           go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
-
-          # Ensure the bin directory is in PATH for protoc-gen-go and protoc-gen-go-grpc
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      # Step 4: Compile .proto files using Make for the server
+      # Step 5: Compile .proto files using Make for the server
       - name: Compile proto files
         run: |
           cd server
           make proto 
 
-      # Step 5: Run tests for the server
+      # Step 6: Run tests for the server
       - name: Run tests
         run: |
           cd server
