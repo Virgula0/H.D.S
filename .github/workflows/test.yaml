@@ -42,10 +42,10 @@ jobs:
           MYSQL_PASSWORD: SUPERSECUREUNCRACKABLEPASSWORD
         ports:
           - 3306:3306
-        options: >
-          --health-cmd="mysqladmin ping --silent" 
-          --health-interval=10s 
-          --health-timeout=5s 
+        options: |
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
           --health-retries=5
         volumes:
           - ./database/initialize.sql:/docker-entrypoint-initdb.d/initialize.sql:ro
