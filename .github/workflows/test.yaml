@@ -1,0 +1,82 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - synchronize
+
+jobs:
+  lint:
+    name: Run tests, not works with IDEs
+    runs-on: ubuntu-latest
+
+    env:
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 4747
+      FRONTEND_HOST: 0.0.0.0
+      FRONTEND_PORT: 4748
+      DB_USER: agent
+      DB_PASSWORD: SUPERSECUREUNCRACKABLEPASSWORD
+      DB_HOST: localhost
+      DB_PORT: 3306
+      DB_NAME: dp_hashcat
+      ALLOW_REGISTRATIONS: true
+      DEBUG: true
+      RESET: true
+      GRPC_URL: 0.0.0.0:7777
+      GRPC_TIMEOUT: 10s
+
+    services:
+      mysql:
+        image: mariadb:10.9
+        env:
+          MYSQL_ROOT_PASSWORD: SUPERSECUREUNCRACKABLEPASSWORD
+          MYSQL_DATABASE: dp_hashcat
+          MYSQL_USER: agent
+          MYSQL_PASSWORD: SUPERSECUREUNCRACKABLEPASSWORD
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Go
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.23.4
+
+      # Step 3: Install protoc and Go plugins for protobuf
+      - name: Install protoc and dependencies
+        run: |
+          # Install protoc (Protocol Buffers Compiler)
+          sudo apt-get install -y protobuf-compiler
+
+          # Install Go plugin for protoc
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+
+          # Ensure the bin directory is in PATH for protoc-gen-go and protoc-gen-go-grpc
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      # Step 4: Compile .proto files using Make for the server
+      - name: Compile proto files
+        run: |
+          cd server
+          make proto 
+
+      # Step 5: Run tests for the server
+      - name: Run tests
+        run: |
+          cd server
+          go mod tidy
+          make test

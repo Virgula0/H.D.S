@@ -2,8 +2,10 @@ package testsuite
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/authenticate"
 	"github.com/Virgula0/progetto-dp/server/entities"
 	"io"
@@ -12,7 +14,7 @@ import (
 	"time"
 )
 
-var APILOGIN = fmt.Sprintf("http://%s:%s/v1/auth", "localhost", "4747")
+var APILOGIN = fmt.Sprintf("http://%s:%s/v1/auth", constants.ServerHost, constants.ServerPort)
 
 // HTTPRequest performs an HTTP request with the specified method, URL, headers, query parameters, and body.
 // It returns the response body as a string and an error if any.
@@ -23,7 +25,7 @@ func HTTPRequest(method, urlStr string, headers map[string]string, queryParams u
 	}
 
 	// Create the HTTP request
-	req, err := http.NewRequest(method, urlStr, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(context.Background(), method, urlStr, bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -38,7 +40,7 @@ func HTTPRequest(method, urlStr string, headers map[string]string, queryParams u
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	// Create a new HTTP client with a timeout
+	// Create a new HTTP Client with a timeout
 	client := &http.Client{
 		Timeout: timeout,
 	}

@@ -3,13 +3,13 @@ package restapi
 import (
 	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
+	"github.com/Virgula0/progetto-dp/server/entities"
 	"log"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/repository"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/seed"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
-	"github.com/Virgula0/progetto-dp/server/entities"
 )
 
 type ServiceHandler struct {
@@ -28,16 +28,11 @@ func NewServiceHandler(db *infrastructure.Database) (ServiceHandler, error) {
 
 	if constants.WipeTables != "" {
 
-		// wipe tables first, if requested
-		cleanTables := []string{
-			fmt.Sprintf("DELETE FROM %s", entities.UserTableName),
-		}
+		// Delete data from DB
+		err = db.CleanDB([]string{entities.UserTableName})
 
-		for _, query := range cleanTables {
-			_, err := db.Exec(query)
-			if err != nil {
-				return ServiceHandler{}, fmt.Errorf("unable to exec delete query %s ERROR: %v", query, err)
-			}
+		if err != nil {
+			return ServiceHandler{}, err
 		}
 
 		// tables have been wiped, needs a seed

@@ -13,16 +13,20 @@ import (
 )
 
 type Seed struct {
-	AdminUser *entities.User
-	Role      constants.Role
+	User *entities.User
+	Role constants.Role
 }
 
-var UserUUID = uuid.New().String()
-
-var UserSeed = &Seed{
+var AdminSeed = &Seed{
 	// TODO: pay attention to this seed, in case the paassword is not random for debugging purposes
-	AdminUser: &entities.User{UserUUID: UserUUID, Username: "admin", Password: "test1234"}, // utils.GenerateToken(32)},
-	Role:      constants.ADMIN,
+	User: &entities.User{UserUUID: uuid.New().String(), Username: "admin", Password: "test1234"}, // utils.GenerateToken(32)},
+	Role: constants.ADMIN,
+}
+
+var NormalUserSeed = &Seed{
+	// TODO: pay attention to this seed, in case the paassword is not random for debugging purposes
+	User: &entities.User{UserUUID: uuid.New().String(), Username: "user", Password: "test1234"}, // utils.GenerateToken(32)},
+	Role: constants.USER,
 }
 
 func LoadUsers(repo *repository.Repository) error {
@@ -32,7 +36,8 @@ func LoadUsers(repo *repository.Repository) error {
 func loadUsers(repo *repository.Repository) error {
 
 	adminSeed := []*entities.User{
-		UserSeed.AdminUser,
+		AdminSeed.User,
+		NormalUserSeed.User,
 	}
 
 	for _, user := range adminSeed {
