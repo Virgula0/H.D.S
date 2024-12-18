@@ -1,0 +1,59 @@
+name: Linter
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - synchronize
+
+jobs:
+  lint:
+    name: Run golangci-lint via Makefile
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Go
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.23.4
+
+      # Step 3: Install protoc and Go plugins for protobuf
+      - name: Install protoc and dependencies
+        run: |
+          # Install protoc (Protocol Buffers Compiler)
+          sudo apt-get install -y protobuf-compiler
+
+          # Install Go plugin for protoc
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+
+          # Ensure the bin directory is in PATH for protoc-gen-go and protoc-gen-go-grpc
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      # Step 4: Install golangci-lint
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.62.2
+
+      # Step 5: Compile .proto files using Make
+      - name: Compile proto files
+        run: |
+          cd server
+          make proto 
+
+      # Step 6: Run the linter
+      - name: Run golangci-lint
+        run: |
+          cd server
+          go mod tidy
+          make lint 

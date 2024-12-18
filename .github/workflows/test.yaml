@@ -63,8 +63,6 @@ jobs:
           mariadb version: 10.9
           mysql database: 'dp_hashcat'
           mysql root password: SUPERSECUREUNCRACKABLEPASSWORD
-          mysql user: 'agent'
-          mysql password: 'SUPERSECUREUNCRACKABLEPASSWORD'
 
       # Step 6: Initialize the database with your SQL script
       - name: Initialize database with SQL script
