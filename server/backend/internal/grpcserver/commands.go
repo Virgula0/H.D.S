@@ -86,35 +86,33 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 }
 
 func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
-	ticker := time.NewTicker(1 * time.Second) // Do not overflow client. Update tasks every second
+	ticker := time.NewTicker(1 * time.Second) // Do not flood client. Update tasks every second
 	defer ticker.Stop()
 
 	for {
-		select {
-		case <-ticker.C:
-			handshakes, _, err := s.Usecase.GetHandshakesByStatus(constants.PendingStatus)
-			if err != nil {
-				return fmt.Errorf("[GRPC]: HashcatChat GetHandshakesByStatus -> %s", err.Error())
-			}
+		<-ticker.C // blocking channel
+		handshakes, _, err := s.Usecase.GetHandshakesByStatus(constants.PendingStatus)
+		if err != nil {
+			return fmt.Errorf("[GRPC]: HashcatChat GetHandshakesByStatus -> %s", err.Error())
+		}
 
-			// Prepare tasks for clients
-			var tasks []*pb.ClientTask
-			for _, handshake := range handshakes {
-				tasks = append(tasks, &pb.ClientTask{
-					StartCracking:  true,
-					UserId:         handshake.UserUUID,
-					ClientUuid:     *handshake.ClientUUID,
-					HandshakeUuid:  handshake.UUID,
-					HashcatOptions: *handshake.HashcatOptions,
-					HashcatPcap:    *handshake.HandshakePCAP,
-				})
-			}
+		// Prepare tasks for clients
+		var tasks []*pb.ClientTask
+		for _, handshake := range handshakes {
+			tasks = append(tasks, &pb.ClientTask{
+				StartCracking:  true,
+				UserId:         handshake.UserUUID,
+				ClientUuid:     *handshake.ClientUUID,
+				HandshakeUuid:  handshake.UUID,
+				HashcatOptions: *handshake.HashcatOptions,
+				HashcatPcap:    *handshake.HandshakePCAP,
+			})
+		}
 
-			// Send tasks if available
-			if len(tasks) > 0 {
-				if err := stream.Send(&pb.ClientTaskMessageFromServer{Tasks: tasks}); err != nil {
-					return fmt.Errorf("[GRPC]: HashcatChat -> error sending message: %w", err)
-				}
+		// Send tasks if available
+		if len(tasks) > 0 {
+			if err := stream.Send(&pb.ClientTaskMessageFromServer{Tasks: tasks}); err != nil {
+				return fmt.Errorf("[GRPC]: HashcatChat -> error sending message: %w", err)
 			}
 		}
 	}
