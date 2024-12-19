@@ -4,9 +4,7 @@ package grpcserver_test
 import (
 	"context"
 	_ "context"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/entities"
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -233,7 +231,6 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_ErrorWhenClientTriesToU
 	// Connect to the gRPC server
 	client := s.Client
 
-	// Define test case
 	testName := "Error when client tries to update a hashcat row of another user"
 	request := &pb.ClientTaskMessageFromClient{
 		Jwt:        s.NormalUserTokenFixture,
@@ -241,19 +238,66 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_ErrorWhenClientTriesToU
 	}
 
 	s.Run(testName, func() {
-		// Set a context with a timeout
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3) // Timeout after 3 seconds
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20) // Timeout after 20 seconds
 		defer cancel()
 
-		// Initialize the gRPC stream
 		stream, err := client.HashcatTaskChat(ctx)
 		s.Require().NoError(err, "Stream initialization failed")
 
-		// Send the request to the server
 		err = stream.Send(request)
+		s.Require().NoError(err, "Failed to send request to the server")
 
-		time.Sleep(time.Second * 10)
-		log.Println("Error", err.Error())
-		s.Require().ErrorIs(err, status.Errorf(codes.Internal, "Cannot update client task: %v", errors.ErrElementNotFound))
+		response, recvErr := stream.Recv()
+
+		if recvErr != nil {
+			// Ensure the server returns the correct error when a user tries to update another user's row
+			s.Require().Equal(codes.Internal, status.Code(recvErr), "Unexpected error code")
+			s.Require().Contains(recvErr.Error(), "Cannot update client task: not found", "Unexpected error message")
+		} else {
+			s.FailNow("Unexpected response received: %v", response)
+		}
+	})
+}
+
+func (s *GRPCServerTestSuite) Test_HashcatMessageService_UpdateClientTaskSuccessfully() {
+	// Connect to the gRPC server
+	client := s.Client
+
+	testName := "Client should be able to update its own info about its handshakes"
+	request := &pb.ClientTaskMessageFromClient{
+		Jwt:            s.TokenFixture,
+		HandshakeUuid:  s.HandshakeValidID,
+		ClientUuid:     s.UserClientRegistered.ClientUUID,
+		HashcatOptions: "updated",
+	}
+
+	responseExpected := &pb.ClientTaskMessageFromServer{
+		Tasks: []*pb.ClientTask{
+			{
+				UserId:         s.UserClientRegistered.UserUUID,
+				ClientUuid:     s.UserClientRegistered.ClientUUID,
+				HandshakeUuid:  s.HandshakeValidID,
+				HashcatOptions: "updated",
+			},
+		},
+	}
+
+	s.Run(testName, func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20) // Timeout after 20 seconds
+		defer cancel()
+
+		stream, err := client.HashcatTaskChat(ctx)
+		s.Require().NoError(err, "Stream initialization failed")
+
+		err = stream.Send(request)
+		s.Require().NoError(err, "Failed to send request to the server")
+
+		response, recvErr := stream.Recv()
+		s.Require().NoError(recvErr, "Failed to receive response from the server")
+
+		s.Require().Equal(responseExpected.Tasks[0].UserId, response.Tasks[0].UserId, "Unexpected response from Test RPC")
+		s.Require().Equal(responseExpected.Tasks[0].ClientUuid, response.Tasks[0].ClientUuid, "Unexpected response from Test RPC")
+		s.Require().Equal(responseExpected.Tasks[0].UserId, response.Tasks[0].UserId, "Unexpected response from Test RPC")
+		s.Require().Equal(responseExpected.Tasks[0].HashcatOptions, response.Tasks[0].HashcatOptions, "Unexpected response from Test RPC")
 	})
 }

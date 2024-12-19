@@ -86,18 +86,19 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 }
 
 func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
-	errChannel := make(chan error, 1)
-	go func() {
-		for {
-			// Example of the server sending a message to the client
-			handshakes, _, err := s.Usecase.GetHandshakesByStatus(constants.PendingStatus)
+	ticker := time.NewTicker(1 * time.Second) // Do not overflow client. Update tasks every second
+	defer ticker.Stop()
 
+	for {
+		select {
+		case <-ticker.C:
+			handshakes, _, err := s.Usecase.GetHandshakesByStatus(constants.PendingStatus)
 			if err != nil {
-				errChannel <- fmt.Errorf("[GRPC]: HashcatChat GetHandshakesByStatus -> %s", err.Error())
-				return
+				return fmt.Errorf("[GRPC]: HashcatChat GetHandshakesByStatus -> %s", err.Error())
 			}
 
-			tasks := make([]*pb.ClientTask, 0)
+			// Prepare tasks for clients
+			var tasks []*pb.ClientTask
 			for _, handshake := range handshakes {
 				tasks = append(tasks, &pb.ClientTask{
 					StartCracking:  true,
@@ -109,50 +110,51 @@ func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatT
 				})
 			}
 
-			err = stream.Send(&pb.ClientTaskMessageFromServer{
-				Tasks: tasks,
-			})
-
-			if err != nil {
-				errChannel <- fmt.Errorf("[GRPC]: HashcatChat -> error sending message: %w", err)
-				return // this will end the goroutine if sending fails
+			// Send tasks if available
+			if len(tasks) > 0 {
+				if err := stream.Send(&pb.ClientTaskMessageFromServer{Tasks: tasks}); err != nil {
+					return fmt.Errorf("[GRPC]: HashcatChat -> error sending message: %w", err)
+				}
 			}
-			time.Sleep(1 * time.Second) // Add a delay to avoid flooding the client
 		}
-	}()
-	err := <-errChannel
-	return err
+	}
 }
 
 func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
-	// Server listens for client messages.
 	for {
-		msg, err := stream.Recv() // msg: ClientTaskMessageFromClient
+		// Receive message from client
+		msg, err := stream.Recv()
 		if err != nil {
-			// Handle the error
 			if status.Code(err) == codes.Canceled {
-				return status.Errorf(codes.NotFound, "Client has closed the connection")
+				return status.Errorf(codes.NotFound, "[GRPC]: HashcatChat -> Client has closed the connection")
 			}
-			return status.Errorf(codes.Unknown, "Failed to receive message: %v", err)
+			return status.Errorf(codes.Unknown, "[GRPC]: HashcatChat -> Failed to receive message: %v", err)
 		}
-		// Process the received message, extract userID
-		log.Println("Received from client:")
-		data, err := s.Usecase.GetDataFromToken(msg.GetJwt())
 
+		log.Printf("[GRPC]: HashcatChat ->Received from client: %+v", msg)
+
+		// Process the received message
+		data, err := s.Usecase.GetDataFromToken(msg.GetJwt())
 		if err != nil {
-			return err
+			return status.Errorf(codes.Unauthenticated, "[GRPC]: HashcatChat -> Invalid token: %v", err)
 		}
 
 		userID := data[constants.UserIDKey].(string)
-
-		handshake, err := s.Usecase.UpdateClientTask(userID, msg.GetHandshakeUuid(), msg.GetClientUuid(), msg.GetStatus(), msg.GetHashcatOptions(), msg.GetHashcatLogs(), msg.GetCrackedHandshake())
-
+		handshake, err := s.Usecase.UpdateClientTask(
+			userID,
+			msg.GetHandshakeUuid(),
+			msg.GetClientUuid(),
+			msg.GetStatus(),
+			msg.GetHashcatOptions(),
+			msg.GetHashcatLogs(),
+			msg.GetCrackedHandshake(),
+		)
 		if err != nil {
-			return status.Errorf(codes.Internal, "Cannot update client task: %v", err)
+			return status.Errorf(codes.Internal, "[GRPC]: HashcatChat -> Cannot update client task: %v", err)
 		}
 
-		// answer back the client
-		if err := stream.Send(&pb.ClientTaskMessageFromServer{
+		// Respond to client
+		response := &pb.ClientTaskMessageFromServer{
 			Tasks: []*pb.ClientTask{
 				{
 					StartCracking:  false,
@@ -163,33 +165,35 @@ func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_Has
 					HashcatPcap:    *handshake.HandshakePCAP,
 				},
 			},
-		}); err != nil {
-			return status.Errorf(codes.Internal, "Cannot answer to the client after an update: %v", err)
+		}
+
+		if err := stream.Send(response); err != nil {
+			return status.Errorf(codes.Internal, "[GRPC]: HashcatChat -> Cannot answer to the client after an update: %v", err)
 		}
 	}
 }
 
 func (s *ServerContext) HashcatTaskChat(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
+	errChannel := make(chan error, 1) // Buffered channel to avoid blocking
+
 	/*
 		Here is the logic for this part:
 		- We select from table all tasks with pending state (the user has requested to crack it)
 		- We send a message to all clients and if the uuid matches, then the client will reply to the server updating the status
 	*/
-	err := s.sendTasksToClients(stream)
-
-	if err != nil {
-		return err
-	}
+	go func() {
+		if err := s.sendTasksToClients(stream); err != nil {
+			errChannel <- err
+		}
+	}()
 
 	/*
 		- The client will start the cracking process
 		- The client will update the status and hashcat logs once cracking has started
 	*/
-	err = s.listenToTasksFromClient(stream)
-
-	if err != nil {
+	if err := s.listenToTasksFromClient(stream); err != nil {
 		return err
 	}
 
-	return nil
+	return <-errChannel
 }

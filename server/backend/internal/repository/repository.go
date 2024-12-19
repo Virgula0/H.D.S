@@ -369,10 +369,12 @@ func (repo *Repository) CreateRaspberryPI(userUUID, machineID, encryptionKey str
 
 // UpdateClientTask REST-API/GRPC - UpdateClientTask updates a new client task
 func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
+	selectQuery := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
 
+	// Define a variable for the handshake
 	var handshake entities.Handshake
 
+	// Bind columns for querying
 	columnsToBind := []any{
 		&handshake.UserUUID,
 		&handshake.ClientUUID,
@@ -389,8 +391,7 @@ func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClient
 		&handshake.HandshakePCAP,
 	}
 
-	handshakes, err := repo.queryEntities(query, columnsToBind, &handshake, userUUID, handshakeUUID)
-
+	handshakes, err := repo.queryEntities(selectQuery, columnsToBind, &handshake, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -399,17 +400,30 @@ func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClient
 		return nil, errors.ErrElementNotFound
 	}
 
-	temp := handshakes[0] // it should be unique anyway
-	converted, ok := temp.(*entities.Handshake)
-	if !ok {
+	// Ensure that the result is of type Handshake
+	if _, ok := handshakes[0].(*entities.Handshake); !ok {
 		return nil, errors.ErrInvalidType
 	}
 
-	query = fmt.Sprintf("UPDATE %s SET uuid_assigned_client = ?, status = ?, hashcat_options = ? , hashcat_logs = ?, cracked_handshake = ? "+
-		"WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
-	_, err = repo.db.Exec(query, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, userUUID, handshakeUUID)
+	updateQuery := fmt.Sprintf("UPDATE %s SET uuid_assigned_client = ?, status = ?, hashcat_options = ?, hashcat_logs = ?, cracked_handshake = ? WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
+	_, err = repo.db.Exec(updateQuery, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Get updated data
+	handshakes, err = repo.queryEntities(selectQuery, columnsToBind, &handshake, userUUID, handshakeUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(handshakes) == 0 {
+		return nil, errors.ErrElementNotFound
+	}
+
+	converted, ok := handshakes[0].(*entities.Handshake)
+	if !ok {
+		return nil, errors.ErrInvalidType
 	}
 
 	return converted, nil

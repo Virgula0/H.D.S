@@ -27,6 +27,7 @@ type GRPCServerTestSuite struct {
 
 	NormalUserFixture      *entities.User
 	NormalUserTokenFixture string
+	HandshakeValidID       string
 }
 
 // Run All tests
@@ -70,6 +71,8 @@ func (s *GRPCServerTestSuite) SetupSuite() {
 	// create handshake pending tasks
 	handshakeID, err := s.Service.Usecase.CreateHandshake(s.UserClientRegistered.UserUUID, raspID, s.UserClientRegistered.Name, "XX:XX:XX:XX:XX:XX", constants.NothingStatus, utils.StringToBase64String("test.pcap"))
 	s.Require().NoError(err)
+
+	s.HandshakeValidID = handshakeID
 
 	// assign handshake to client
 	_, err = s.Service.Usecase.UpdateClientTask(s.UserClientRegistered.UserUUID, handshakeID, s.UserClientRegistered.ClientUUID, constants.PendingStatus, "", "", "")
