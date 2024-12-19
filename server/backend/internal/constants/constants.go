@@ -54,3 +54,13 @@ const (
 	ADMIN Role = "ADMIN"
 	USER  Role = "USER"
 )
+
+// Statuses for handshake assignments
+const (
+	NothingStatus   = "nothing"
+	PendingStatus   = "pending"
+	WorkingStatus   = "working"
+	CrackStatus     = "cracked"
+	ErrorStatus     = "error"
+	ExhaustedStatus = "exhausted"
+)

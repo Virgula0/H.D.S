@@ -98,20 +98,36 @@ func (uc *Usecase) CreateUser(userEntity *entities.User, role constants.Role) er
 }
 
 func (uc *Usecase) GetClientsInstalled(userUUID string, offset uint) ([]*entities.Client, int, error) {
-	return uc.repo.GetClientsInstalled(userUUID, offset)
+	return uc.repo.GetClientsInstalledByUserID(userUUID, offset)
 }
 
 func (uc *Usecase) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
 	return uc.repo.CreateClient(userUUID, machineID, latestIP, name)
 }
 
+func (uc *Usecase) CreateHandshake(userUUID, raspberryPIUUID, ssid, bssid, status, handshakePcap string) (string, error) {
+	return uc.repo.CreateHandshake(userUUID, raspberryPIUUID, ssid, bssid, status, handshakePcap)
+}
+
 func (uc *Usecase) GetRaspberryPI(userUUID string, offset uint) ([]*entities.RaspberryPI, int, error) {
-	return uc.repo.GetRaspberryPI(userUUID, offset)
+	return uc.repo.GetRaspberryPiByUserID(userUUID, offset)
+}
+
+func (uc *Usecase) CreateRaspberryPI(userUUID, machineID, encryptionKey string) (string, error) {
+	return uc.repo.CreateRaspberryPI(userUUID, machineID, encryptionKey)
 }
 
 func (uc *Usecase) GetHandshakes(userUUID string, offset uint) ([]*entities.Handshake, int, error) {
-	return uc.repo.GetHandshakes(userUUID, offset)
+	return uc.repo.GetHandshakesByUserID(userUUID, offset)
 }
+
 func (uc *Usecase) GetClientInfo(userUUID, machineID string) (*entities.Client, error) {
 	return uc.repo.GetClientInfo(userUUID, machineID)
+}
+
+func (uc *Usecase) GetHandshakesByStatus(filterStatus string) (handshakes []*entities.Handshake, length int, e error) {
+	return uc.repo.GetHandshakesByStatus(filterStatus)
+}
+func (uc *Usecase) UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
+	return uc.repo.UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake)
 }

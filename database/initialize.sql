@@ -62,14 +62,14 @@ CREATE TABLE IF NOT EXISTS client (
 -- Creating handshake table
 SELECT 'Creating handshake table...';
 CREATE TABLE IF NOT EXISTS handshake (
-    UUID_USER varchar(36) UNIQUE,
+    UUID_USER varchar(36),
     UUID_ASSIGNED_CLIENT varchar(36),
     UUID_ASSIGNED_RASPBERRY_PI varchar(36),
     UUID varchar(36),
     SSID varchar(300),
     BSSID varchar(300),
     UPLOADED_DATE DATETIME DEFAULT CURRENT_TIMESTAMP,
-    STATUS varchar(20) DEFAULT 'pending',
+    STATUS varchar(20) DEFAULT 'nothing',
     CRACKED_DATE DATETIME NULL,
     HASHCAT_OPTIONS text,
     HASHCAT_LOGS text,
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS handshake (
     HANDSHAKE_PCAP text,
     PRIMARY KEY(UUID),
     FOREIGN KEY (`UUID_USER`) REFERENCES `user` (`UUID`) ON DELETE CASCADE,
-    FOREIGN KEY (`UUID_ASSIGNED_CLIENT`) REFERENCES `client` (`UUID`),
+    FOREIGN KEY (`UUID_ASSIGNED_CLIENT`) REFERENCES `client` (`UUID`) ON DELETE CASCADE,
     FOREIGN KEY (`UUID_ASSIGNED_RASPBERRY_PI`) REFERENCES `raspberry_pi` (`UUID`)
 );
 

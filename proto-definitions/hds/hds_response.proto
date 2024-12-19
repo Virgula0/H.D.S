@@ -15,3 +15,16 @@ message GetClientInfoResponse {
   string last_connection_time = 7;
   string machine_id = 8;
 }
+
+message ClientTaskMessageFromServer {
+  repeated ClientTask tasks = 1;
+}
+
+message ClientTask {
+  string user_id = 1;
+  string client_uuid = 2;
+  string handshake_uuid = 3;
+  string hashcat_options = 4;
+  bool start_cracking = 5;
+  string hashcat_pcap=6;
+}

@@ -4,6 +4,11 @@ package grpcserver_test
 import (
 	"context"
 	_ "context"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
+	"github.com/Virgula0/progetto-dp/server/entities"
+	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"time"
 	_ "time"
 
@@ -58,26 +63,26 @@ func (s *GRPCServerTestSuite) Test_GetClientInfo_Method() {
 			testname: "Non Registered Client",
 			request: &pb.GetClientInfoRequest{
 				Jwt:       s.TokenFixture,
-				MachineId: "THISISATEST",
-				Name:      "NEW CLIENT",
+				MachineId: s.UserClientUnregistered.MachineID,
+				Name:      s.UserClientUnregistered.Name,
 			},
 			expectedOutput: &pb.GetClientInfoResponse{
 				IsRegistered: false,
-				Name:         "NEW CLIENT",
-				MachineId:    "THISISATEST",
+				MachineId:    s.UserClientUnregistered.MachineID,
+				Name:         s.UserClientUnregistered.Name,
 			},
 		},
 		{
 			testname: "IsRegistered true on a client with MACHINE_ID already present in the table",
 			request: &pb.GetClientInfoRequest{
 				Jwt:       s.TokenFixture,
-				Name:      s.UserClient.Name,
-				MachineId: s.UserClient.MachineID,
+				Name:      s.UserClientRegistered.Name,
+				MachineId: s.UserClientRegistered.MachineID,
 			},
 			expectedOutput: &pb.GetClientInfoResponse{
 				IsRegistered: true,
-				Name:         s.UserClient.Name,
-				MachineId:    s.UserClient.MachineID,
+				Name:         s.UserClientRegistered.Name,
+				MachineId:    s.UserClientRegistered.MachineID,
 			},
 		},
 	}
@@ -99,4 +104,156 @@ func (s *GRPCServerTestSuite) Test_GetClientInfo_Method() {
 			s.Require().Equal(tt.expectedOutput.MachineId, resp.GetMachineId(), "Unexpected response from Test RPC")
 		})
 	}
+}
+
+func (s *GRPCServerTestSuite) Test_HashcatMessageService_Method() {
+
+	// Connect to the gRPC server
+	client := s.Client
+
+	// Define test cases
+	tests := []struct {
+		testname       string
+		request        *pb.ClientTaskMessageFromClient
+		expectedOutput *pb.ClientTaskMessageFromServer
+	}{
+		{
+			testname: "Expect input task from server",
+			request: &pb.ClientTaskMessageFromClient{
+				Jwt: s.TokenFixture,
+			},
+			expectedOutput: &pb.ClientTaskMessageFromServer{
+				Tasks: []*pb.ClientTask{
+					{
+						UserId:     s.UserClientRegistered.UserUUID,
+						ClientUuid: s.UserClientRegistered.ClientUUID,
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.testname, func() {
+			// Perform the gRPC request
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10) // timeout after 10 seconds
+			defer cancel()
+
+			stream, err := client.HashcatTaskChat(ctx)
+			s.Require().NoError(err, "Stream initialization failed")
+
+			var clientID string
+			var crackedDate string
+			var hashcatOptions string
+			var hashcatLogs string
+			var crackedHandshake string
+			var handshakePCAP string
+
+			var handshake = entities.Handshake{
+				UserUUID:         "",
+				ClientUUID:       &clientID,
+				RaspberryPIUUID:  "",
+				UUID:             "",
+				SSID:             "",
+				BSSID:            "",
+				UploadedDate:     "",
+				Status:           "",
+				CrackedDate:      &crackedDate,
+				HashcatOptions:   &hashcatOptions,
+				HashcatLogs:      &hashcatLogs,
+				CrackedHandshake: &crackedHandshake,
+				HandshakePCAP:    &handshakePCAP,
+			}
+
+			// Start receiving messages from the server
+			for {
+				msg, err := stream.Recv()
+				s.Require().NoError(err, "Failed to receive message from stream")
+
+				// if this check is ok it means that the server is asking for starting the task
+				// the client uuid is a known information since we will perform a GetClientInfo request
+				// before
+				for _, task := range msg.GetTasks() {
+					if task.GetClientUuid() == s.UserClientRegistered.ClientUUID && task.GetStartCracking() {
+						*handshake.HandshakePCAP = task.GetHashcatPcap()
+						*handshake.ClientUUID = task.GetClientUuid()
+						handshake.UUID = task.GetHandshakeUuid()
+						handshake.UserUUID = task.GetUserId()
+					}
+				}
+				if handshake.ClientUUID != nil {
+					break
+				}
+			}
+
+			// Use assert to check the response
+			s.Require().Equal(handshake.UserUUID, tt.expectedOutput.Tasks[0].UserId, "Unexpected response from Test RPC")
+			s.Require().Equal(*handshake.ClientUUID, tt.expectedOutput.Tasks[0].ClientUuid, "Unexpected response from Test RPC")
+		})
+	}
+}
+
+func (s *GRPCServerTestSuite) Test_HashcatMessageService_TimeoutOnNonRegisteredClient() {
+	// Connect to the gRPC server
+	client := s.Client
+
+	// Define test case
+	testName := "Ensure no task is sent for unregistered client"
+
+	s.Run(testName, func() {
+		// Set a context with a timeout
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3) // Timeout after 3 seconds
+		defer cancel()
+
+		// Initialize the gRPC stream
+		stream, err := client.HashcatTaskChat(ctx)
+		s.Require().NoError(err, "Stream initialization failed")
+
+		// Attempt to receive responses
+		for {
+			msg, err := stream.Recv()
+			if err != nil {
+				// Check if the error is a timeout or end-of-stream
+				s.Require().Equal(context.DeadlineExceeded, ctx.Err(), "Expected timeout while waiting for server response")
+				break
+			}
+
+			// Inspect the tasks sent by the server
+			for _, task := range msg.GetTasks() {
+				if task.GetClientUuid() == s.UserClientUnregistered.ClientUUID {
+					s.FailNow("Server sent a task for an unregistered client", "Task: %v", task)
+				}
+			}
+		}
+	})
+}
+
+func (s *GRPCServerTestSuite) Test_HashcatMessageService_ErrorWhenClientTriesToUpdateAHashcatRowOfAnotherUser() {
+	// Connect to the gRPC server
+	client := s.Client
+
+	// Define test case
+	testName := "Error when client tries to update a hashcat row of another user"
+	request := &pb.ClientTaskMessageFromClient{
+		Jwt:        s.NormalUserTokenFixture,
+		ClientUuid: s.UserClientRegistered.ClientUUID, // Registered and valid client UUID!
+	}
+
+	s.Run(testName, func() {
+		// Set a context with a timeout
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3) // Timeout after 3 seconds
+		defer cancel()
+
+		// Initialize the gRPC stream
+		stream, err := client.HashcatTaskChat(ctx)
+		s.Require().NoError(err, "Stream initialization failed")
+
+		// Send the request to the server
+		err = stream.Send(request)
+
+		time.Sleep(time.Second * 10)
+		log.Println("Error", err.Error())
+		s.Require().ErrorIs(err, status.Errorf(codes.Internal, "Cannot update client task: %v", errors.ErrElementNotFound))
+	})
 }

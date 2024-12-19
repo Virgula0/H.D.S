@@ -4,7 +4,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
@@ -54,7 +54,7 @@ func (repo *Repository) CreateUser(userEntity *entities.User, role constants.Rol
 	return nil
 }
 
-// GetUserByUsername CreateUser creates a new record in the user table
+// GetUserByUsername Get an user info by username
 func (repo *Repository) GetUserByUsername(username string) (*entities.User, *entities.Role, error) {
 
 	var user entities.User
@@ -98,13 +98,14 @@ func (repo *Repository) countQueryResults(query string, args ...any) (int, error
 
 }
 
+// queryEntities generic function for abstracting select statements in tables
 func (repo *Repository) queryEntities(query string, columns []any, entity any, args ...any) ([]any, error) {
 	var ent []any
 
 	rows, err := repo.db.Query(query, args...)
 
 	if err != nil {
-		log.Println(err.Error())
+		log.Error(err.Error())
 		return nil, errors.ErrInternalServerError
 	}
 	defer rows.Close()
@@ -112,22 +113,22 @@ func (repo *Repository) queryEntities(query string, columns []any, entity any, a
 	// Loop through the rows and scan into the provided entity
 	for rows.Next() {
 		if err := rows.Scan(columns...); err != nil {
-			log.Println(err.Error())
+			log.Error(err.Error())
 			return nil, errors.ErrInternalServerError
 		}
 		ent = append(ent, entity)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Println(err.Error())
+		log.Error(err.Error())
 		return nil, errors.ErrInternalServerError
 	}
 
 	return ent, nil
 }
 
-// GetClientsInstalled REST-API GetClientsInstalled
-func (repo *Repository) GetClientsInstalled(userUUID string, offset uint) (clients []*entities.Client, length int, e error) {
+// GetClientsInstalledByUserID REST-API GetClientsInstalledByUserID
+func (repo *Repository) GetClientsInstalledByUserID(userUUID string, offset uint) (clients []*entities.Client, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.ClientTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.ClientTableName)
 
@@ -162,8 +163,8 @@ func (repo *Repository) GetClientsInstalled(userUUID string, offset uint) (clien
 	return clients, count, err
 }
 
-// GetRaspberryPI REST-API GetClientsInstalledByUser
-func (repo *Repository) GetRaspberryPI(userUUID string, offset uint) (rsps []*entities.RaspberryPI, length int, e error) {
+// GetRaspberryPiByUserID REST-API GetRaspberryPiyUserID
+func (repo *Repository) GetRaspberryPiByUserID(userUUID string, offset uint) (rsps []*entities.RaspberryPI, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.RaspberryPiTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.RaspberryPiTableName)
 
@@ -195,8 +196,8 @@ func (repo *Repository) GetRaspberryPI(userUUID string, offset uint) (rsps []*en
 	return rsps, count, err
 }
 
-// GetHandshakes REST-API GetClientsInstalledByUser
-func (repo *Repository) GetHandshakes(userUUID string, offset uint) (handshakes []*entities.Handshake, length int, e error) {
+// GetHandshakesByUserID REST-API - GetHandshakesByUserID returns handshakes by userID
+func (repo *Repository) GetHandshakesByUserID(userUUID string, offset uint) (handshakes []*entities.Handshake, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.HandshakeTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.HandshakeTableName)
 
@@ -221,7 +222,6 @@ func (repo *Repository) GetHandshakes(userUUID string, offset uint) (handshakes 
 	results, err := repo.queryEntities(query, columnsToBind, &handshake, userUUID, (offset-1)*constants.Limit)
 
 	if err != nil {
-		log.Println(err.Error())
 		return nil, -1, err
 	}
 
@@ -234,6 +234,48 @@ func (repo *Repository) GetHandshakes(userUUID string, offset uint) (handshakes 
 	}
 
 	count, err := repo.countQueryResults(queryCount, userUUID)
+
+	return handshakes, count, err
+}
+
+// GetHandshakesByStatus GRPC - Status of all handshake by a given filter status
+func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes []*entities.Handshake, length int, e error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE status = ?", entities.HandshakeTableName)
+	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE status = ? ", entities.HandshakeTableName)
+
+	var handshake entities.Handshake
+
+	columnsToBind := []any{
+		&handshake.UserUUID,
+		&handshake.ClientUUID,
+		&handshake.RaspberryPIUUID,
+		&handshake.UUID,
+		&handshake.SSID,
+		&handshake.BSSID,
+		&handshake.UploadedDate,
+		&handshake.Status,
+		&handshake.CrackedDate,
+		&handshake.HashcatOptions,
+		&handshake.HashcatLogs,
+		&handshake.CrackedHandshake,
+		&handshake.HandshakePCAP,
+	}
+
+	results, err := repo.queryEntities(query, columnsToBind, &handshake, filterStatus)
+
+	if err != nil {
+		return nil, -1, err
+	}
+
+	for _, item := range results {
+		hdk, ok := item.(*entities.Handshake)
+		if !ok {
+			return nil, 0, fmt.Errorf("%w *entities.Handshake", errors.ErrInvalidType)
+		}
+		handshakes = append(handshakes, hdk)
+	}
+
+	count, err := repo.countQueryResults(queryCount, filterStatus)
 
 	return handshakes, count, err
 }
@@ -272,11 +314,9 @@ func (repo *Repository) GetClientInfo(userUUID, machineID string) (*entities.Cli
 
 	// Execute the query expecting a single row.
 	rows, err := repo.db.Query(query, userUUID, machineID)
-
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	hasNext := rows.Next()
@@ -300,7 +340,10 @@ func (repo *Repository) CreateHandshake(userUUID, raspberryPIUUID, ssid, bssid, 
 		entities.HandshakeTableName)
 
 	handshakeID := uuid.New().String()
-	_, err := repo.db.Exec(query, userUUID, raspberryPIUUID, raspberryPIUUID, ssid, bssid, status, handshakePcap)
+	// clientID will be assigned via REST-API by the user
+	// we save the userID to specify that the task can be run only from that specific user and no one else
+	// in particular such userID is the same for the raspberryPI userID
+	_, err := repo.db.Exec(query, userUUID, raspberryPIUUID, handshakeID, ssid, bssid, status, handshakePcap)
 
 	if err != nil {
 		return "", err
@@ -324,151 +367,50 @@ func (repo *Repository) CreateRaspberryPI(userUUID, machineID, encryptionKey str
 	return rspNewID, nil
 }
 
-// TODO: remove these commented
-/*
-// countQueryResults function to count results
-func (repo *Repository) countQueryResults(query string, args ...any) (int, error) {
+// UpdateClientTask REST-API/GRPC - UpdateClientTask updates a new client task
+func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
 
-	var count int
-	// Query for a value based on a single row.
-	if err := repo.db.QueryRow(query, args...).Scan(&count); err != nil {
-		return 0, err
-	}
-	return count, nil
+	var handshake entities.Handshake
 
-}
-
-// CreatePost creates a new record in the post table
-func (repo *Repository) CreatePost(userUUID, title, content string) (string, error) {
-	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid_post, title, content, creation_datetime, latest_revision_datetime) VALUES(?,?,?,?,?,?)",
-		entities.PostTableName)
-
-	formattedDateTime := time.Now().Format(constants.DateTimeExample)
-	postNewID := uuid.New().String()
-	_, err := repo.db.Exec(query, userUUID, postNewID, title, utils.StringToBase64String(content), formattedDateTime, formattedDateTime)
-
-	if err != nil {
-		return "", err
+	columnsToBind := []any{
+		&handshake.UserUUID,
+		&handshake.ClientUUID,
+		&handshake.RaspberryPIUUID,
+		&handshake.UUID,
+		&handshake.SSID,
+		&handshake.BSSID,
+		&handshake.UploadedDate,
+		&handshake.Status,
+		&handshake.CrackedDate,
+		&handshake.HashcatOptions,
+		&handshake.HashcatLogs,
+		&handshake.CrackedHandshake,
+		&handshake.HandshakePCAP,
 	}
 
-	return postNewID, nil
-}
-
-// Common private method for executing queries and scanning rows into Post entities
-func (repo *Repository) queryPosts(query string, args ...any) ([]*entities.Post, error) {
-	var posts []*entities.Post
-
-	rows, err := repo.db.Query(query, args...)
-	if err != nil {
-		return nil, errors.ErrInternalServerError
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var post entities.Post
-		if err = rows.Scan(&post.UUIDUser, &post.UUIDPost, &post.Title, &post.Content, &post.CreationDateTime, &post.LatestRevisionDateTime); err != nil {
-			return nil, errors.ErrInternalServerError
-		}
-		posts = append(posts, &post)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, errors.ErrInternalServerError
-	}
-
-	return posts, nil
-}
-
-// GetUserPosts function
-func (repo *Repository) GetUserPosts(userUUID string, offset uint) ([]*entities.Post, int, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.PostTableName, constants.Limit)
-	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.PostTableName)
-
-	posts, err := repo.queryPosts(query, userUUID, (offset-1)*constants.Limit)
-
-	if err != nil {
-		return nil, -1, err
-	}
-
-	count, err := repo.countQueryResults(queryCount, userUUID)
-
-	return posts, count, err
-}
-
-// GetAllPosts created. Intended for ADMINs only
-func (repo *Repository) GetAllPosts(offset uint) ([]*entities.Post, int, error) {
-	query := fmt.Sprintf("SELECT * FROM %s ORDER BY RAND() LIMIT %v OFFSET ?", entities.PostTableName, constants.Limit)
-	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s", entities.PostTableName)
-
-	posts, err := repo.queryPosts(query, (offset-1)*constants.Limit)
-
-	if err != nil {
-		return nil, -1, err
-	}
-
-	count, err := repo.countQueryResults(queryCount)
-
-	return posts, count, err
-}
-
-// GetPostByID get a post information by passing an uuid
-func (repo *Repository) GetPostByID(postUUID string) (*entities.Post, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_post = ?", entities.PostTableName)
-	posts, err := repo.queryPosts(query, postUUID)
-
-	if len(posts) > 0 {
-		return posts[0], err // it should be unique
-	}
-
-	return nil, errors.ErrElementNotFound
-}
-
-func (repo *Repository) EditPostByUser(userUUID, postUUID, title, content string) (*entities.Post, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_post = ? AND uuid_user = ?", entities.PostTableName)
-	posts, err := repo.queryPosts(query, postUUID, userUUID)
+	handshakes, err := repo.queryEntities(query, columnsToBind, &handshake, userUUID, handshakeUUID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if len(posts) == 0 {
+	if len(handshakes) == 0 {
 		return nil, errors.ErrElementNotFound
 	}
 
-	post := posts[0] // it should be unique anyway
+	temp := handshakes[0] // it should be unique anyway
+	converted, ok := temp.(*entities.Handshake)
+	if !ok {
+		return nil, errors.ErrInvalidType
+	}
 
-	query = fmt.Sprintf("UPDATE %s SET title = ?, content = ? WHERE uuid_post = ? AND uuid_user = ?", entities.PostTableName)
-	_, err = repo.db.Exec(query, title, content, post.UUIDPost, post.UUIDUser)
+	query = fmt.Sprintf("UPDATE %s SET uuid_assigned_client = ?, status = ?, hashcat_options = ? , hashcat_logs = ?, cracked_handshake = ? "+
+		"WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
+	_, err = repo.db.Exec(query, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
 	}
 
-	return post, nil
+	return converted, nil
 }
-
-func (repo *Repository) UpdateLatestRevision(postUUID string) (*entities.Post, error) {
-
-	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_post = ?", entities.PostTableName)
-	posts, err := repo.queryPosts(query, postUUID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(posts) == 0 {
-		return nil, errors.ErrElementNotFound
-	}
-
-	post := posts[0] // it should be unique anyway
-
-	formattedDateTime := time.Now().Format(constants.DateTimeExample)
-
-	query = fmt.Sprintf("UPDATE %s SET latest_revision_datetime = ? WHERE uuid_post = ?", entities.PostTableName)
-	_, err = repo.db.Exec(query, formattedDateTime, post.UUIDPost)
-	if err != nil {
-		return nil, err
-	}
-
-	return post, nil
-}
-*/

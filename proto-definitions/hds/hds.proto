@@ -7,6 +7,5 @@ import "hds/hds_response.proto";
 service HDSTemplateService {
   rpc Test (HelloRequest) returns (HelloResponse);
   rpc GetClientInfo (GetClientInfoRequest) returns (GetClientInfoResponse);
+  rpc HashcatTaskChat (stream ClientTaskMessageFromClient) returns (stream ClientTaskMessageFromServer); // stream for bi-directional communication instead of waiting for a client
 }
-
-

@@ -22,8 +22,10 @@ go.work
 build/*
 .vscode
 .idea
+.env
 *.log
 server/protobuf
+client/protobuf
 
 client/hashcat.dictstat*
 client/hashcat.pid
