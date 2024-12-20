@@ -23,6 +23,9 @@ type ServerTCPIPSuite struct {
 	AdminToken                 string
 	NormalUser                 *entities.User
 	NormalUserToken            string
+	RaspberryPIExistingID      string
+	TestSSID                   string
+	TestBSSID                  string
 }
 
 // Run All tests
@@ -54,10 +57,11 @@ func (s *ServerTCPIPSuite) SetupSuite() {
 
 	// create raspberryPI instance first
 	machineID := fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10))))
-	_, err = s.Service.Usecase.CreateRaspberryPI(s.UserClientRegistered.UserUUID, machineID, "test")
+	respID, err := s.Service.Usecase.CreateRaspberryPI(s.UserClientRegistered.UserUUID, machineID, "test")
 	s.Require().NoError(err)
 
 	s.ExistingRaspberryMachineID = machineID
+	s.RaspberryPIExistingID = respID
 
 	s.AdminToken, err = testsuite.AuthAPI(authenticate.AuthRequest{
 		Username: s.UserFixture.Username,
@@ -70,6 +74,9 @@ func (s *ServerTCPIPSuite) SetupSuite() {
 		Password: s.NormalUser.Password,
 	})
 	s.Require().NoError(err)
+
+	s.TestSSID = "TEST"
+	s.TestSSID = "XX:XX:XX:XX:XX:XX"
 
 }
 

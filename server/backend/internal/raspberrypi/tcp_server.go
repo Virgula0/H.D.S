@@ -9,6 +9,7 @@ import (
 	"github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
 	"github.com/Virgula0/progetto-dp/server/entities"
 	"github.com/go-sql-driver/mysql"
+	"strings"
 
 	"io"
 	"net"
@@ -88,7 +89,7 @@ func (wr *TCPServer) RunTCPServer() error {
 				if errWrite != nil {
 					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
 				}
-				return
+				return // critical can close connection with client
 			}
 			errValidation := utils.ValidateGenericStruct(createRequest)
 
@@ -98,7 +99,7 @@ func (wr *TCPServer) RunTCPServer() error {
 				if errWrite != nil {
 					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
 				}
-				return
+				return // critical can close connection with client
 			}
 
 			createdID, errCreation := wrapper.CreateRaspberryPI(&createRequest)
@@ -110,11 +111,6 @@ func (wr *TCPServer) RunTCPServer() error {
 			case errors.As(errCreation, &mysqlErr) && customErrors.ErrCodeDuplicateEntry == mysqlErr.Number:
 				// Handle the duplicate entry error
 				log.Warn("[TCP/IP] RaspberryPI already exists")
-				_, errWrite := client.Write([]byte(errCreation.Error() + "\n"))
-				if errWrite != nil {
-					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-					return
-				}
 
 			case errCreation != nil:
 				// Handle other errors
@@ -122,22 +118,20 @@ func (wr *TCPServer) RunTCPServer() error {
 				_, errWrite := client.Write([]byte(errCreation.Error() + "\n"))
 				if errWrite != nil {
 					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-					return
 				}
-			}
-
-			_, errWrite := client.Write(createdID)
-
-			if errWrite != nil {
-				_, errWrite := client.Write([]byte(errCreation.Error() + "\n"))
+				return // critical can close connection with client
+			default:
+				_, errWrite := client.Write(createdID)
 				if errWrite != nil {
 					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
 					return
 				}
 			}
 
+			handshakeSavedIDs := make([]string, 0)
 			// proceed with checking if the handshakes exist
-			if len(createRequest.Handshakes) > 0 {
+			switch {
+			case len(createRequest.Handshakes) > 0:
 				for _, handshake := range createRequest.Handshakes {
 					bssid, essid := handshake.BSSID, handshake.SSID
 					if bssid == "" || essid == "" {
@@ -151,12 +145,21 @@ func (wr *TCPServer) RunTCPServer() error {
 							return
 						}
 					}
-					_, errWrite := client.Write([]byte(handshakeID + "\n"))
-					if errWrite != nil {
-						log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-						return
-					}
+					// nope, write will end transmission with the client. need to return an array of ids
+					handshakeSavedIDs = append(handshakeSavedIDs, handshakeID)
 				}
+			default:
+				_, errWrite := client.Write([]byte("No handshakes provided\n"))
+				if errWrite != nil {
+					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
+					return
+				}
+			}
+
+			_, errWrite := client.Write([]byte(strings.Join(handshakeSavedIDs, ";") + "\n"))
+			if errWrite != nil {
+				log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
+				return
 			}
 		}()
 	}
@@ -193,6 +196,7 @@ func (wr *Wrapper) CreateHandshake(jwt, rspID string, handshake *entities.Handsh
 		return "", fmt.Errorf("undshake already present")
 	}
 
+	// TODO: use encryption key of the raspberryPI for exchanging handshakes bytes securely
 	handshakeID, err := wr.usecase.CreateHandshake(userID, rspID, handshake.SSID, handshake.BSSID, constants.NothingStatus, *handshake.HandshakePCAP)
 
 	if err != nil {
