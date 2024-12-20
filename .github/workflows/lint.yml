@@ -15,6 +15,7 @@ jobs:
   lint:
     name: Run golangci-lint via Makefile
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       # Step 1: Checkout the code

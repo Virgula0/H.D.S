@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/raspberrypi"
 	"log"
 	"net/http"
 	"runtime"
@@ -59,6 +60,17 @@ func startGRPC(service *handlers.ServiceHandler) error {
 	return err
 }
 
+func tcpServerInstance(service *handlers.ServiceHandler, host, port string) (*raspberrypi.TCPServer, error) {
+
+	tcpInstance, err := raspberrypi.NewTCPServer(service, host, port)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tcpInstance, nil
+}
+
 func RunBackend() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -89,10 +101,23 @@ func RunBackend() {
 
 	// ---- SETUP gRPC SERVER -> CLIENT COMMUNICATION -----
 
-	err = startGRPC(service)
+	go func() {
+		err = startGRPC(service)
+		if err != nil {
+			log.Fatalf("Cannot start GRPC server! %s", err.Error())
+		}
+	}()
 
+	// ---- SETUP TCP/IP SERVER -> RASPBERRY_PI COMMUNICATION -----
+
+	tcpInstance, err := tcpServerInstance(service, constants.TCPAddress, constants.TCPPort)
 	if err != nil {
-		log.Fatalf("Cannot start GRPC server! %s", err.Error())
+		log.Fatalf("Cannot create TCP server instance! %s", err.Error())
 	}
 
+	err = tcpInstance.RunTCPServer()
+
+	if err != nil {
+		log.Fatalf("Cannot run TCP server! %s", err.Error())
+	}
 }

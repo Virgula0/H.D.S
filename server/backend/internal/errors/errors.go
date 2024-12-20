@@ -14,6 +14,18 @@ var ErrElementNotFound = errors.New("not found")
 var ErrInvalidJSON = errors.New("invalid JSON: ")
 var ErrRegistrationNotEnabled = errors.New("registration are not enabled")
 var ErrInvalidType = errors.New("failed conversion while fetching db for type: ")
-
 var ErrNoClientFound = errors.New("no client found")
 var ErrNotValidClientIP = errors.New("not valid client IP")
+
+// GRPC
+var ErrGRPCClosedConnection = errors.New("[GRPC]: HashcatChat -> Client has closed the connection ->")
+var ErrGRPCFailedToReceive = errors.New("[GRPC]: HashcatChat -> Failed to receive message -> ")
+var ErrInvalidToken = errors.New("[GRPC]: HashcatChat -> Invalid token -> ")
+var ErrOnUpdateTask = errors.New("[GRPC]: HashcatChat -> Cannot update client task -> ")
+var ErrCannotAnswerToClient = errors.New("[GRPC]: HashcatChat -> Cannot reply to the client -> ")
+var ErrGetHandshakeStatus = errors.New("[GRPC]: HashcatChat GetHandshakesByStatus -> ")
+
+// SQL
+const (
+	ErrCodeDuplicateEntry = 1062 // MySQL error code for duplicate entry
+)

@@ -19,7 +19,7 @@ import (
 )
 
 type GRPCServerTestSuite struct {
-	testsuite.TestSuite
+	testsuite.GRPCTestSuite
 	UserFixture            *entities.User
 	UserClientRegistered   *entities.Client
 	UserClientUnregistered *entities.Client
@@ -36,7 +36,7 @@ func TestGRPCMethodCaller(t *testing.T) {
 }
 
 func (s *GRPCServerTestSuite) SetupSuite() {
-	s.TestSuite.SetupSuite()
+	s.GRPCTestSuite.SetupSuite()
 	s.Require().NotNil(seed.AdminSeed.User)
 	s.UserFixture = seed.AdminSeed.User
 

@@ -48,3 +48,16 @@ func ValidateJSON(request any, r *http.Request) error {
 
 	return nil
 }
+
+func ValidateGenericStruct(obj any) error {
+	err := validate.Struct(obj)
+	if err != nil {
+		// If validation fails, return the first validation error
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			return validationErrors[0] // Return the first error
+		}
+		return err // Return the validation error
+	}
+	return nil
+}

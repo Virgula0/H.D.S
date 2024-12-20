@@ -1,3 +1,4 @@
+//nolint:govet // Disabling vet for grpc format string false positives
 package grpcserver
 
 import (
@@ -45,7 +46,7 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 
 	userID := data[constants.UserIDKey].(string)
 
-	client, err := s.Usecase.GetClientInfo(userID, machineUUID)
+	client, err := s.Usecase.GetClientInfo(userID, machineUUID) // TODO: think if change this by using only CreateClient logic function since machineID it's unique
 
 	if err != nil {
 		// We can create a new client since it does not exist
@@ -93,7 +94,7 @@ func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatT
 		<-ticker.C // blocking channel
 		handshakes, _, err := s.Usecase.GetHandshakesByStatus(constants.PendingStatus)
 		if err != nil {
-			return fmt.Errorf("[GRPC]: HashcatChat GetHandshakesByStatus -> %s", err.Error())
+			return fmt.Errorf("%s %s", customErrors.ErrGetHandshakeStatus, err.Error())
 		}
 
 		// Prepare tasks for clients
@@ -111,8 +112,8 @@ func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatT
 
 		// Send tasks if available
 		if len(tasks) > 0 {
-			if err := stream.Send(&pb.ClientTaskMessageFromServer{Tasks: tasks}); err != nil {
-				return fmt.Errorf("[GRPC]: HashcatChat -> error sending message: %w", err)
+			if errSend := stream.Send(&pb.ClientTaskMessageFromServer{Tasks: tasks}); errSend != nil {
+				return fmt.Errorf("%s %v", customErrors.ErrCannotAnswerToClient, errSend)
 			}
 		}
 	}
@@ -123,18 +124,19 @@ func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_Has
 		// Receive message from client
 		msg, err := stream.Recv()
 		if err != nil {
+			// check if client has disconnected
 			if status.Code(err) == codes.Canceled {
-				return status.Errorf(codes.NotFound, "[GRPC]: HashcatChat -> Client has closed the connection")
+				return status.Errorf(codes.NotFound, customErrors.ErrGRPCClosedConnection.Error())
 			}
-			return status.Errorf(codes.Unknown, "[GRPC]: HashcatChat -> Failed to receive message: %v", err)
+			return status.Errorf(codes.Unknown, fmt.Sprintf("%s %v", customErrors.ErrGRPCFailedToReceive, err))
 		}
 
-		log.Printf("[GRPC]: HashcatChat ->Received from client: %+v", msg)
+		log.Printf("[GRPC]: HashcatChat ->Received from client: %v", msg)
 
 		// Process the received message
 		data, err := s.Usecase.GetDataFromToken(msg.GetJwt())
 		if err != nil {
-			return status.Errorf(codes.Unauthenticated, "[GRPC]: HashcatChat -> Invalid token: %v", err)
+			return status.Errorf(codes.Unauthenticated, fmt.Sprintf("%s %v", customErrors.ErrInvalidToken, err))
 		}
 
 		userID := data[constants.UserIDKey].(string)
@@ -148,7 +150,7 @@ func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_Has
 			msg.GetCrackedHandshake(),
 		)
 		if err != nil {
-			return status.Errorf(codes.Internal, "[GRPC]: HashcatChat -> Cannot update client task: %v", err)
+			return status.Errorf(codes.Internal, fmt.Sprintf("%s %v", customErrors.ErrOnUpdateTask, err))
 		}
 
 		// Respond to client
@@ -166,7 +168,7 @@ func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_Has
 		}
 
 		if err := stream.Send(response); err != nil {
-			return status.Errorf(codes.Internal, "[GRPC]: HashcatChat -> Cannot answer to the client after an update: %v", err)
+			return status.Errorf(codes.Internal, fmt.Sprintf("%s %v", customErrors.ErrCannotAnswerToClient, err))
 		}
 	}
 }

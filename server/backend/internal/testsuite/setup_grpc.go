@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi"
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
+	"log"
 	"net/http"
 	"time"
 
@@ -19,7 +19,7 @@ import (
 	usecaseHandler "github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
 )
 
-type TestSuite struct {
+type GRPCTestSuite struct {
 	suite.Suite
 	Service  *restapi.ServiceHandler // contains Usecase as well
 	Database *infrastructure.Database
@@ -34,7 +34,7 @@ type TestSuite struct {
 	clientCloser  context.CancelFunc
 }
 
-func (s *TestSuite) SetupSuite() {
+func (s *GRPCTestSuite) SetupSuite() {
 	dbConn, err := infrastructure.NewDatabaseConnection()
 	s.Require().NoError(err)
 	s.Database = dbConn
@@ -56,10 +56,10 @@ func (s *TestSuite) SetupSuite() {
 
 	// Run REST-API
 	go func() {
+		log.Printf("[REST-API] Server running on %s:%s", constants.ServerHost, constants.ServerPort)
 		service.InitRoutes(gorillaMux)
 		restErr := srv.ListenAndServe()
 		s.Require().NoError(restErr)
-		log.Printf("[REST-API] Server running on %s:%s", constants.ServerHost, constants.ServerPort)
 	}()
 
 	// server context
@@ -71,7 +71,7 @@ func (s *TestSuite) SetupSuite() {
 	s.startServer(s.Service.Usecase)
 }
 
-func (s *TestSuite) startServer(usecase *usecaseHandler.Usecase) {
+func (s *GRPCTestSuite) startServer(usecase *usecaseHandler.Usecase) {
 
 	// create server
 	g := server.New(server.NewServerContext(usecase))
@@ -92,7 +92,7 @@ func (s *TestSuite) startServer(usecase *usecaseHandler.Usecase) {
 	s.startClient(errCh)
 }
 
-func (s *TestSuite) startClient(errCh chan error) {
+func (s *GRPCTestSuite) startClient(errCh chan error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	defer cancel()
 

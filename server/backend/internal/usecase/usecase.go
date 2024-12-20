@@ -131,3 +131,7 @@ func (uc *Usecase) GetHandshakesByStatus(filterStatus string) (handshakes []*ent
 func (uc *Usecase) UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
 	return uc.repo.UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake)
 }
+
+func (uc *Usecase) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string) (handshakes []*entities.Handshake, length int, e error) {
+	return uc.repo.GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid)
+}

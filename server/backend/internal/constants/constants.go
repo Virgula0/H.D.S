@@ -40,6 +40,10 @@ var (
 	// GRPC
 	GrpcURL                            = os.Getenv("GRPC_URL")
 	GrpcTimeout, GrpcTimeoutParseError = time.ParseDuration(os.Getenv("GRPC_TIMEOUT"))
+
+	// TCP
+	TCPAddress = os.Getenv("TCP_ADDRESS")
+	TCPPort    = os.Getenv("TCP_PORT")
 )
 
 var HashCost = 12

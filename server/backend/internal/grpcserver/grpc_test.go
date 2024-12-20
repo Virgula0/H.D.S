@@ -252,7 +252,7 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_ErrorWhenClientTriesToU
 		if recvErr != nil {
 			// Ensure the server returns the correct error when a user tries to update another user's row
 			s.Require().Equal(codes.Internal, status.Code(recvErr), "Unexpected error code")
-			s.Require().Contains(recvErr.Error(), "Cannot update client task: not found", "Unexpected error message")
+			s.Require().Contains(recvErr.Error(), "Cannot update client task ->  not found", "Unexpected error message")
 		} else {
 			s.FailNow("Unexpected response received: %v", response)
 		}

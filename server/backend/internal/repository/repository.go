@@ -280,6 +280,49 @@ func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes [
 	return handshakes, count, err
 }
 
+// GetHandshakesByStatus TCP/IP - Check if an hanshake is already registered
+func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string) (handshakes []*entities.Handshake, length int, e error) {
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND bssid = ? AND ssid = ?", entities.HandshakeTableName)
+	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s  WHERE uuid_user = ? AND bssid = ? AND ssid = ?", entities.HandshakeTableName)
+
+	var handshake entities.Handshake
+
+	columnsToBind := []any{
+		&handshake.UserUUID,
+		&handshake.ClientUUID,
+		&handshake.RaspberryPIUUID,
+		&handshake.UUID,
+		&handshake.SSID,
+		&handshake.BSSID,
+		&handshake.UploadedDate,
+		&handshake.Status,
+		&handshake.CrackedDate,
+		&handshake.HashcatOptions,
+		&handshake.HashcatLogs,
+		&handshake.CrackedHandshake,
+		&handshake.HandshakePCAP,
+	}
+
+	results, err := repo.queryEntities(query, columnsToBind, &handshake, userUUID, bssid, ssid)
+
+	if err != nil {
+		return nil, -1, err
+	}
+
+	for _, item := range results {
+		hdk, ok := item.(*entities.Handshake)
+		if !ok {
+			return nil, 0, fmt.Errorf("%w *entities.Handshake", errors.ErrInvalidType)
+		}
+		handshakes = append(handshakes, hdk)
+	}
+
+	count, err := repo.countQueryResults(queryCount, userUUID, bssid, ssid)
+
+	return handshakes, count, err
+}
+
 // CreateClient GRPC - CreateClient creates a new record in the client table
 func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, name, latest_ip, creation_datetime, latest_connection, machine_id) VALUES(?,?,?,?,?,?,?)",
