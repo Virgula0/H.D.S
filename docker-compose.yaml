@@ -35,8 +35,8 @@ services:
       - RESET=True
       - GRPC_URL=0.0.0.0:7777
       - GRPC_TIMEOUT=10s
-      - TCP_SERVER_HOST=0.0.0.0
-      - TCP_SERVER_PORT=4749
+      - TCP_ADDRESS=0.0.0.0
+      - TCP_PORT=4749
 
   database:
     build: database
