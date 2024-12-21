@@ -1,0 +1,30 @@
+syntax = "proto3";
+package hds;
+
+message HelloResponse {
+  string message = 1;
+}
+
+message GetClientInfoResponse {
+  bool is_registered = 1;
+  string user_uuid = 2;
+  string client_uuid = 3;
+  string name = 4;
+  string latest_ip = 5;
+  string creation_time = 6;
+  string last_connection_time = 7;
+  string machine_id = 8;
+}
+
+message ClientTaskMessageFromServer {
+  repeated ClientTask tasks = 1;
+}
+
+message ClientTask {
+  string user_id = 1;
+  string client_uuid = 2;
+  string handshake_uuid = 3;
+  string hashcat_options = 4;
+  bool start_cracking = 5;
+  string hashcat_pcap=6;
+}

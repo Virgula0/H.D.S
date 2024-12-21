@@ -1,0 +1,22 @@
+syntax = "proto3";
+package hds;
+
+message HelloRequest {
+  string name = 1;
+}
+
+message GetClientInfoRequest {
+  string jwt = 1;
+  string machine_id =2;
+  string name = 3;
+}
+
+message ClientTaskMessageFromClient {
+  string jwt = 1;
+  string hashcat_logs = 2;
+  string cracked_handshake = 3;
+  string status=4;
+  string hashcat_options =5;
+  string handshake_uuid = 6;
+  string client_uuid =7;
+}
