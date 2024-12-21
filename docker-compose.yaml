@@ -13,13 +13,30 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix # X11 forwarding
       - /usr/share/seclists/Passwords:/usr/share/seclists/Passwords
 
-  backend:
-    container_name: dp-backend
+  server:
+    container_name: server
     build:
       context: server
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
     depends_on:
       - database
+    environment:
+      - BACKEND_HOST=0.0.0.0 # Not need to change
+      - BACKEND_PORT=4747    # Not need to change
+      - FRONTEND_HOST=0.0.0.0
+      - FRONTEND_PORT=4748
+      - DB_USER=agent
+      - DB_PASSWORD=SUPERSECUREUNCRACKABLEPASSWORD
+      - DB_HOST=dp-database
+      - DB_PORT=3306
+      - DB_NAME=dp_hashcat
+      - ALLOW_REGISTRATIONS=True # Disable if needed
+      - DEBUG=True
+      - RESET=True
+      - GRPC_URL=0.0.0.0:7777
+      - GRPC_TIMEOUT=10s
+      - TCP_ADDRESS=0.0.0.0
+      - TCP_PORT=4749
 
   database:
     build: database
@@ -28,7 +45,7 @@ services:
       MYSQL_RANDOM_ROOT_PASSWORD: "yes"
     restart: unless-stopped
     ports: 
-      - 3306:3306
+      - "3306:3306"
     healthcheck:
       test:
         [

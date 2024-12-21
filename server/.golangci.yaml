@@ -1,0 +1,160 @@
+linters-settings:
+  dogsled:
+    max-blank-identifiers: 3
+
+  govet:
+    # Disable all analyzers.
+    # Default: false
+    disable-all: true
+    # Enable analyzers by name.
+    # (in addition to default:
+    #   appends, asmdecl, assign, atomic, bools, buildtag, cgocall, composites, copylocks, defers, directive, errorsas,
+    #   framepointer, httpresponse, ifaceassert, loopclosure, lostcancel, nilfunc, printf, shift, sigchanyzer, slog,
+    #   stdmethods, stringintconv, structtag, testinggoroutine, tests, timeformat, unmarshal, unreachable, unsafeptr,
+    #   unusedresult
+    # ).
+    # Run `GL_DEBUG=govet golangci-lint run --enable=govet` to see default, all available analyzers, and enabled analyzers.
+    # Default: []
+    enable:
+      - appends
+      - asmdecl
+      - assign
+      - atomic
+      - atomicalign
+      - bools
+      - buildtag
+      - cgocall
+      - composites
+      - copylocks
+      - deepequalerrors
+      - defers
+      - directive
+      - errorsas
+      # - fieldalignment
+      - findcall
+      - framepointer
+      - httpresponse
+      - ifaceassert
+      - loopclosure
+      - lostcancel
+      - nilfunc
+      - nilness
+      - printf
+      - reflectvaluecompare
+      - shadow
+      - shift
+      - sigchanyzer
+      - slog
+      - sortslice
+      - stdmethods
+      - stringintconv
+      - structtag
+      - testinggoroutine
+      - tests
+      - unmarshal
+      - unreachable
+      - unsafeptr
+      - unusedresult
+      - unusedwrite
+
+  gocognit:
+    min-complexity: 20
+  gocyclo:
+    min-complexity: 15
+
+  misspell:
+    locale: US
+
+  gomnd:
+    checks:
+      - argument
+      - case
+      - condition
+      - return
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+
+  nolintlint:
+    allow-unused: false
+    require-explanation: false
+    require-specific: false
+
+  funlen:
+    lines: 100
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - dogsled
+    - dupl
+    - dupword
+    - errcheck
+    - copyloopvar
+    - funlen
+    - gosec
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goprintffuncname
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - nilerr
+    - makezero
+    - importas
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - unused
+    - gocognit
+    - protogetter
+    - prealloc
+    - reassign
+
+
+  # don't enable:
+  # - asciicheck
+  # - scopelint
+  # - gochecknoglobals
+  # - godot
+  # - godox
+  # - goerr113
+  # - interfacer
+  # - nestif
+  # - prealloc
+  # - testpackage
+  # - revive
+  # - wsl
+
+issues:
+  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
+  max-same-issues: 0
+
+  exclude-dirs:
+    - docker
+    - proto-definitions
+    - proto
+    - .github
+    - docs
+
+run:
+  tests: false
+  timeout: 10m
