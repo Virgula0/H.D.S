@@ -5,13 +5,25 @@ services:
       context: client
       dockerfile: Dockerfile
       args:
-        DISPLAY: ${DISPLAY} # Pass display variable from terminal 
+        DISPLAY: ${DISPLAY} # Pass display variable from terminal
     environment:
       - DISPLAY=${DISPLAY} # Pass display variable from terminal
     volumes:
       # - ./client:/app/client
       - /tmp/.X11-unix:/tmp/.X11-unix # X11 forwarding
       - /usr/share/seclists/Passwords:/usr/share/seclists/Passwords
+
+  raspberrypi:
+    container_name: emulate-raspberrypi
+    build:
+      context: raspberry-pi
+      dockerfile: Dockerfile
+    depends_on:
+      - server
+    environment:
+      - TCP_ADDRESS=0.0.0.0
+      - TCP_PORT=4749
+      - DEBUG=True
 
   server:
     container_name: server
@@ -26,7 +38,7 @@ services:
       - FRONTEND_HOST=0.0.0.0
       - FRONTEND_PORT=4748
       - DB_USER=agent
-      - DB_PASSWORD=SUPERSECUREUNCRACKABLEPASSWORD
+      - DB_PASSWORD=SUPERSECUREUNCRACKABLEPASSWORD # This should be changed (remember to change it in database/initialize.sql too
       - DB_HOST=dp-database
       - DB_PORT=3306
       - DB_NAME=dp_hashcat
@@ -37,6 +49,7 @@ services:
       - GRPC_TIMEOUT=10s
       - TCP_ADDRESS=0.0.0.0
       - TCP_PORT=4749
+    entrypoint: make run
 
   database:
     build: database

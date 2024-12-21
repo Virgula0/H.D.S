@@ -52,9 +52,16 @@ jobs:
           cd server
           make proto 
 
-      # Step 6: Run the linter
+      # Step 6: Run the linter for the server
       - name: Run golangci-lint
         run: |
           cd server
+          go mod tidy
+          make lint 
+
+      # Step 7: Run the linter for the raspberrypi
+      - name: Run golangci-lint
+        run: |
+          cd raspberry-pi
           go mod tidy
           make lint 

@@ -1,0 +1,5 @@
+package deamon
+
+func StartDeamon() {
+
+}
