@@ -76,7 +76,7 @@ func (s *ServerTCPIPSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	s.TestSSID = "TEST"
-	s.TestSSID = "XX:XX:XX:XX:XX:XX"
+	s.TestBSSID = "00:01:02:03:04:05"
 
 }
 

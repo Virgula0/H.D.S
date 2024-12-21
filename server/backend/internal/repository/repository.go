@@ -206,7 +206,6 @@ func (repo *Repository) GetHandshakesByUserID(userUUID string, offset uint) (han
 	columnsToBind := []any{
 		&handshake.UserUUID,
 		&handshake.ClientUUID,
-		&handshake.RaspberryPIUUID,
 		&handshake.UUID,
 		&handshake.SSID,
 		&handshake.BSSID,
@@ -248,7 +247,6 @@ func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes [
 	columnsToBind := []any{
 		&handshake.UserUUID,
 		&handshake.ClientUUID,
-		&handshake.RaspberryPIUUID,
 		&handshake.UUID,
 		&handshake.SSID,
 		&handshake.BSSID,
@@ -291,7 +289,6 @@ func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string
 	columnsToBind := []any{
 		&handshake.UserUUID,
 		&handshake.ClientUUID,
-		&handshake.RaspberryPIUUID,
 		&handshake.UUID,
 		&handshake.SSID,
 		&handshake.BSSID,
@@ -378,15 +375,15 @@ func (repo *Repository) GetClientInfo(userUUID, machineID string) (*entities.Cli
 }
 
 // CreateHandshake TCP/IP - CreateHandshake creates a new record in the handshake table
-func (repo *Repository) CreateHandshake(userUUID, raspberryPIUUID, ssid, bssid, status, handshakePcap string) (string, error) {
-	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid_assigned_raspberry_pi, uuid, ssid, bssid, status, handshake_pcap) VALUES(?,?,?,?,?,?,?)",
+func (repo *Repository) CreateHandshake(userUUID, ssid, bssid, status, handshakePcap string) (string, error) {
+	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, ssid, bssid, status, handshake_pcap) VALUES(?,?,?,?,?,?)",
 		entities.HandshakeTableName)
 
 	handshakeID := uuid.New().String()
 	// clientID will be assigned via REST-API by the user
 	// we save the userID to specify that the task can be run only from that specific user and no one else
 	// in particular such userID is the same for the raspberryPI userID
-	_, err := repo.db.Exec(query, userUUID, raspberryPIUUID, handshakeID, ssid, bssid, status, handshakePcap)
+	_, err := repo.db.Exec(query, userUUID, handshakeID, ssid, bssid, status, handshakePcap)
 
 	if err != nil {
 		return "", err
@@ -421,7 +418,6 @@ func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClient
 	columnsToBind := []any{
 		&handshake.UserUUID,
 		&handshake.ClientUUID,
-		&handshake.RaspberryPIUUID,
 		&handshake.UUID,
 		&handshake.SSID,
 		&handshake.BSSID,

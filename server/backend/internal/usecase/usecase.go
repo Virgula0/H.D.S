@@ -105,8 +105,8 @@ func (uc *Usecase) CreateClient(userUUID, machineID, latestIP, name string) (str
 	return uc.repo.CreateClient(userUUID, machineID, latestIP, name)
 }
 
-func (uc *Usecase) CreateHandshake(userUUID, raspberryPIUUID, ssid, bssid, status, handshakePcap string) (string, error) {
-	return uc.repo.CreateHandshake(userUUID, raspberryPIUUID, ssid, bssid, status, handshakePcap)
+func (uc *Usecase) CreateHandshake(userUUID, ssid, bssid, status, handshakePcap string) (string, error) {
+	return uc.repo.CreateHandshake(userUUID, ssid, bssid, status, handshakePcap)
 }
 
 func (uc *Usecase) GetRaspberryPI(userUUID string, offset uint) ([]*entities.RaspberryPI, int, error) {

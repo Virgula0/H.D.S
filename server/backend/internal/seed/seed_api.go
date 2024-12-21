@@ -61,7 +61,7 @@ func loadUsers(repo *repository.Repository) error {
 			}
 
 			// #nosec G401 disable weak hash alert, it is not used for crypto stuff
-			rspID, err := repo.CreateRaspberryPI(user.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), fmt.Sprintf("%x%x", md5.Sum([]byte(utils.GenerateToken(10))), md5.Sum([]byte(utils.GenerateToken(10)))))
+			_, err := repo.CreateRaspberryPI(user.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), fmt.Sprintf("%x%x", md5.Sum([]byte(utils.GenerateToken(10))), md5.Sum([]byte(utils.GenerateToken(10)))))
 
 			if err != nil {
 				e := fmt.Errorf("failed to seed rsp table: %v", err)
@@ -69,7 +69,7 @@ func loadUsers(repo *repository.Repository) error {
 				return e
 			}
 
-			_, err = repo.CreateHandshake(user.UserUUID, rspID, "TEST", "XX:XX:XX:XX:XX:XX", "Uncracked", utils.StringToBase64String("test.pcap"))
+			_, err = repo.CreateHandshake(user.UserUUID, "TEST", "XX:XX:XX:XX:XX:XX", constants.NothingStatus, utils.StringToBase64String("test.pcap"))
 
 			if err != nil {
 				e := fmt.Errorf("failed to seed handshake table: %v", err)

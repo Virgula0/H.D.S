@@ -65,11 +65,11 @@ func (s *GRPCServerTestSuite) SetupSuite() {
 	}
 
 	// create raspberryPI instance first
-	raspID, err := s.Service.Usecase.CreateRaspberryPI(s.UserClientRegistered.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), "test")
+	_, err = s.Service.Usecase.CreateRaspberryPI(s.UserClientRegistered.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), "test")
 	s.Require().NoError(err)
 
 	// create handshake pending tasks
-	handshakeID, err := s.Service.Usecase.CreateHandshake(s.UserClientRegistered.UserUUID, raspID, s.UserClientRegistered.Name, "XX:XX:XX:XX:XX:XX", constants.NothingStatus, utils.StringToBase64String("test.pcap"))
+	handshakeID, err := s.Service.Usecase.CreateHandshake(s.UserClientRegistered.UserUUID, s.UserClientRegistered.Name, "XX:XX:XX:XX:XX:XX", constants.NothingStatus, utils.StringToBase64String("test.pcap"))
 	s.Require().NoError(err)
 
 	s.HandshakeValidID = handshakeID

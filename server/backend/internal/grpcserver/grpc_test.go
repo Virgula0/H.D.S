@@ -151,7 +151,6 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_Method() {
 			var handshake = entities.Handshake{
 				UserUUID:         "",
 				ClientUUID:       &clientID,
-				RaspberryPIUUID:  "",
 				UUID:             "",
 				SSID:             "",
 				BSSID:            "",

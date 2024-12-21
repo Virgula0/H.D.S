@@ -5,6 +5,7 @@ import (
 	handlers "github.com/Virgula0/progetto-dp/server/backend/internal/restapi"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
 	"net"
+	"time"
 )
 
 /*
@@ -16,6 +17,7 @@ type TCPHandler interface {
 
 type TCPServer struct {
 	w       net.Listener
+	timeout time.Duration
 	usecase *usecase.Usecase
 	TCPHandler
 }
@@ -31,5 +33,6 @@ func NewTCPServer(service *handlers.ServiceHandler, address, port string) (*TCPS
 	return &TCPServer{
 		w:       conn,
 		usecase: service.Usecase,
+		timeout: 30 * time.Second,
 	}, nil
 }

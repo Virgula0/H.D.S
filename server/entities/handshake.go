@@ -6,7 +6,6 @@ const HandshakeTableName = "handshake"
 type Handshake struct {
 	UserUUID         string  `db:"UUID_USER"`
 	ClientUUID       *string `db:"UUID_ASSIGNED_CLIENT"`
-	RaspberryPIUUID  string  `db:"UUID_ASSIGNED_RASPBERRY_PI"`
 	UUID             string  `db:"UUID"`
 	SSID             string  `db:"SSID"`
 	BSSID            string  `db:"BSSID"`

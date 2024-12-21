@@ -1,207 +1,84 @@
 package raspberrypi
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
-	customErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
+	"bufio"
+	"context"
 	"github.com/Virgula0/progetto-dp/server/entities"
-	"github.com/go-sql-driver/mysql"
-	"strings"
-
-	"io"
-	"net"
-
 	log "github.com/sirupsen/logrus"
-
-	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
+	"net"
 )
 
 type TCPHandler interface {
 	RunTCPServer()
 }
 
-type Wrapper struct {
-	cc      net.Conn
-	usecase *usecase.Usecase
-}
-
-// Read reads data into the provided byte slice from the underlying net.Conn. It returns the number of bytes read and an error.
-func (wr *Wrapper) Read(b []byte) (n int, err error) {
-
-	numberOfBytesRead, err := wr.cc.Read(b)
-	if err != nil && err != io.EOF {
-		return n, err
-	}
-
-	return numberOfBytesRead, io.EOF
-}
-
 type TCPCreateRaspberryPIRequest struct {
 	Handshakes    []*entities.Handshake
-	Jwt           string `validate:"required"`
-	UserUUID      string `validate:"required,len=36"`
+	Jwt           string `validate:"required,jwt"`
 	MachineID     string `validate:"required,len=32"`
 	EncryptionKey string `validate:"required,len=64"`
 }
 
+// TODO: returned errors should be refactored in errors
+
+// RunTCPServer Start TCP server
 func (wr *TCPServer) RunTCPServer() error {
 	log.Printf("[TCP/IP Server] TCP/IP server running on %s", wr.w.Addr())
 
 	for {
-		client, err := wr.w.Accept() // blocking channel
-
+		client, err := wr.w.Accept()
 		if err != nil {
 			log.Errorf("[TCP/IP] Error accepting connection: %s", err.Error())
-			continue // skip
+			continue
 		}
 
-		wrapper := &Wrapper{
-			cc:      client,
-			usecase: wr.usecase, // inject usecase
-		}
-
-		// new goroutine in order to accept new connection after
-		go func() {
-			defer client.Close()
-			read, err := io.ReadAll(wrapper) // calls (wr Wrapper) Read(b []byte). it's a reader after implementation
-
-			if err != nil {
-				log.Errorf("[TCP/IP] Error reading from client: %s", err.Error())
-				_, errWrite := client.Write([]byte(err.Error() + "\n"))
-				if errWrite != nil {
-					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-				}
-				return
-			}
-
-			log.Println("read: " + string(read))
-
-			var createRequest TCPCreateRaspberryPIRequest
-
-			// Unmarshal into the createRequest struct
-			err = json.Unmarshal(read, &createRequest)
-			if err != nil {
-				log.Errorf("[TCP/IP] Cannot unmarshal TCPCreateRaspberryPIRequest from client: %s", err.Error())
-				_, errWrite := client.Write([]byte(err.Error() + "\n"))
-				if errWrite != nil {
-					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-				}
-				return // critical can close connection with client
-			}
-			errValidation := utils.ValidateGenericStruct(createRequest)
-
-			if errValidation != nil {
-				log.Errorf("[TCP/IP] Error, request from the client is not valid %s", errValidation.Error())
-				_, errWrite := client.Write([]byte(errValidation.Error() + "\n"))
-				if errWrite != nil {
-					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-				}
-				return // critical can close connection with client
-			}
-
-			createdID, errCreation := wrapper.CreateRaspberryPI(&createRequest)
-			createdID = append(createdID, byte('\n'))
-
-			var mysqlErr *mysql.MySQLError
-
-			switch {
-			case errors.As(errCreation, &mysqlErr) && customErrors.ErrCodeDuplicateEntry == mysqlErr.Number:
-				// Handle the duplicate entry error
-				log.Warn("[TCP/IP] RaspberryPI already exists")
-
-			case errCreation != nil:
-				// Handle other errors
-				log.Errorf("[TCP/IP] Error, cannot create RaspberryPI %s", errCreation.Error())
-				_, errWrite := client.Write([]byte(errCreation.Error() + "\n"))
-				if errWrite != nil {
-					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-				}
-				return // critical can close connection with client
-			default:
-				_, errWrite := client.Write(createdID)
-				if errWrite != nil {
-					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-					return
-				}
-			}
-
-			handshakeSavedIDs := make([]string, 0)
-			// proceed with checking if the handshakes exist
-			switch {
-			case len(createRequest.Handshakes) > 0:
-				for _, handshake := range createRequest.Handshakes {
-					bssid, essid := handshake.BSSID, handshake.SSID
-					if bssid == "" || essid == "" {
-						continue // skip
-					}
-					handshakeID, err := wrapper.CreateHandshake(createRequest.Jwt, string(createdID), handshake)
-					if err != nil {
-						_, errWrite := client.Write([]byte(errCreation.Error() + "\n"))
-						if errWrite != nil {
-							log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-							return
-						}
-					}
-					// nope, write will end transmission with the client. need to return an array of ids
-					handshakeSavedIDs = append(handshakeSavedIDs, handshakeID)
-				}
-			default:
-				_, errWrite := client.Write([]byte("No handshakes provided\n"))
-				if errWrite != nil {
-					log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-					return
-				}
-			}
-
-			_, errWrite := client.Write([]byte(strings.Join(handshakeSavedIDs, ";") + "\n"))
-			if errWrite != nil {
-				log.Errorf("[TCP/IP] Error, cannot reply to the client %s", errWrite.Error())
-				return
-			}
-		}()
+		go wr.handleClientConnection(client)
 	}
 }
 
-func (wr *Wrapper) CreateRaspberryPI(request *TCPCreateRaspberryPIRequest) (result []byte, err error) {
+func (wr *TCPServer) handleClientConnection(client net.Conn) {
+	defer client.Close()
 
-	data, err := wr.usecase.GetDataFromToken(request.Jwt)
+	// Set a timeout for the request handling
+	ctx, cancel := context.WithTimeout(context.Background(), wr.timeout)
+	defer cancel()
 
-	if err != nil {
-		return nil, err
+	done := make(chan error, 1)
+
+	// let's do this for managing timeout connection
+	go func() {
+		done <- wr.processClientRequest(client) // process client request and prepare to read the next one
+	}()
+
+	select {
+	case <-ctx.Done():
+		log.Errorf("[TCP/IP] Request timed out for client: %s", client.RemoteAddr())
+	case err := <-done:
+		if err != nil {
+			log.Errorf("[TCP/IP] Error processing request: %s", err.Error())
+		}
 	}
-
-	userID := data[constants.UserIDKey].(string)
-
-	raspID, err := wr.usecase.CreateRaspberryPI(userID, request.MachineID, request.EncryptionKey)
-
-	return []byte(raspID), err
 }
 
-func (wr *Wrapper) CreateHandshake(jwt, rspID string, handshake *entities.Handshake) (result string, err error) {
+func (wr *TCPServer) processClientRequest(client net.Conn) error {
+	reader := bufio.NewReader(client)
 
-	data, err := wr.usecase.GetDataFromToken(jwt)
-
+	// Step 1: Read message size
+	messageSize, err := wr.readMessageSize(reader)
 	if err != nil {
-		return "", err
+		wr.writeError(client, "Invalid message size")
+		return err
 	}
 
-	userID := data[constants.UserIDKey].(string)
-
-	_, saved, err := wr.usecase.GetHandshakesByBSSIDAndSSID(userID, handshake.BSSID, handshake.SSID)
-
-	if saved > 0 { // we don't save the handshake if already saved
-		return "", fmt.Errorf("undshake already present")
-	}
-
-	// TODO: use encryption key of the raspberryPI for exchanging handshakes bytes securely
-	handshakeID, err := wr.usecase.CreateHandshake(userID, rspID, handshake.SSID, handshake.BSSID, constants.NothingStatus, *handshake.HandshakePCAP)
-
+	// Step 2: Read message content
+	buffer, err := wr.readMessageContent(reader, messageSize)
 	if err != nil {
-		return "", err
+		wr.writeError(client, "Error reading message content")
+		return err
 	}
 
-	return handshakeID, err
+	log.Printf("[TCP/IP] Received message: %s", string(buffer))
+
+	// Step 3: Process the message
+	return wr.processMessage(buffer, client)
 }
