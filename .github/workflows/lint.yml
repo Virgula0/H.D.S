@@ -52,14 +52,20 @@ jobs:
           cd server
           make proto 
 
-      - name: Run golangci-lint
+      - name: Run golangci-lint:server
         run: |
           cd server
           go mod tidy
           make lint 
 
-      - name: Run golangci-lint
+      - name: Run golangci-lint:rsp
         run: |
           cd raspberry-pi
+          go mod tidy
+          make lint 
+
+      - name: Run golangci-lint:client
+        run: |
+          cd client
           go mod tidy
           make lint 
