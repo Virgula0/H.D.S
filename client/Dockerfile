@@ -1,5 +1,5 @@
 # Use Ubuntu as the base image
-FROM golang:1.23.3-bookworm
+FROM golang:1.23.4-bookworm
 
 # Install required dependencies
 RUN apt update -y && \
