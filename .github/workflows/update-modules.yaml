@@ -26,11 +26,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+          ref: main
 
       # Update references
       - name: Git Submodule Update
         run: |
-          git pull --recurse-submodules
+          git checkout main
+          git pull origin main --recurse-submodules
           git submodule update --remote --recursive
 
       - uses: docker://chinthakagodawita/autoupdate-action:v1
