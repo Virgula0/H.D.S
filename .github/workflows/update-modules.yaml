@@ -22,16 +22,17 @@ jobs:
         shell: bash
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          token: ${{ secrets.CI_TOKEN }}
           submodules: true
+          ref: main
 
       # Update references
       - name: Git Submodule Update
         run: |
-          git pull --recurse-submodules
+          git checkout main
+          git pull origin main --recurse-submodules
           git submodule update --remote --recursive
 
       - uses: docker://chinthakagodawita/autoupdate-action:v1
