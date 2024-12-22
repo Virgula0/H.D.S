@@ -8,6 +8,8 @@ services:
         DISPLAY: ${DISPLAY} # Pass display variable from terminal
     environment:
       - DISPLAY=${DISPLAY} # Pass display variable from terminal
+    depends_on:
+      - server
     volumes:
       # - ./client:/app/client
       - /tmp/.X11-unix:/tmp/.X11-unix # X11 forwarding

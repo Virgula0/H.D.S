@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
+	"path"
 	"unsafe"
 
 	gocat "github.com/mandiant/gocat/v6"
 	"github.com/mandiant/gocat/v6/hcargp"
 )
 
-const wordlistExample = "/usr/share/seclists/Passwords/darkc0de.txt"
-const fileToCrack = "output.hashcat"
+var defaultWordList = path.Join("wordlists", "rockyou.txt")
+
+const fileToCrack = "/home/angelo/tools/hcxtools/gotests/output.hashcat"
 const DebugTest = true
 
 func callbackForTests(resultsmap map[string]*string) gocat.EventCallback {
@@ -62,9 +64,7 @@ func main() {
 	crackedHashes := map[string]*string{}
 
 	tt := gocat.Options{
-		ExecutablePath:    "/usr/local/bin",
-		SharedPath:        "/tmp",
-		PatchEventContext: true,
+		SharedPath: "/usr/local/share/hashcat",
 	}
 
 	hashcat, err := gocat.New(tt, callbackForTests(crackedHashes))
@@ -76,7 +76,7 @@ func main() {
 	}
 
 	// potfile remembers cracked hashcat
-	err = hashcat.RunJob("-a", "3", "-m", "22000", "--potfile-disable", "--logfile-disable", fileToCrack, "okok")
+	err = hashcat.RunJob("-a", "0", "-m", "22000", "--potfile-disable", "--logfile-disable", fileToCrack, defaultWordList)
 
 	if err != nil {
 		fmt.Println(err.Error())

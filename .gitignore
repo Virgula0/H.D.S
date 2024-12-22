@@ -28,6 +28,14 @@ build/*
 server/protobuf
 client/protobuf
 
-client/hashcat.dictstat*
-client/hashcat.pid
-client/hashcat.induct
+client/hashcat
+client/gocat
+client/*.hctune
+client/*.hcstat2
+client/*.dictstat*
+client/*.pid
+client/*.induct
+client/OpenCL
+client/kernels
+client/modules
+client/main
