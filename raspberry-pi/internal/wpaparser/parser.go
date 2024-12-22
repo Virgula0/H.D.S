@@ -4,159 +4,149 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	log "github.com/sirupsen/logrus"
+	"strings"
 )
 
 const UnknownType = "Unknown"
 
-// FindBSSIDSSID Function to process the packet and return BSSID, SSID, and a found flag
-func FindBSSIDSSID(packets []gopacket.Packet, seenBSSIDs map[string]string) {
+type HandshakeInfo struct {
+	FilePath string
+	BSSID    string
+	SSID     string
+}
+
+// -----------------------------
+// BSSID and SSID Extraction
+// -----------------------------
+
+// findBSSIDSSID processes packets to extract BSSID and SSID.
+func findBSSIDSSID(packets []gopacket.Packet, seenBSSIDs map[string]string) {
 	for _, packet := range packets {
-		dot11 := getDot11Layer(packet)
-		if dot11 == nil {
-			continue
-		}
+		if dot11 := extractDot11Layer(packet); dot11 != nil {
+			bssid := dot11.Address3.String()
+			if bssid == "ff:ff:ff:ff:ff:ff" || bssid == "" {
+				continue // Skip invalid BSSIDs
+			}
 
-		bssid := getBSSID(dot11)
-		if bssid == "" || isInvalidBSSID(bssid) {
-			continue
-		}
+			// Check if it's a management frame
+			if dot11.Type != layers.Dot11TypeMgmt {
+				continue
+			}
 
-		ssid := getSSID(packet)
-		if ssid == "" {
-			continue
-		}
-
-		if _, seen := seenBSSIDs[bssid]; !seen {
-			seenBSSIDs[bssid] = ssid
-			log.Printf("BSSID: %v SSID: %q\n", bssid, ssid)
+			if ssid := extractSSID(packet); ssid != "" {
+				if _, seen := seenBSSIDs[bssid]; !seen {
+					seenBSSIDs[bssid] = strings.Trim(ssid, "\"")
+					log.Printf("BSSID: %v SSID: %q\n", bssid, ssid)
+				}
+			}
 		}
 	}
 }
 
-// Extracts the Dot11 layer from the packet
-func getDot11Layer(packet gopacket.Packet) *layers.Dot11 {
-	dot11Layer := packet.Layer(layers.LayerTypeDot11)
-	if dot11Layer == nil {
-		return nil
+// extractDot11Layer gets the Dot11 layer from a packet.
+func extractDot11Layer(packet gopacket.Packet) *layers.Dot11 {
+	if layer := packet.Layer(layers.LayerTypeDot11); layer != nil {
+		if dot11, ok := layer.(*layers.Dot11); ok {
+			return dot11
+		}
 	}
-	dot11, _ := dot11Layer.(*layers.Dot11)
-	return dot11
+	return nil
 }
 
-// Extracts the BSSID from a Dot11 layer
-func getBSSID(dot11 *layers.Dot11) string {
-	return dot11.Address3.String()
-}
-
-// Checks if a BSSID is invalid (e.g., broadcast address)
-func isInvalidBSSID(bssid string) bool {
-	return bssid == "ff:ff:ff:ff:ff:ff"
-}
-
-// Extracts the SSID from the packet, if present
-func getSSID(packet gopacket.Packet) string {
-	dot11InfoLayer := packet.Layer(layers.LayerTypeDot11InformationElement)
-	if dot11InfoLayer == nil {
-		return ""
+// extractSSID retrieves the SSID from a packet.
+func extractSSID(packet gopacket.Packet) string {
+	if layer := packet.Layer(layers.LayerTypeDot11InformationElement); layer != nil {
+		if infoElem, ok := layer.(*layers.Dot11InformationElement); ok && infoElem.ID == layers.Dot11InformationElementIDSSID {
+			return string(infoElem.Info)
+		}
 	}
-
-	dot11Info, _ := dot11InfoLayer.(*layers.Dot11InformationElement)
-	if dot11Info.ID == layers.Dot11InformationElementIDSSID {
-		return string(dot11Info.Info)
-	}
-
 	return ""
 }
 
-// ProcessWPAHandshake Function to process WPA handshake by checking EAPOL messages and extracting key info
-func ProcessWPAHandshake(packets []gopacket.Packet) bool {
-	handshakePackets := make([]*layers.EAPOL, 4) // Store up to 4 EAPOL packets
-	eapolCount := 0
-	keyVersionDesc := ""
+// -----------------------------
+// WPA Handshake Processing
+// -----------------------------
+
+// processWPAHandshake validates a 4-way WPA handshake.
+func processWPAHandshake(packets []gopacket.Packet) bool {
+	handshakePackets := make([]*layers.EAPOL, 0, 4) // Preallocate capacity for 4 packets
+	var keyVersionDesc string
 
 	for _, packet := range packets {
-		eapolPacket := getEAPOLLayer(packet)
-		if eapolPacket == nil {
+		eapol := extractEAPOLLayer(packet)
+		if eapol == nil {
 			continue
 		}
 
-		if eapolCount == 0 {
-			keyVersionDesc = processFirstEAPOLPacket(eapolPacket)
-		}
-
-		if eapolCount < 4 {
-			handshakePackets[eapolCount] = eapolPacket
-			eapolCount++
-		}
-
-		if isHandshakeComplete(eapolCount, keyVersionDesc) {
-			printHandshakeDetails(handshakePackets)
-			return true
+		switch len(handshakePackets) {
+		case 0:
+			// Process the first EAPOL packet to get the key descriptor
+			keyVersionDesc = processFirstEAPOLPacket(eapol)
+			fallthrough
+		case 1, 2, 3:
+			// Append the next EAPOL packets until we reach 4
+			handshakePackets = append(handshakePackets, eapol)
+		case 4:
+			// Validate handshake completeness
+			if keyVersionDesc != UnknownType {
+				printHandshakeDetails(handshakePackets)
+				return true
+			}
 		}
 	}
 
-	return false // Return false if not enough EAPOL packets were found
+	return false
 }
 
-// Extracts the EAPOL layer from the packet
-func getEAPOLLayer(packet gopacket.Packet) *layers.EAPOL {
-	eapolLayer := packet.Layer(layers.LayerTypeEAPOL)
-	if eapolLayer == nil {
-		return nil
+// extractEAPOLLayer retrieves the EAPOL layer from a packet.
+func extractEAPOLLayer(packet gopacket.Packet) *layers.EAPOL {
+	if layer := packet.Layer(layers.LayerTypeEAPOL); layer != nil {
+		if eapol, ok := layer.(*layers.EAPOL); ok {
+			return eapol
+		}
 	}
-	eapolPacket, _ := eapolLayer.(*layers.EAPOL)
-	return eapolPacket
+	return nil
 }
 
-// Processes the first EAPOL packet to extract and print key descriptor details
-func processFirstEAPOLPacket(eapolPacket *layers.EAPOL) string {
+// processFirstEAPOLPacket processes the first EAPOL packet to extract key descriptor details.
+func processFirstEAPOLPacket(eapol *layers.EAPOL) string {
 	log.Println("EAPOL M1 detected")
-	log.Println("EAPOL Payload:", eapolPacket.Payload)
+	log.Println("EAPOL Payload:", eapol.Payload)
 
-	if len(eapolPacket.Payload) >= 3 { // Ensure we have enough bytes to extract Key Information field
-		keyInfo := uint16(eapolPacket.Payload[1])<<8 | uint16(eapolPacket.Payload[2])
-		keyVersionDesc := getKeyDescriptorVersion(keyInfo)
+	if len(eapol.Payload) >= 3 {
+		keyInfo := uint16(eapol.Payload[1])<<8 | uint16(eapol.Payload[2])
+		keyVersion := keyInfo & 0x07 // Extract the last 3 bits
+
+		keyVersionDesc := map[uint16]string{
+			0: UnknownType,
+			1: "HMAC-MD5",
+			2: "HMAC-SHA1-128",
+		}[keyVersion]
+
+		if keyVersionDesc == "" {
+			keyVersionDesc = "Invalid"
+		}
+
 		log.Printf("Key Information: 0x%04x\n", keyInfo)
-		log.Printf("    .... .... .... .XXX = Key Descriptor Version: %s (%d)\n", keyVersionDesc, keyInfo&0x07)
+		log.Printf(".... .... .... .XXX = Key Descriptor Version: %s (%d)\n", keyVersionDesc, keyVersion)
 		return keyVersionDesc
 	}
 	return UnknownType
 }
 
-// Checks if the handshake is complete based on EAPOL packet count and key version descriptor
-func isHandshakeComplete(eapolCount int, keyVersionDesc string) bool {
-	return eapolCount == 4 && keyVersionDesc != UnknownType
-}
-
-// Prints handshake details for all 4 EAPOL packets
+// printHandshakeDetails logs the details of a successful WPA handshake.
 func printHandshakeDetails(handshakePackets []*layers.EAPOL) {
 	log.Println("WPA2 Handshake Detected!")
-	log.Println("Message 1: AP -> Client (EAPOL)")
-	log.Println("Message 2: Client -> AP (EAPOL)")
-	log.Println("Message 3: AP -> Client (EAPOL)")
-	log.Println("Message 4: Client -> AP (EAPOL)")
-
-	for i, eapolPacket := range handshakePackets {
-		if eapolPacket != nil {
-			log.Printf("Message %d: %v\n", i+1, eapolPacket.Payload)
-		}
+	messages := []string{
+		"Message 1: AP -> Client",
+		"Message 2: Client -> AP",
+		"Message 3: AP -> Client",
+		"Message 4: Client -> AP",
 	}
-}
 
-// Helper function to extract the Key Descriptor Version (3 bits)
-func getKeyDescriptorVersion(keyInfo uint16) string {
-	// Mask the last 3 bits to determine the Key Descriptor Version
-	descriptorVersion := keyInfo & 0x07 // Mask the last 3 bits (0x07 = 00000111)
-
-	// Interpret based on the last 3 bits
-	switch descriptorVersion {
-	case 0:
-		return UnknownType
-	case 1:
-		return "HMAC-MD5"
-	case 2:
-		return "HMAC-SHA1-128"
-	default:
-		return "Invalid"
+	for i, packet := range handshakePackets {
+		if packet != nil {
+			log.Printf("%s (EAPOL Payload: %v)\n", messages[i], packet.Payload)
+		}
 	}
 }

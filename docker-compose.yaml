@@ -13,6 +13,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix # X11 forwarding
       - /usr/share/seclists/Passwords:/usr/share/seclists/Passwords
 
+  # TODO: add a good healtcheck because otherwise this will try to connect to tcp server before is starts
   raspberrypi:
     container_name: emulate-raspberrypi
     build:
@@ -21,20 +22,25 @@ services:
     depends_on:
       - server
     environment:
-      - TCP_ADDRESS=0.0.0.0
+      - SERVER_HOST=server
+      - SERVER_PORT=4747
+      - TCP_ADDRESS=server
       - TCP_PORT=4749
-      - DEBUG=True
+      - TEST=True
+      - HOME_WIFI=Vodafone-A60818803 # Change with your SSID xD
+    entrypoint: go run main.go run --username=admin --password=test1234 # these credentials won't work if DEBUG of server is disabled
 
   server:
-    container_name: server
+    container_name: dp-server
     build:
       context: server
       dockerfile: Dockerfile
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     environment:
-      - BACKEND_HOST=0.0.0.0 # Not need to change
-      - BACKEND_PORT=4747    # Not need to change
+      - BACKEND_HOST=0.0.0.0
+      - BACKEND_PORT=4747
       - FRONTEND_HOST=0.0.0.0
       - FRONTEND_PORT=4748
       - DB_USER=agent
@@ -43,12 +49,15 @@ services:
       - DB_PORT=3306
       - DB_NAME=dp_hashcat
       - ALLOW_REGISTRATIONS=True # Disable if needed
-      - DEBUG=True
+      - DEBUG=True  # This will enable seeds for having some accounts for testing purposes. admin:test1234 will bre created
       - RESET=True
       - GRPC_URL=0.0.0.0:7777
       - GRPC_TIMEOUT=10s
       - TCP_ADDRESS=0.0.0.0
       - TCP_PORT=4749
+    ports:
+      - 4747:4747 # TODO: code development only, MUST BE REMOVED
+      - 4749:4749
     entrypoint: make run
 
   database:

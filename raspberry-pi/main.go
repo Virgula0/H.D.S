@@ -1,40 +1,93 @@
 package main
 
 import (
+	"github.com/Virgula0/progetto-dp/raspberrypi/internal/cmd"
+	"github.com/Virgula0/progetto-dp/raspberrypi/internal/constants"
+	"github.com/Virgula0/progetto-dp/raspberrypi/internal/deamon"
+	"github.com/Virgula0/progetto-dp/raspberrypi/internal/entities"
+	"github.com/Virgula0/progetto-dp/raspberrypi/internal/utils"
+	internalWIFI "github.com/Virgula0/progetto-dp/raspberrypi/internal/wifi"
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/wpaparser"
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/pcap"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
-func main() {
-	// Open the pcap file
-	handle, err := pcap.OpenOffline("handshakes/test.pcap") // Replace with your PCAP file path
+// initializeInstance sets up the Raspberry Pi instance.
+func initializeInstance() (_ *deamon.RaspberryPiInfo, machineID string) {
+	machineID, err := utils.MachineID()
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer handle.Close()
-
-	// Set up a packet source for reading packets from the capture file
-	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-
-	// Store packets in a slice. Since it is an iterator it will give problems when iterated twice
-	packets := make([]gopacket.Packet, 0, 1000) // Start with a capacity of 1000
-	for packet := range packetSource.Packets() {
-		packets = append(packets, packet)
+		log.Fatalf("[RSP-PI] Failed to get machine ID: %s", err.Error())
 	}
 
-	// Map to track which BSSIDs we've already seen
-	seenBSSIDs := make(map[string]string)
+	credentials, err := cmd.AuthCommand()
+	if err != nil {
+		log.Fatalf("[RSP-PI] Failed to get credentials: %s", err.Error())
+	}
 
-	// Call the function to find BSSID and SSID
-	wpaparser.FindBSSIDSSID(packets, seenBSSIDs)
+	return &deamon.RaspberryPiInfo{
+		JWT:         new(string),
+		FirstLogin:  make(chan bool),
+		Credentials: credentials,
+	}, machineID
+}
 
-	// Call the function to process the WPA handshake
-	handshakeFound := wpaparser.ProcessWPAHandshake(packets)
-	if handshakeFound {
-		log.Println("WPA2 Handshake successfully detected!")
-	} else {
-		log.Println("Not enough EAPOL packets to form a WPA2 handshake.")
+// processHandshakes processes Wi-Fi handshakes and prepares them for transmission.
+func processHandshakes(env deamon.Environment) []*entities.Handshake {
+	handles, err := env.LoadEnvironment()
+	if err != nil {
+		log.Fatalf("[RSP-PI] Failed to load environment: %s", err.Error())
+	}
+
+	handshakes := wpaparser.GetWPA(handles)
+	toSend := make([]*entities.Handshake, 0)
+
+	log.Println("-------------------------------------------")
+	for _, handshakeInfo := range handshakes {
+		log.Println(*handshakeInfo)
+
+		readContent, err := utils.ReadFileBytes(handshakeInfo.FilePath)
+		if err != nil {
+			log.Warnf("[RSP-PI] Unable to read '%s': %s", handshakeInfo.FilePath, err.Error())
+			continue
+		}
+
+		content := utils.BytesToBase64String(readContent)
+		toSend = append(toSend, &entities.Handshake{
+			SSID:          handshakeInfo.SSID,
+			BSSID:         handshakeInfo.BSSID,
+			HandshakePCAP: &content,
+		})
+	}
+	log.Println("-------------------------------------------")
+	return toSend
+}
+
+// main orchestrates the Raspberry Pi client application.
+func main() {
+	ticker := time.NewTicker(5 * time.Minute)
+
+	// If it is not a test let's check for connection.
+	// This is because we're inside a container we can skip overcomplicating
+	if !constants.Test {
+		internalWIFI.MonitorWiFiConnection(constants.HomeWIFISSID)
+	}
+
+	instance, machineID := initializeInstance()
+	go instance.Authenticator()
+
+	<-instance.FirstLogin
+
+	env, err := deamon.ChooseEnvironment()
+	if err != nil {
+		log.Fatalf("[RSP-PI] Failed to choose environment: %s", err.Error())
+	}
+
+	for {
+		handshakes := processHandshakes(env)
+		err := deamon.HandleServerCommunication(instance, machineID, handshakes)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		<-ticker.C
 	}
 }

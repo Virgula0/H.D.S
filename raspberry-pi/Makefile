@@ -7,7 +7,9 @@ install-linter:
 .PHONY: install-linter
 
 run:
-	go run main.go
+	# run with make run USERNAME=XXXX PASSWORD=XXX
+	@echo "Running with username: $(USERNAME) and password: $(PASSWORD)"
+	go run main.go --username=$(USERNAME) --password=$(PASSWORD)
 .PHONY: run
 
 go-vuln:

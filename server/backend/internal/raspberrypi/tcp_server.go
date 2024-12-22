@@ -16,7 +16,7 @@ type TCPCreateRaspberryPIRequest struct {
 	Handshakes    []*entities.Handshake
 	Jwt           string `validate:"required,jwt"`
 	MachineID     string `validate:"required,len=32"`
-	EncryptionKey string `validate:"required,len=64"`
+	EncryptionKey string `validate:"omitempty,len=64"`
 }
 
 // TODO: returned errors should be refactored in errors
