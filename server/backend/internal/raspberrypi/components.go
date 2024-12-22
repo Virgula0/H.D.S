@@ -142,7 +142,7 @@ func (wr *TCPServer) CreateHandshake(jwt string, handshake *entities.Handshake) 
 	}
 
 	if saved > 0 { // we don't save the handshake if already saved
-		return "", fmt.Errorf("undshake already present")
+		return "", fmt.Errorf("handshake already present")
 	}
 
 	// TODO: use encryption key of the raspberryPI for exchanging handshakes bytes securely
