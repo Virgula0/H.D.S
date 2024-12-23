@@ -22,8 +22,8 @@ var (
 var ListOfDirToCreate = []string{TempPCAPStorage, TempHashcatFileDir}
 
 const (
-	WorkingStatus   = "working"
 	CrackStatus     = "cracked"
 	ErrorStatus     = "error"
 	ExhaustedStatus = "exhausted"
+	WorkingStatus   = "working"
 )

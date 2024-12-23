@@ -63,4 +63,5 @@ const (
 const (
 	NothingStatus = "nothing"
 	PendingStatus = "pending"
+	WorkingStatus = "working"
 )

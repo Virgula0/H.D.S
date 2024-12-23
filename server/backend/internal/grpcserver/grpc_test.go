@@ -329,17 +329,6 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_UpdateClientTaskSuccess
 		HashcatOptions: "updated",
 	}
 
-	responseExpected := &pb.ClientTaskMessageFromServer{
-		Tasks: []*pb.ClientTask{
-			{
-				UserId:         s.UserClientRegistered.UserUUID,
-				ClientUuid:     s.UserClientRegistered.ClientUUID,
-				HandshakeUuid:  s.HandshakeValidID,
-				HashcatOptions: "updated",
-			},
-		},
-	}
-
 	s.Run(testName, func() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20) // Timeout after 20 seconds
 		defer cancel()
@@ -349,13 +338,5 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_UpdateClientTaskSuccess
 
 		err = stream.Send(request)
 		s.Require().NoError(err, "Failed to send request to the server")
-
-		response, recvErr := stream.Recv()
-		s.Require().NoError(recvErr, "Failed to receive response from the server")
-
-		s.Require().Equal(responseExpected.Tasks[0].UserId, response.Tasks[0].UserId, "Unexpected response from Test RPC")
-		s.Require().Equal(responseExpected.Tasks[0].ClientUuid, response.Tasks[0].ClientUuid, "Unexpected response from Test RPC")
-		s.Require().Equal(responseExpected.Tasks[0].UserId, response.Tasks[0].UserId, "Unexpected response from Test RPC")
-		s.Require().Equal(responseExpected.Tasks[0].HashcatOptions, response.Tasks[0].HashcatOptions, "Unexpected response from Test RPC")
 	})
 }

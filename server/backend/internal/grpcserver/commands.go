@@ -124,7 +124,6 @@ func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatT
 
 		// Prepare tasks for clients
 		var tasks []*pb.ClientTask
-		var submitted map[string]bool
 		for _, handshake := range handshakes {
 
 			if handshake.ClientUUID == nil || handshake.HashcatOptions == nil || handshake.HandshakePCAP == nil {
@@ -132,17 +131,14 @@ func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatT
 				continue
 			}
 
-			if _, ok := submitted[handshake.UUID]; !ok {
-				tasks = append(tasks, &pb.ClientTask{
-					StartCracking:  true,
-					UserId:         handshake.UserUUID,
-					ClientUuid:     *handshake.ClientUUID,
-					HandshakeUuid:  handshake.UUID,
-					HashcatOptions: *handshake.HashcatOptions,
-					HashcatPcap:    *handshake.HandshakePCAP,
-				})
-				submitted[handshake.UUID] = true
-			}
+			tasks = append(tasks, &pb.ClientTask{
+				StartCracking:  true,
+				UserId:         handshake.UserUUID,
+				ClientUuid:     *handshake.ClientUUID,
+				HandshakeUuid:  handshake.UUID,
+				HashcatOptions: *handshake.HashcatOptions,
+				HashcatPcap:    *handshake.HandshakePCAP,
+			})
 
 		}
 
@@ -150,6 +146,14 @@ func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatT
 		if len(tasks) > 0 {
 			if errSend := stream.Send(&pb.ClientTaskMessageFromServer{Tasks: tasks}); errSend != nil {
 				return fmt.Errorf("%s %v", customErrors.ErrCannotAnswerToClient, errSend)
+			}
+
+			// Mark tasks as assigned after sending
+			for _, task := range tasks {
+				_, err = s.Usecase.UpdateClientTask(task.UserId, task.HandshakeUuid, task.ClientUuid, constants.WorkingStatus, task.HashcatOptions, "", task.HashcatPcap)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -176,7 +180,7 @@ func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_Has
 		}
 
 		userID := data[constants.UserIDKey].(string)
-		handshake, err := s.Usecase.UpdateClientTask(
+		_, err = s.Usecase.UpdateClientTask(
 			userID,
 			msg.GetHandshakeUuid(),
 			msg.GetClientUuid(),
@@ -187,24 +191,6 @@ func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_Has
 		)
 		if err != nil {
 			return status.Errorf(codes.Internal, fmt.Sprintf("%s %v", customErrors.ErrOnUpdateTask, err))
-		}
-
-		// Respond to client
-		response := &pb.ClientTaskMessageFromServer{
-			Tasks: []*pb.ClientTask{
-				{
-					StartCracking:  false,
-					UserId:         userID,
-					ClientUuid:     *handshake.ClientUUID,
-					HandshakeUuid:  handshake.UUID,
-					HashcatOptions: *handshake.HashcatOptions,
-					HashcatPcap:    *handshake.HandshakePCAP,
-				},
-			},
-		}
-
-		if err := stream.Send(response); err != nil {
-			return status.Errorf(codes.Internal, fmt.Sprintf("%s %v", customErrors.ErrCannotAnswerToClient, err))
 		}
 	}
 }

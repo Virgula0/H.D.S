@@ -14,7 +14,7 @@ const (
 )
 
 // InitLoginWindow initializes and displays the login window.
-func InitLoginWindow(client *grpcclient.Client) {
+func InitLoginWindow(client *grpcclient.Client) bool {
 	// Initialize Raylib
 	rl.SetTraceLogLevel(rl.LogError)
 	rl.InitWindow(screenWidth, screenHeight, "Login Window")
@@ -55,7 +55,7 @@ func InitLoginWindow(client *grpcclient.Client) {
 				client.Credentials.Auth.Username = username
 				client.Credentials.Auth.Password = password
 				*client.Credentials.JWT = resp.Details
-				return
+				return false
 			} else {
 				errorMessage = "Invalid username or password"
 			}
@@ -89,6 +89,8 @@ func InitLoginWindow(client *grpcclient.Client) {
 
 		rl.EndDrawing()
 	}
+
+	return rl.WindowShouldClose()
 }
 
 // HandleTextInput captures text input for username and password fields.
