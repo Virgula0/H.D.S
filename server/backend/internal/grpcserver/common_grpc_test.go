@@ -2,12 +2,13 @@
 package grpcserver_test
 
 import (
+	"context"
 	"crypto/md5"
 	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/repository"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/authenticate"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
+	pb "github.com/Virgula0/progetto-dp/server/protobuf/hds"
 	"github.com/google/uuid"
 	"testing"
 
@@ -78,17 +79,20 @@ func (s *GRPCServerTestSuite) SetupSuite() {
 	_, err = s.Service.Usecase.UpdateClientTask(s.UserClientRegistered.UserUUID, handshakeID, s.UserClientRegistered.ClientUUID, constants.PendingStatus, "", "", "")
 	s.Require().NoError(err)
 
-	s.TokenFixture, err = testsuite.AuthAPI(authenticate.AuthRequest{
+	temp, err := s.Client.Login(context.Background(), &pb.AuthRequest{
 		Username: s.UserFixture.Username,
 		Password: s.UserFixture.Password,
 	})
 	s.Require().NoError(err)
+	s.TokenFixture = temp.Details
 
-	s.NormalUserTokenFixture, err = testsuite.AuthAPI(authenticate.AuthRequest{
+	temp, err = s.Client.Login(context.Background(), &pb.AuthRequest{
 		Username: s.NormalUserFixture.Username,
 		Password: s.NormalUserFixture.Password,
 	})
 	s.Require().NoError(err)
+	s.NormalUserTokenFixture = temp.Details
+
 }
 
 // TearDownAllSuite implements suite.SetupTestSuite and is called after each suite

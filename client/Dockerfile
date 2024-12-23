@@ -66,7 +66,7 @@ RUN useradd -ms /bin/bash client && \
 USER client
 
 RUN go mod verify && \
-    go mod tidy && \
-    go build main.go
+    #go mod tidy && \
+    #go build main.go
 
 ENTRYPOINT ["tail", "-f", "/dev/null"]

@@ -39,3 +39,4 @@ client/OpenCL
 client/kernels
 client/modules
 client/main
+client/*.so

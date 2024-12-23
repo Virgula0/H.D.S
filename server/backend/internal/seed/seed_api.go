@@ -35,14 +35,14 @@ func LoadUsers(repo *repository.Repository) error {
 
 func loadUsers(repo *repository.Repository) error {
 
-	adminSeed := []*entities.User{
-		AdminSeed.User,
-		NormalUserSeed.User,
+	seeds := []*Seed{
+		AdminSeed,
+		NormalUserSeed,
 	}
 
-	for _, user := range adminSeed {
+	for _, user := range seeds {
 
-		err := repo.CreateUser(user, constants.ADMIN)
+		err := repo.CreateUser(user.User, user.Role)
 		if err != nil {
 			e := fmt.Errorf("failed to seed users table: %v", err)
 			log.Println(e)
@@ -52,7 +52,7 @@ func loadUsers(repo *repository.Repository) error {
 		if constants.DebugEnabled != "" {
 			randomHash := fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))) // #nosec G401 disable weak hash alert, it is not used for crypto stuff
 
-			_, err = repo.CreateClient(user.UserUUID, randomHash, "127.0.0.1", "TestAdmin")
+			_, err = repo.CreateClient(user.User.UserUUID, randomHash, "127.0.0.1", "TestAdmin")
 
 			if err != nil {
 				e := fmt.Errorf("failed to seed client table: %v", err)
@@ -61,7 +61,7 @@ func loadUsers(repo *repository.Repository) error {
 			}
 
 			// #nosec G401 disable weak hash alert, it is not used for crypto stuff
-			_, err := repo.CreateRaspberryPI(user.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), fmt.Sprintf("%x%x", md5.Sum([]byte(utils.GenerateToken(10))), md5.Sum([]byte(utils.GenerateToken(10)))))
+			_, err := repo.CreateRaspberryPI(user.User.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), fmt.Sprintf("%x%x", md5.Sum([]byte(utils.GenerateToken(10))), md5.Sum([]byte(utils.GenerateToken(10)))))
 
 			if err != nil {
 				e := fmt.Errorf("failed to seed rsp table: %v", err)
@@ -69,7 +69,7 @@ func loadUsers(repo *repository.Repository) error {
 				return e
 			}
 
-			_, err = repo.CreateHandshake(user.UserUUID, "TEST", "XX:XX:XX:XX:XX:XX", constants.NothingStatus, utils.StringToBase64String("test.pcap"))
+			_, err = repo.CreateHandshake(user.User.UserUUID, "TEST", "XX:XX:XX:XX:XX:XX", constants.NothingStatus, utils.StringToBase64String("test.pcap"))
 
 			if err != nil {
 				e := fmt.Errorf("failed to seed handshake table: %v", err)
@@ -77,7 +77,6 @@ func loadUsers(repo *repository.Repository) error {
 				return e
 			}
 		}
-
 	}
 	return nil
 }

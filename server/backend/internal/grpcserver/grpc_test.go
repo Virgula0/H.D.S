@@ -4,7 +4,9 @@ package grpcserver_test
 import (
 	"context"
 	_ "context"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	"github.com/Virgula0/progetto-dp/server/entities"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -42,6 +44,63 @@ func (s *GRPCServerTestSuite) Test_GRPC_Connection() {
 			// Use assert to check the response
 
 			s.Require().Equal(tt.expectedOutput.Message, resp.Message, "Unexpected response from Test RPC")
+		})
+	}
+}
+
+func (s *GRPCServerTestSuite) Test_GRPC_Login() {
+	// Define test cases
+	tests := []struct {
+		testname       string
+		request        *pb.AuthRequest
+		expectedOutput func(resp *pb.UniformResponse, err error) bool
+	}{
+		{
+			testname: "Valid username",
+			request: &pb.AuthRequest{
+				Username: s.UserFixture.Username,
+				Password: s.UserFixture.Password,
+			},
+			expectedOutput: func(resp *pb.UniformResponse, err error) bool {
+				s.Require().NoError(err, "Test RPC failed")
+				return resp.Details != "" && resp.Status == "logged_in"
+			},
+		},
+		{
+			testname: "Not Valid Username",
+			request: &pb.AuthRequest{
+				Username: "test",
+				Password: s.UserFixture.Password,
+			},
+			expectedOutput: func(resp *pb.UniformResponse, err error) bool {
+				s.Require().Contains(err.Error(), "invalid credentials", "invalid credentials fail")
+				return true
+			},
+		},
+		{
+			testname: "Not Valid Password",
+			request: &pb.AuthRequest{
+				Username: s.UserFixture.Username,
+				Password: utils.GenerateToken(10),
+			},
+			expectedOutput: func(resp *pb.UniformResponse, err error) bool {
+				s.Require().Contains(err.Error(), "invalid credentials", "invalid credentials fail")
+				return true
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.testname, func() {
+			// Perform the gRPC request
+			client := s.Client
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			resp, err := client.Login(ctx, tt.request)
+			log.Println(err)
+			// Use assert to check the response
+			s.Require().True(tt.expectedOutput(resp, err))
 		})
 	}
 }

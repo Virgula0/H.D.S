@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -22,6 +23,30 @@ func (s *ServerContext) Test(_ context.Context, _ *pb.HelloRequest) (*pb.HelloRe
 	// do usecase stuff
 	return &pb.HelloResponse{
 		Message: "Hello, World!",
+	}, nil
+}
+
+func (s *ServerContext) Login(_ context.Context, request *pb.AuthRequest) (*pb.UniformResponse, error) {
+	user, role, err := s.Usecase.GetUserByUsername(request.Username)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "%v", err)
+	}
+
+	// Compare password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "%s", customErrors.ErrInvalidCredentials)
+	}
+
+	// Create the auth token
+	token, err := s.Usecase.CreateAuthToken(user.UserUUID, role.RoleString)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
+	}
+
+	return &pb.UniformResponse{
+		Status:  "logged_in",
+		Details: token,
 	}, nil
 }
 
@@ -99,15 +124,26 @@ func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatT
 
 		// Prepare tasks for clients
 		var tasks []*pb.ClientTask
+		var submitted map[string]bool
 		for _, handshake := range handshakes {
-			tasks = append(tasks, &pb.ClientTask{
-				StartCracking:  true,
-				UserId:         handshake.UserUUID,
-				ClientUuid:     *handshake.ClientUUID,
-				HandshakeUuid:  handshake.UUID,
-				HashcatOptions: *handshake.HashcatOptions,
-				HashcatPcap:    *handshake.HandshakePCAP,
-			})
+
+			if handshake.ClientUUID == nil || handshake.HashcatOptions == nil || handshake.HandshakePCAP == nil {
+				log.Errorf("%s One among important info ClientUUID or HashcatOptions or HandshakePCAP is missing for Handshake UUID '%s'. Client task can't be forwarded to clients", customErrors.ErrGetHandshakeStatus, handshake.UUID)
+				continue
+			}
+
+			if _, ok := submitted[handshake.UUID]; !ok {
+				tasks = append(tasks, &pb.ClientTask{
+					StartCracking:  true,
+					UserId:         handshake.UserUUID,
+					ClientUuid:     *handshake.ClientUUID,
+					HandshakeUuid:  handshake.UUID,
+					HashcatOptions: *handshake.HashcatOptions,
+					HashcatPcap:    *handshake.HandshakePCAP,
+				})
+				submitted[handshake.UUID] = true
+			}
+
 		}
 
 		// Send tasks if available
