@@ -27,3 +27,9 @@ const (
 	ExhaustedStatus = "exhausted"
 	WorkingStatus   = "working"
 )
+
+const (
+	HashcatFile   = "hashcatFile"
+	HashcatStatus = "status"
+	PCAPFile      = "pcapFile"
+)

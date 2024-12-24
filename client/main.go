@@ -8,12 +8,14 @@ import (
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
 	"github.com/Virgula0/progetto-dp/client/internal/environment"
 	"github.com/Virgula0/progetto-dp/client/internal/grpcclient"
+	"github.com/Virgula0/progetto-dp/client/internal/gui"
 	"github.com/Virgula0/progetto-dp/client/internal/hcxtools"
 	"github.com/Virgula0/progetto-dp/client/internal/utils"
 	"github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	pb "github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -29,24 +31,29 @@ var gocatOptions = gocat.Options{
 	SharedPath: "/usr/local/share/hashcat/OpenCL",
 }
 
-var logs = ""
+var logs strings.Builder
 
-func gocatCallback(resultsmap map[string]*string, stream grpc.BidiStreamingClient[hds.ClientTaskMessageFromClient, hds.ClientTaskMessageFromServer], msg *pb.ClientTaskMessageFromClient) gocat.EventCallback {
+func gocatCallback(resultsmap map[string]*string,
+	stream grpc.BidiStreamingClient[hds.ClientTaskMessageFromClient, hds.ClientTaskMessageFromServer],
+	msg *pb.ClientTaskMessageFromClient,
+	info *gui.ProcessWindowInfo,
+	otherInfos map[string]string,
+) gocat.EventCallback {
 	return func(hc unsafe.Pointer, payload interface{}) {
 		switch pl := payload.(type) {
 		case gocat.LogPayload:
 			if DebugTest {
-				logs += fmt.Sprintf("LOG [%s] %s\n", pl.Level, pl.Message)
+				logs.WriteString(fmt.Sprintf("LOG [%s] %s\n", pl.Level, pl.Message))
 				log.Infof("LOG [%s] %s\n", pl.Level, pl.Message)
 			}
 		case gocat.ActionPayload:
 			if DebugTest {
-				logs += fmt.Sprintf("ACTION [%d] %s\n", pl.HashcatEvent, pl.Message)
+				logs.WriteString(fmt.Sprintf("ACTION [%d] %s\n", pl.HashcatEvent, pl.Message))
 				log.Infof("LOG [%s] %s\n", pl.Level, pl.Message)
 			}
 		case gocat.CrackedPayload:
 			if DebugTest {
-				logs += fmt.Sprintf("CRACKED %s -> %s\n", pl.Hash, pl.Value)
+				logs.WriteString(fmt.Sprintf("CRACKED %s -> %s\n", pl.Hash, pl.Value))
 				log.Infof("CRACKED %s -> %s\n", pl.Hash, pl.Value)
 			}
 			if resultsmap != nil {
@@ -54,21 +61,28 @@ func gocatCallback(resultsmap map[string]*string, stream grpc.BidiStreamingClien
 			}
 		case gocat.FinalStatusPayload:
 			if DebugTest {
-				logs += fmt.Sprintf("FINAL STATUS -> %v\n", pl.Status)
+				logs.WriteString(fmt.Sprintf("FINAL STATUS -> %v\n", pl.Status))
 				log.Infof("FINAL STATUS -> %v\n", pl.Status)
 			}
 		case gocat.TaskInformationPayload:
 			if DebugTest {
-				logs += fmt.Sprintf("TASK INFO -> %v\n", pl)
+				logs.WriteString(fmt.Sprintf("TASK INFO -> %v\n", pl))
 				log.Infof("TASK INFO -> %v\n", pl)
 			}
 		}
 
-		msg.HashcatLogs = logs
+		// Send statistics to the server
+		msg.HashcatLogs = logs.String()
 		err := stream.Send(msg)
 		if err != nil {
 			return
 		}
+
+		// Update GUI
+		info.Logs = logs.String()
+		info.HashcatFile = otherInfos["hashcatFile"]
+		info.HashcatStatus = otherInfos["status"]
+		info.PCAPFile = otherInfos["pcapFile"]
 	}
 }
 
@@ -83,7 +97,6 @@ func main() {
 	// start client
 	client := grpcclient.InitClient()
 	defer client.ClientCloser()
-
 	/*
 		closed := gui.InitLoginWindow(client)
 
@@ -91,6 +104,14 @@ func main() {
 			os.Exit(1)
 		}
 	*/
+
+	infoLogger := &gui.ProcessWindowInfo{}
+	go func() {
+		closed := infoLogger.InitProcessWindow()
+		if closed {
+			os.Exit(1)
+		}
+	}()
 
 	response, _ := client.Authenticate("admin", "test1234")
 	*client.Credentials.JWT = response.Details
@@ -119,6 +140,7 @@ func main() {
 	for {
 		var handshake entities.Handshake
 		log.Println("[CLIENT] Listening for tasks...")
+		infoLogger.IsConnected = true
 
 		handshake = entities.Handshake{
 			ClientUUID:       new(string),
@@ -129,10 +151,18 @@ func main() {
 			HandshakePCAP:    new(string),
 		}
 
+		infoLogger.StatusLabel = "Waiting for tasks..."
+
 		msg, err := stream.Recv()
 		if err != nil {
 			log.Errorf("[CLIENT] Closed connection %s", err.Error())
 		}
+
+		infoLogger.PCAPFile = ""
+		infoLogger.HashcatFile = ""
+		infoLogger.HashcatStatus = ""
+		infoLogger.StatusLabel = "Task accepted " + handshake.UUID
+		infoLogger.Logs = ""
 
 		for _, task := range msg.GetTasks() {
 			// Identify an assigned task, it takes the first one if many are present
@@ -151,6 +181,18 @@ func main() {
 		bytes, err := utils.StringBase64DataToBinary(*handshake.HandshakePCAP)
 		if err != nil {
 			log.Errorf("[CLIENT] Failed to decode PCAP %s", err.Error())
+			finalize := &pb.ClientTaskMessageFromClient{
+				Jwt:            *client.Credentials.JWT,
+				HashcatLogs:    logs.String(),
+				Status:         constants.ErrorStatus,
+				HandshakeUuid:  handshake.UUID,
+				ClientUuid:     clientUUID,
+				HashcatOptions: *handshake.HashcatOptions,
+			}
+			err = stream.Send(finalize)
+			if err != nil {
+				log.Error(err.Error())
+			}
 			continue
 		}
 
@@ -158,6 +200,18 @@ func main() {
 		pcapGenerated, err := utils.CreateMD5RandomFile(constants.TempPCAPStorage, constants.PCAPExtension, bytes)
 		if err != nil {
 			log.Errorf("[CLIENT] Failed to create temp PCAP file %s", err.Error())
+			finalize := &pb.ClientTaskMessageFromClient{
+				Jwt:            *client.Credentials.JWT,
+				HashcatLogs:    logs.String(),
+				Status:         constants.ErrorStatus,
+				HandshakeUuid:  handshake.UUID,
+				ClientUuid:     clientUUID,
+				HashcatOptions: *handshake.HashcatOptions,
+			}
+			err = stream.Send(finalize)
+			if err != nil {
+				log.Error(err.Error())
+			}
 			continue
 		}
 
@@ -165,6 +219,18 @@ func main() {
 		err = hcxtools.ConvertPCAPToHashcatFormat(pcapGenerated, randomHashcatFileName)
 		if err != nil {
 			log.Errorf("[CLIENT] Failed to convert PCAP file using hcxtools %s", err.Error())
+			finalize := &pb.ClientTaskMessageFromClient{
+				Jwt:            *client.Credentials.JWT,
+				HashcatLogs:    logs.String(),
+				Status:         constants.ErrorStatus,
+				HandshakeUuid:  handshake.UUID,
+				ClientUuid:     clientUUID,
+				HashcatOptions: *handshake.HashcatOptions,
+			}
+			err = stream.Send(finalize)
+			if err != nil {
+				log.Error(err.Error())
+			}
 			continue
 		}
 
@@ -173,6 +239,18 @@ func main() {
 
 		if err != nil || !exists {
 			log.Error("[CLIENT] Failed to verify generated hashcat file existence, maybe hcxtools failed...")
+			finalize := &pb.ClientTaskMessageFromClient{
+				Jwt:            *client.Credentials.JWT,
+				HashcatLogs:    logs.String(),
+				Status:         constants.ErrorStatus,
+				HandshakeUuid:  handshake.UUID,
+				ClientUuid:     clientUUID,
+				HashcatOptions: *handshake.HashcatOptions,
+			}
+			err = stream.Send(finalize)
+			if err != nil {
+				log.Error(err.Error())
+			}
 			continue
 		}
 
@@ -188,10 +266,29 @@ func main() {
 			HandshakeUuid:    handshake.UUID,
 			ClientUuid:       clientUUID,
 			HashcatOptions:   *handshake.HashcatOptions,
-		}))
+		},
+			infoLogger,
+			map[string]string{
+				constants.HashcatFile:   randomHashcatFileName,
+				constants.PCAPFile:      pcapGenerated,
+				constants.HashcatStatus: constants.WorkingStatus,
+			},
+		))
 
 		if err != nil {
 			log.Errorf("Gocat init error %s", err.Error())
+			finalize := &pb.ClientTaskMessageFromClient{
+				Jwt:            *client.Credentials.JWT,
+				HashcatLogs:    logs.String(),
+				Status:         constants.ErrorStatus,
+				HandshakeUuid:  handshake.UUID,
+				ClientUuid:     clientUUID,
+				HashcatOptions: *handshake.HashcatOptions,
+			}
+			err = stream.Send(finalize)
+			if err != nil {
+				log.Error(err.Error())
+			}
 			continue
 		}
 
@@ -212,15 +309,19 @@ func main() {
 		for _, value := range crackedHashes {
 			if value != nil {
 				status = constants.CrackStatus
+				infoLogger.StatusLabel = constants.CrackStatus
 				result += *value
 			} else {
 				status = constants.ExhaustedStatus
+				infoLogger.StatusLabel = constants.ExhaustedStatus
+
 			}
 		}
 		log.Println(crackedHashes)
+
 		finalize := &pb.ClientTaskMessageFromClient{
 			Jwt:              *client.Credentials.JWT,
-			HashcatLogs:      logs,
+			HashcatLogs:      logs.String(),
 			CrackedHandshake: result,
 			Status:           status,
 			HandshakeUuid:    handshake.UUID,
@@ -228,7 +329,8 @@ func main() {
 			HashcatOptions:   *handshake.HashcatOptions,
 		}
 
-		logs = ""
+		infoLogger.HashcatStatus = status
+		logs.Reset()
 
 		err = stream.Send(finalize)
 		newTicker := time.NewTicker(30 * time.Second)

@@ -31,7 +31,7 @@ client/protobuf
 client/hashcat.dictstat*
 client/hashcat.pid
 client/hashcat.induct
-client/hashcat
+client/hashcat/
 client/gocat
 client/*.hcstat2
 client/*.hctune
