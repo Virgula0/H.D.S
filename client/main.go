@@ -1,7 +1,7 @@
-//nolint:all // test
 package main
 
 import (
+	"context"
 	"crypto/md5"
 	"fmt"
 	"github.com/Virgula0/progetto-dp/client/internal/constants"
@@ -15,7 +15,6 @@ import (
 	pb "github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -32,13 +31,15 @@ var gocatOptions = gocat.Options{
 }
 
 var logs strings.Builder
+var stateUpdateCh = make(chan gui.StateUpdate, 1)
 
-func gocatCallback(resultsmap map[string]*string,
+// gocatCallback handles events from gocat and sends updates to the server stream.
+func gocatCallback(
+	resultsmap map[string]*string,
 	stream grpc.BidiStreamingClient[hds.ClientTaskMessageFromClient, hds.ClientTaskMessageFromServer],
 	msg *pb.ClientTaskMessageFromClient,
-	info *gui.ProcessWindowInfo,
-	otherInfos map[string]string,
 ) gocat.EventCallback {
+
 	return func(hc unsafe.Pointer, payload interface{}) {
 		switch pl := payload.(type) {
 		case gocat.LogPayload:
@@ -71,47 +72,42 @@ func gocatCallback(resultsmap map[string]*string,
 			}
 		}
 
-		// Send statistics to the server
+		// Send updated logs/stats to the server
 		msg.HashcatLogs = logs.String()
-		err := stream.Send(msg)
-		if err != nil {
+		if err := stream.Send(msg); err != nil {
 			return
 		}
+	}
+}
 
-		// Update GUI
-		info.Logs = logs.String()
-		info.HashcatFile = otherInfos["hashcatFile"]
-		info.HashcatStatus = otherInfos["status"]
-		info.PCAPFile = otherInfos["pcapFile"]
+// guiLogs periodically sends GUI updates until the context is cancelled.
+func guiLogs(otherInfos map[string]string, ctx context.Context) {
+	for {
+		stateUpdateCh <- gui.StateUpdate{
+			StatusLabel:   otherInfos[constants.HashcatStatus],
+			IsConnected:   true,
+			PCAPFile:      otherInfos[constants.PCAPFile],
+			HashcatFile:   otherInfos[constants.HashcatFile],
+			HashcatStatus: constants.CrackStatus,
+			LogContent:    logs.String(),
+		}
+		if ctx.Err() != nil {
+			log.Warn("Log goroutine killed")
+			return
+		}
 	}
 }
 
 func main() {
-
 	_, err := environment.InitEnvironment()
-
 	if err != nil {
-		log.Fatal()
+		log.Fatal(err)
 	}
 
-	// start client
 	client := grpcclient.InitClient()
 	defer client.ClientCloser()
-	/*
-		closed := gui.InitLoginWindow(client)
 
-		if closed {
-			os.Exit(1)
-		}
-	*/
-
-	infoLogger := &gui.ProcessWindowInfo{}
-	go func() {
-		closed := infoLogger.InitProcessWindow()
-		if closed {
-			os.Exit(1)
-		}
-	}()
+	go gui.RunGUI(stateUpdateCh)
 
 	response, _ := client.Authenticate("admin", "test1234")
 	*client.Credentials.JWT = response.Details
@@ -119,7 +115,6 @@ func main() {
 	go client.Authenticator() // run authenticator
 
 	machineID, err := utils.MachineID()
-
 	if err != nil {
 		log.Panic(err.Error())
 	}
@@ -128,20 +123,24 @@ func main() {
 	if err != nil {
 		log.Panic(err.Error())
 	}
-
 	clientUUID := info.GetClientUuid()
 
 	stream, err := client.HashcatChat()
-
 	if err != nil {
 		log.Panic(err.Error())
 	}
 
 	for {
-		var handshake entities.Handshake
 		log.Println("[CLIENT] Listening for tasks...")
-		infoLogger.IsConnected = true
+		msg, err := stream.Recv()
+		if err != nil {
+			log.Errorf("[CLIENT] Closed connection: %s", err.Error())
+			continue
+		}
 
+		logs.Reset() // Clear log buffer for each new task
+
+		var handshake entities.Handshake
 		handshake = entities.Handshake{
 			ClientUUID:       new(string),
 			CrackedDate:      new(string),
@@ -151,21 +150,7 @@ func main() {
 			HandshakePCAP:    new(string),
 		}
 
-		infoLogger.StatusLabel = "Waiting for tasks..."
-
-		msg, err := stream.Recv()
-		if err != nil {
-			log.Errorf("[CLIENT] Closed connection %s", err.Error())
-		}
-
-		infoLogger.PCAPFile = ""
-		infoLogger.HashcatFile = ""
-		infoLogger.HashcatStatus = ""
-		infoLogger.StatusLabel = "Task accepted " + handshake.UUID
-		infoLogger.Logs = ""
-
 		for _, task := range msg.GetTasks() {
-			// Identify an assigned task, it takes the first one if many are present
 			if task.GetClientUuid() == clientUUID && task.GetStartCracking() {
 				*handshake.HandshakePCAP = task.GetHashcatPcap()
 				*handshake.ClientUUID = task.GetClientUuid()
@@ -180,85 +165,38 @@ func main() {
 		log.Println("[CLIENT] Decoding PCAP...")
 		bytes, err := utils.StringBase64DataToBinary(*handshake.HandshakePCAP)
 		if err != nil {
-			log.Errorf("[CLIENT] Failed to decode PCAP %s", err.Error())
-			finalize := &pb.ClientTaskMessageFromClient{
-				Jwt:            *client.Credentials.JWT,
-				HashcatLogs:    logs.String(),
-				Status:         constants.ErrorStatus,
-				HandshakeUuid:  handshake.UUID,
-				ClientUuid:     clientUUID,
-				HashcatOptions: *handshake.HashcatOptions,
-			}
-			err = stream.Send(finalize)
-			if err != nil {
-				log.Error(err.Error())
-			}
+			logErrorAndSend(stream, client, handshake, constants.ErrorStatus, err.Error())
 			continue
 		}
 
-		log.Println("[CLIENT] Saving pcap... ")
+		log.Println("[CLIENT] Saving pcap...")
 		pcapGenerated, err := utils.CreateMD5RandomFile(constants.TempPCAPStorage, constants.PCAPExtension, bytes)
 		if err != nil {
-			log.Errorf("[CLIENT] Failed to create temp PCAP file %s", err.Error())
-			finalize := &pb.ClientTaskMessageFromClient{
-				Jwt:            *client.Credentials.JWT,
-				HashcatLogs:    logs.String(),
-				Status:         constants.ErrorStatus,
-				HandshakeUuid:  handshake.UUID,
-				ClientUuid:     clientUUID,
-				HashcatOptions: *handshake.HashcatOptions,
-			}
-			err = stream.Send(finalize)
-			if err != nil {
-				log.Error(err.Error())
-			}
+			logErrorAndSend(stream, client, handshake, constants.ErrorStatus, err.Error())
 			continue
 		}
 
-		randomHashcatFileName := filepath.Join(constants.TempHashcatFileDir, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(20))))+constants.HashcatExtension)
+		randomHashcatFileName := filepath.Join(
+			constants.TempHashcatFileDir,
+			fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(20))))+constants.HashcatExtension,
+		)
 		err = hcxtools.ConvertPCAPToHashcatFormat(pcapGenerated, randomHashcatFileName)
 		if err != nil {
-			log.Errorf("[CLIENT] Failed to convert PCAP file using hcxtools %s", err.Error())
-			finalize := &pb.ClientTaskMessageFromClient{
-				Jwt:            *client.Credentials.JWT,
-				HashcatLogs:    logs.String(),
-				Status:         constants.ErrorStatus,
-				HandshakeUuid:  handshake.UUID,
-				ClientUuid:     clientUUID,
-				HashcatOptions: *handshake.HashcatOptions,
-			}
-			err = stream.Send(finalize)
-			if err != nil {
-				log.Error(err.Error())
-			}
+			logErrorAndSend(stream, client, handshake, constants.ErrorStatus, err.Error())
 			continue
 		}
 
 		log.Println("[CLIENT] Checking generated conversion...")
 		exists, err := utils.DirOrFileExists(randomHashcatFileName)
-
 		if err != nil || !exists {
-			log.Error("[CLIENT] Failed to verify generated hashcat file existence, maybe hcxtools failed...")
-			finalize := &pb.ClientTaskMessageFromClient{
-				Jwt:            *client.Credentials.JWT,
-				HashcatLogs:    logs.String(),
-				Status:         constants.ErrorStatus,
-				HandshakeUuid:  handshake.UUID,
-				ClientUuid:     clientUUID,
-				HashcatOptions: *handshake.HashcatOptions,
-			}
-			err = stream.Send(finalize)
-			if err != nil {
-				log.Error(err.Error())
-			}
+			logErrorAndSend(stream, client, handshake, constants.ErrorStatus, "hcxtools failed or file missing")
 			continue
 		}
 
 		log.Println("[CLIENT] Running hashcat...")
-
 		crackedHashes := map[string]*string{}
 
-		hashcat, err := gocat.New(gocatOptions, gocatCallback(crackedHashes, stream, &pb.ClientTaskMessageFromClient{
+		msgToServer := &pb.ClientTaskMessageFromClient{
 			Jwt:              *client.Credentials.JWT,
 			HashcatLogs:      "",
 			CrackedHandshake: "",
@@ -266,40 +204,25 @@ func main() {
 			HandshakeUuid:    handshake.UUID,
 			ClientUuid:       clientUUID,
 			HashcatOptions:   *handshake.HashcatOptions,
-		},
-			infoLogger,
-			map[string]string{
-				constants.HashcatFile:   randomHashcatFileName,
-				constants.PCAPFile:      pcapGenerated,
-				constants.HashcatStatus: constants.WorkingStatus,
-			},
-		))
+		}
 
+		hashcat, err := gocat.New(gocatOptions, gocatCallback(crackedHashes, stream, msgToServer))
 		if err != nil {
-			log.Errorf("Gocat init error %s", err.Error())
-			finalize := &pb.ClientTaskMessageFromClient{
-				Jwt:            *client.Credentials.JWT,
-				HashcatLogs:    logs.String(),
-				Status:         constants.ErrorStatus,
-				HandshakeUuid:  handshake.UUID,
-				ClientUuid:     clientUUID,
-				HashcatOptions: *handshake.HashcatOptions,
-			}
-			err = stream.Send(finalize)
-			if err != nil {
-				log.Error(err.Error())
-			}
+			logErrorAndSend(stream, client, handshake, constants.ErrorStatus, err.Error())
 			continue
 		}
 
-		// -a 3 -m 22000 --potfile-disable --logfile-disable FILE_TO_CRACK test12?d?d
+		logContext, killLogGoRoutine := context.WithCancel(context.Background())
+		go guiLogs(map[string]string{
+			constants.HashcatFile:   randomHashcatFileName,
+			constants.PCAPFile:      pcapGenerated,
+			constants.HashcatStatus: constants.WorkingStatus,
+		}, logContext)
+
 		replaced := strings.ReplaceAll(*handshake.HashcatOptions, "FILE_TO_CRACK", randomHashcatFileName)
 		err = hashcat.RunJob(strings.Split(replaced, " ")...)
-
-		var result = ""
-		var status = ""
+		var result, status string
 		if err != nil {
-			log.Errorf("[CLIENT] Error on gocat command %s", err.Error())
 			status = constants.ErrorStatus
 		}
 
@@ -309,15 +232,14 @@ func main() {
 		for _, value := range crackedHashes {
 			if value != nil {
 				status = constants.CrackStatus
-				infoLogger.StatusLabel = constants.CrackStatus
 				result += *value
-			} else {
-				status = constants.ExhaustedStatus
-				infoLogger.StatusLabel = constants.ExhaustedStatus
-
 			}
 		}
-		log.Println(crackedHashes)
+		if len(crackedHashes) == 0 && status != constants.ErrorStatus {
+			status = constants.ExhaustedStatus
+		}
+
+		killLogGoRoutine()
 
 		finalize := &pb.ClientTaskMessageFromClient{
 			Jwt:              *client.Credentials.JWT,
@@ -329,15 +251,29 @@ func main() {
 			HashcatOptions:   *handshake.HashcatOptions,
 		}
 
-		infoLogger.HashcatStatus = status
-		logs.Reset()
-
-		err = stream.Send(finalize)
 		newTicker := time.NewTicker(30 * time.Second)
-		for err != nil {
-			log.Println("[CLIENT] Handshake has been cracked but cannot update status to server, retrying in seconds")
+		for err := stream.Send(finalize); err != nil; err = stream.Send(finalize) {
+			log.Println("[CLIENT] Failed to send final status, retrying in 30s...")
 			<-newTicker.C
-			err = stream.Send(finalize)
 		}
 	}
+}
+
+// logErrorAndSend is a helper that updates the logs with an error message and sends a failure status to the server.
+func logErrorAndSend(
+	stream grpc.BidiStreamingClient[hds.ClientTaskMessageFromClient, hds.ClientTaskMessageFromServer],
+	client *grpcclient.Client,
+	handshake entities.Handshake,
+	status, errMsg string,
+) {
+	log.Errorf("[CLIENT] %s", errMsg)
+	finalize := &pb.ClientTaskMessageFromClient{
+		Jwt:            *client.Credentials.JWT,
+		HashcatLogs:    logs.String(),
+		Status:         status,
+		HandshakeUuid:  handshake.UUID,
+		ClientUuid:     *handshake.ClientUUID,
+		HashcatOptions: *handshake.HashcatOptions,
+	}
+	_ = stream.Send(finalize)
 }
