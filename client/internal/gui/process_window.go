@@ -1,8 +1,12 @@
 package gui
 
 import (
+	"context"
 	"fmt"
+	"github.com/Virgula0/progetto-dp/client/internal/constants"
+	"github.com/Virgula0/progetto-dp/client/internal/grpcclient"
 	rl "github.com/gen2brain/raylib-go/raylib"
+	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -20,6 +24,26 @@ const (
 	// Point this to where your Roboto-Black.ttf (or any TTF) is located
 	FontPath = "/home/angelo/Universita/DP/H.D.S/client/internal/resources/fonts/Roboto-Black.ttf"
 )
+
+var StateUpdateCh = make(chan StateUpdate, 1)
+
+// GuiLogger periodically sends GUI updates until the context is cancelled.
+func GuiLogger(otherInfos map[string]string, ctx context.Context) {
+	for {
+		StateUpdateCh <- StateUpdate{
+			StatusLabel:   otherInfos[constants.HashcatStatus],
+			IsConnected:   true,
+			PCAPFile:      otherInfos[constants.PCAPFile],
+			HashcatFile:   otherInfos[constants.HashcatFile],
+			HashcatStatus: constants.CrackStatus,
+			LogContent:    grpcclient.Logs.String(),
+		}
+		if ctx.Err() != nil {
+			log.Warn("Log goroutine killed")
+			return
+		}
+	}
+}
 
 // ProcessWindowInfo now stores just a *single string* for logs.
 type ProcessWindowInfo struct {
@@ -56,18 +80,50 @@ func applyStateUpdate(state *ProcessWindowInfo, update StateUpdate) {
 }
 
 // RunGUI starts the Raylib window and listens for updates via the channel.
+// RunGUI starts the main Raylib-based GUI loop.
 func RunGUI(stateUpdateCh <-chan StateUpdate) {
-	// 1) Initialize Raylib
-	rl.InitWindow(WindowWidth, WindowHeight, "Process Window - Single Log String")
+	initializeWindow()
 	defer rl.CloseWindow()
+
+	uiFont := loadUIFont()
+	defer rl.UnloadFont(uiFont)
+
+	guiState := newDefaultGUIState()
+
+	// Track scrolling & resizing of the log box
+	var (
+		logOffsetY   float32 = 0
+		logBoxHeight float32 = DefaultLogHeight
+		isResizing   bool    = false
+	)
+
+	// Main application loop
+	for !rl.WindowShouldClose() {
+		// Handle incoming state updates (non-blocking)
+		processStateUpdates(stateUpdateCh, guiState)
+
+		// Handle user input and update GUI state
+		handleGUIInput(&logOffsetY, &logBoxHeight, &isResizing, guiState)
+
+		// Draw all GUI elements
+		drawGUI(guiState, uiFont, logOffsetY, logBoxHeight)
+	}
+}
+
+// initializeWindow sets up the Raylib window and framerate.
+func initializeWindow() {
+	rl.InitWindow(WindowWidth, WindowHeight, "Process Window - Single Log String")
 	rl.SetTargetFPS(60)
+}
 
-	// 2) Load font (use the default font if the custom one isn't found)
-	font := rl.LoadFont(FontPath)
-	defer rl.UnloadFont(font)
+// loadUIFont loads the custom font if available; otherwise falls back to Raylib’s default font.
+func loadUIFont() rl.Font {
+	return rl.LoadFont(FontPath)
+}
 
-	// 3) Initial GUI state
-	state := &ProcessWindowInfo{
+// newDefaultGUIState returns a ProcessWindowInfo struct with initial default values.
+func newDefaultGUIState() *ProcessWindowInfo {
+	return &ProcessWindowInfo{
 		isConnected:   false,
 		statusLabel:   "Initializing...",
 		pcapFile:      "N/A",
@@ -75,46 +131,39 @@ func RunGUI(stateUpdateCh <-chan StateUpdate) {
 		hashcatStatus: "Idle",
 		logs:          "", // initially empty
 	}
+}
 
-	// 4) Variables for log box scrolling/resizing
-	var (
-		logOffsetY float32 = 0
-		logHeight  float32 = DefaultLogHeight
-		isResizing bool    = false
-	)
-
-	// 5) Main loop
-	for !rl.WindowShouldClose() {
-		// -- Process incoming updates (non-blocking) --
-		select {
-		case update := <-stateUpdateCh:
-			applyStateUpdate(state, update)
-		default:
-			// No updates pending
-		}
-
-		// -- Handle user input (scroll, resize) --
-		updateGUIState(&logOffsetY, &logHeight, &isResizing, state)
-
-		// -- Draw everything --
-		drawGUI(state, font, logOffsetY, logHeight)
+// processStateUpdates reads from the StateUpdate channel without blocking.
+// If there is an update, it applies it to the current state.
+func processStateUpdates(ch <-chan StateUpdate, state *ProcessWindowInfo) {
+	select {
+	case update := <-ch:
+		applyStateUpdate(state, update)
+	default:
+		// No updates pending
 	}
 }
 
-// updateGUIState handles scrolling and resizing for the log box.
-func updateGUIState(
+// handleGUIInput aggregates all the user input handling needed to update log scrolling/resizing.
+func handleGUIInput(
 	logOffsetY *float32,
-	logHeight *float32,
+	logBoxHeight *float32,
 	isResizing *bool,
 	state *ProcessWindowInfo,
 ) {
 	mousePos := rl.GetMousePosition()
 
-	// The top of the log box
-	logBoxY := float32(WindowHeight) - *logHeight
+	handleLogScrolling(mousePos, logOffsetY, *logBoxHeight, state)
+	handleLogBoxResizing(mousePos, logBoxHeight, isResizing)
+}
 
-	// 1) Scroll if hovering over the log box
-	if mousePos.Y > logBoxY && mousePos.Y < float32(WindowHeight) {
+// handleLogScrolling manages vertical scrolling within the log box area.
+func handleLogScrolling(mousePos rl.Vector2, logOffsetY *float32, logBoxHeight float32, state *ProcessWindowInfo) {
+	// The top Y coordinate of the log box
+	logBoxTopY := float32(WindowHeight) - logBoxHeight
+
+	// Allow scrolling if the mouse is over the log box region
+	if mousePos.Y > logBoxTopY && mousePos.Y < float32(WindowHeight) {
 		if rl.IsKeyDown(rl.KeyUp) {
 			*logOffsetY += LogScrollSpeed
 		}
@@ -123,11 +172,10 @@ func updateGUIState(
 		}
 	}
 
-	// We need to clamp scrolling. We'll estimate the total text height
-	// by splitting into lines and counting them. Each line ~ LogFontSize + 2
+	// Estimate total text height to clamp scroll offset
 	lines := strings.Split(state.logs, "\n")
 	totalTextHeight := float32(len(lines)) * (LogFontSize + 2)
-	maxOffsetY := totalTextHeight - *logHeight
+	maxOffsetY := totalTextHeight - logBoxHeight
 
 	if *logOffsetY > 0 {
 		*logOffsetY = 0
@@ -135,9 +183,14 @@ func updateGUIState(
 	if *logOffsetY < -maxOffsetY {
 		*logOffsetY = -maxOffsetY
 	}
+}
 
-	// 2) Handle resizing of the log box
-	resizeBarY := float32(WindowHeight) - *logHeight - 5
+// handleLogBoxResizing manages mouse-based resizing of the log box height.
+func handleLogBoxResizing(mousePos rl.Vector2, logBoxHeight *float32, isResizing *bool) {
+	// Grab the Y coordinate for the resizing "grip"
+	resizeBarY := float32(WindowHeight) - *logBoxHeight - 5
+
+	// If mouse is over the resize bar, change cursor icon
 	if mousePos.Y > resizeBarY && mousePos.Y < resizeBarY+10 {
 		rl.SetMouseCursor(rl.MouseCursorResizeNS)
 		if rl.IsMouseButtonDown(rl.MouseLeftButton) {
@@ -147,21 +200,23 @@ func updateGUIState(
 		rl.SetMouseCursor(rl.MouseCursorDefault)
 	}
 
+	// If mouse is released, stop resizing
 	if rl.IsMouseButtonReleased(rl.MouseLeftButton) {
 		*isResizing = false
 	}
 
+	// Update log box height while resizing
 	if *isResizing {
 		newHeight := float32(WindowHeight) - mousePos.Y
-		// Example max range for the log box
-		maxLogHeight := float32(WindowHeight - 240)
+		maxLogHeight := float32(WindowHeight - 240) // Example constraint
+
 		switch {
 		case newHeight < MinLogHeight:
-			*logHeight = MinLogHeight
+			*logBoxHeight = MinLogHeight
 		case newHeight > maxLogHeight:
-			*logHeight = maxLogHeight
+			*logBoxHeight = maxLogHeight
 		default:
-			*logHeight = newHeight
+			*logBoxHeight = newHeight
 		}
 	}
 }

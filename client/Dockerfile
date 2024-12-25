@@ -46,7 +46,7 @@ RUN git clone https://github.com/mandiant/gocat . && \
     cp -r testdata /usr/local/share/hashcat
 
 # IMPORTANT! RUN TEST IN ORDER TO LET HASHCAT TO CREATE KERNELS
-RUN /usr/local/share/hashcat/gocat.test 
+RUN /usr/local/share/hashcat/gocat.test
 
 COPY . /app/client
 WORKDIR /app/client
@@ -65,8 +65,19 @@ RUN useradd -ms /bin/bash client && \
 
 USER client
 
-RUN go mod verify && \
-    #go mod tidy && \
-    #go build main.go
+WORKDIR /app/hcxtools
 
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+COPY ../externals/hcxtools .
+
+# Replace main signature for compiling to lib for hcxtools
+RUN sed -i 's/int main(int argc, char \*argv\[\])/int convert_pcap(int argc, char *argv\[\])/' hcxtools/hcxpcapngtool.c &&\
+    cc -fPIC -shared -o /app/client/internal/hcxtools/libhcxpcapngtool.so hcxtools/hcxpcapngtool.c -lz -lssl -lz -DVERSION_TAG=\"6.3.5\" -DVERSION_YEAR=\"2024\" && \
+    export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+
+WORKDIR /app/client
+
+RUN go mod verify && \
+    go mod tidy && \
+    go build main.go
+
+ENTRYPOINT ["./main"]

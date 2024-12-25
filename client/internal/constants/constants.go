@@ -7,6 +7,8 @@ import (
 
 const TempDir = "/tmp/hds"
 const MachineIDFile = "/etc/machine-id"
+const HostnameFile = "/etc/hostname"
+const FileToCrackPlaceHolder = "FILE_TO_CRACK"
 
 var (
 	TempPCAPStorage    = filepath.Join(TempDir, "downloads")
@@ -15,8 +17,7 @@ var (
 	PCAPExtension    = ".pcap"
 	HashcatExtension = ".hashcat"
 
-	GrpcURL     = os.Getenv("GRPC_URL")
-	MachineName = os.Getenv("HOSTNAME")
+	GrpcURL = os.Getenv("GRPC_URL")
 )
 
 var ListOfDirToCreate = []string{TempPCAPStorage, TempHashcatFileDir}
@@ -26,6 +27,7 @@ const (
 	ErrorStatus     = "error"
 	ExhaustedStatus = "exhausted"
 	WorkingStatus   = "working"
+	PendingStatus   = "pending"
 )
 
 const (

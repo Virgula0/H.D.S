@@ -1,10 +1,15 @@
 package grpcclient
 
 import (
+	"github.com/Virgula0/progetto-dp/client/internal/entities"
 	"github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	pb "github.com/Virgula0/progetto-dp/client/protobuf/hds"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"strings"
 )
+
+var Logs = new(strings.Builder)
 
 func (c *Client) HashcatChat() (grpc.BidiStreamingClient[hds.ClientTaskMessageFromClient, hds.ClientTaskMessageFromServer], error) {
 	return c.PBInstance.HashcatTaskChat(c.ClientContext)
@@ -23,4 +28,22 @@ func (c *Client) Authenticate(username, password string) (*pb.UniformResponse, e
 		Username: username,
 		Password: password,
 	})
+}
+
+// LogErrorAndSend is a helper that updates the logs with an error message and sends a failure status to the server.
+func (c *Client) LogErrorAndSend(
+	stream grpc.BidiStreamingClient[pb.ClientTaskMessageFromClient, pb.ClientTaskMessageFromServer],
+	handshake *entities.Handshake,
+	status, errMsg string,
+) {
+	log.Errorf("[CLIENT] %s", errMsg)
+	finalize := &pb.ClientTaskMessageFromClient{
+		Jwt:            *c.Credentials.JWT,
+		HashcatLogs:    Logs.String(),
+		Status:         status,
+		HandshakeUuid:  handshake.UUID,
+		ClientUuid:     *handshake.ClientUUID,
+		HashcatOptions: *handshake.HashcatOptions,
+	}
+	_ = stream.Send(finalize)
 }
