@@ -14,14 +14,16 @@ RUN apt update -y && \
     dumb-init \
     ca-certificates \
     libz-dev \
+    libssl-dev \
+    uuid-runtime \
     # Graphic libraries for raylib
     libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
 
+#RUN dbus-uuidgen > /etc/machine-id
 
 # Set some ENV
 ENV HASHCAT_SRC_PATH=/app/hashcat
 ENV CGO_CFLAGS="-I$HASHCAT_SRC_PATH/OpenCL -I$HASHCAT_SRC_PATH/deps/LZMA-SDK/C -I$HASHCAT_SRC_PATH/deps/zlib -I$HASHCAT_SRC_PATH/deps/zlib/contrib -I$HASHCAT_SRC_PATH/deps/OpenCL-Headers $CGO_CFLAGS"
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 
 WORKDIR /app/hashcat
 
@@ -48,7 +50,8 @@ RUN git clone https://github.com/mandiant/gocat . && \
 # IMPORTANT! RUN TEST IN ORDER TO LET HASHCAT TO CREATE KERNELS
 RUN /usr/local/share/hashcat/gocat.test
 
-COPY . /app/client
+COPY client /app/client
+
 WORKDIR /app/client
 
 RUN useradd -ms /bin/bash client && \
@@ -67,17 +70,20 @@ USER client
 
 WORKDIR /app/hcxtools
 
-COPY ../externals/hcxtools .
+COPY externals/hcxtools .
 
-# Replace main signature for compiling to lib for hcxtools
-RUN sed -i 's/int main(int argc, char \*argv\[\])/int convert_pcap(int argc, char *argv\[\])/' hcxtools/hcxpcapngtool.c &&\
-    cc -fPIC -shared -o /app/client/internal/hcxtools/libhcxpcapngtool.so hcxtools/hcxpcapngtool.c -lz -lssl -lz -DVERSION_TAG=\"6.3.5\" -DVERSION_YEAR=\"2024\" && \
-    export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+# Replace main signature for compiling hcxtools lib
+RUN sed -i 's/int main(int argc, char \*argv\[\])/int convert_pcap(int argc, char *argv\[\])/' hcxpcapngtool.c && \
+    # Compile library
+    cc -fPIC -shared -o /app/client/libhcxpcapngtool.so /app/hcxtools/hcxpcapngtool.c -lz -lssl -lcrypto -DVERSION_TAG=\"6.3.5\" -DVERSION_YEAR=\"2024\"
 
 WORKDIR /app/client
+
+ENV LD_LIBRARY_PATH=.${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}:/usr/local/lib
 
 RUN go mod verify && \
     go mod tidy && \
     go build main.go
 
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
 ENTRYPOINT ["./main"]

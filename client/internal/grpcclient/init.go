@@ -30,10 +30,10 @@ func InitClient() *Client {
 	var conn *grpc.ClientConn
 	var err error
 	for {
-		conn, err = grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err = grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 
 		if err == nil {
-			log.Println("[CLIENT] Connected to", constants.GrpcURL)
+			log.Println("[CLIENT] Connected to ", constants.GrpcURL)
 			break
 		}
 		log.Println("[CLIENT] Error while attempting to connect to grpc server. Re-attempting in 5 seconds.")

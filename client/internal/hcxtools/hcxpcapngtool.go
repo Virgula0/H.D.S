@@ -1,7 +1,7 @@
 package hcxtools
 
 /*
-#cgo LDFLAGS: -L. -lhcxpcapngtool
+#cgo LDFLAGS: -L../../ -lhcxpcapngtool
 #include <stdlib.h>
 
 // Declare the convert_pcap function from the shared library
