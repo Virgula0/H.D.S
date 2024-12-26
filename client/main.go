@@ -33,6 +33,7 @@ func main() {
 
 	//nolint:gocritic
 	/*
+		// TODO: fix graphics in another PR
 		go func() {
 			if exit := gui.RunGUI(gui.StateUpdateCh); exit {
 				os.Exit(1)
