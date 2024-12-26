@@ -34,7 +34,6 @@ jobs:
         run: |
           git clone https://github.com/hashcat/hashcat.git
           cd hashcat
-          mkdir /usr/local/lib
           mkdir /usr/local/include/hashcat
           mkdir /usr/local/share/doc
           mkdir /usr/local/share/doc/hashcat
