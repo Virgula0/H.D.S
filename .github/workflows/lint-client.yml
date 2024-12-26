@@ -1,4 +1,4 @@
-name: Linter
+name: Lint client
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libpcap0.8-dev
+          packages: libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
           version: 1.0
 
       - name: Set up Go
@@ -49,23 +49,11 @@ jobs:
 
       - name: Compile proto files
         run: |
-          cd server
+          cd client
           make proto 
-
-      - name: Run golangci-lint:server
-        run: |
-          cd server
-          go mod tidy
-          make lint 
-
-      - name: Run golangci-lint:rsp
-        run: |
-          cd raspberry-pi
-          go mod tidy
-          make lint 
 
       - name: Run golangci-lint:client
         run: |
           cd client
           go mod tidy
-          make lint 
+          make lint

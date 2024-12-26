@@ -1,5 +1,5 @@
 build: ## Build project with docker and place executable in build directory
-	mkdir -p build && CGO_ENABLED=0 GOOS=linux go build -o ./build/server ./cmd/main.go && chmod a+x ./build/server
+	mkdir -p build && CGO_ENABLED=1 GOOS=linux go build -o main main.go
 .PHONY: build
 
 install-linter:

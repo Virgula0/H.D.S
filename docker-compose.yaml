@@ -2,12 +2,15 @@ services:
   client:
     container_name: dp-client
     build:
-      context: client
-      dockerfile: Dockerfile
+      dockerfile: client/Dockerfile
       args:
         DISPLAY: ${DISPLAY} # Pass display variable from terminal
     environment:
       - DISPLAY=${DISPLAY} # Pass display variable from terminal
+      - GRPC_URL=dp-server:7777
+      - GRPC_TIMEOUT=10s
+    depends_on:
+      - server
     volumes:
       # - ./client:/app/client
       - /tmp/.X11-unix:/tmp/.X11-unix # X11 forwarding
@@ -81,3 +84,4 @@ services:
         ]
       timeout: 20s
       retries: 10
+

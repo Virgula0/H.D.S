@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	customErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
+	"github.com/Virgula0/progetto-dp/server/entities"
 	pb "github.com/Virgula0/progetto-dp/server/protobuf/hds"
 )
 
@@ -22,6 +24,30 @@ func (s *ServerContext) Test(_ context.Context, _ *pb.HelloRequest) (*pb.HelloRe
 	// do usecase stuff
 	return &pb.HelloResponse{
 		Message: "Hello, World!",
+	}, nil
+}
+
+func (s *ServerContext) Login(_ context.Context, request *pb.AuthRequest) (*pb.UniformResponse, error) {
+	user, role, err := s.Usecase.GetUserByUsername(request.GetUsername())
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "%v", err)
+	}
+
+	// Compare password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.GetPassword()))
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "%s", customErrors.ErrInvalidCredentials)
+	}
+
+	// Create the auth token
+	token, err := s.Usecase.CreateAuthToken(user.UserUUID, role.RoleString)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "%v", err)
+	}
+
+	return &pb.UniformResponse{
+		Status:  "logged_in",
+		Details: token,
 	}, nil
 }
 
@@ -86,93 +112,6 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 	}, nil
 }
 
-func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
-	ticker := time.NewTicker(1 * time.Second) // Do not flood client. Update tasks every second
-	defer ticker.Stop()
-
-	for {
-		<-ticker.C // blocking channel
-		handshakes, _, err := s.Usecase.GetHandshakesByStatus(constants.PendingStatus)
-		if err != nil {
-			return fmt.Errorf("%s %s", customErrors.ErrGetHandshakeStatus, err.Error())
-		}
-
-		// Prepare tasks for clients
-		var tasks []*pb.ClientTask
-		for _, handshake := range handshakes {
-			tasks = append(tasks, &pb.ClientTask{
-				StartCracking:  true,
-				UserId:         handshake.UserUUID,
-				ClientUuid:     *handshake.ClientUUID,
-				HandshakeUuid:  handshake.UUID,
-				HashcatOptions: *handshake.HashcatOptions,
-				HashcatPcap:    *handshake.HandshakePCAP,
-			})
-		}
-
-		// Send tasks if available
-		if len(tasks) > 0 {
-			if errSend := stream.Send(&pb.ClientTaskMessageFromServer{Tasks: tasks}); errSend != nil {
-				return fmt.Errorf("%s %v", customErrors.ErrCannotAnswerToClient, errSend)
-			}
-		}
-	}
-}
-
-func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
-	for {
-		// Receive message from client
-		msg, err := stream.Recv()
-		if err != nil {
-			// check if client has disconnected
-			if status.Code(err) == codes.Canceled {
-				return status.Errorf(codes.NotFound, customErrors.ErrGRPCClosedConnection.Error())
-			}
-			return status.Errorf(codes.Unknown, fmt.Sprintf("%s %v", customErrors.ErrGRPCFailedToReceive, err))
-		}
-
-		log.Printf("[GRPC]: HashcatChat ->Received from client: %v", msg)
-
-		// Process the received message
-		data, err := s.Usecase.GetDataFromToken(msg.GetJwt())
-		if err != nil {
-			return status.Errorf(codes.Unauthenticated, fmt.Sprintf("%s %v", customErrors.ErrInvalidToken, err))
-		}
-
-		userID := data[constants.UserIDKey].(string)
-		handshake, err := s.Usecase.UpdateClientTask(
-			userID,
-			msg.GetHandshakeUuid(),
-			msg.GetClientUuid(),
-			msg.GetStatus(),
-			msg.GetHashcatOptions(),
-			msg.GetHashcatLogs(),
-			msg.GetCrackedHandshake(),
-		)
-		if err != nil {
-			return status.Errorf(codes.Internal, fmt.Sprintf("%s %v", customErrors.ErrOnUpdateTask, err))
-		}
-
-		// Respond to client
-		response := &pb.ClientTaskMessageFromServer{
-			Tasks: []*pb.ClientTask{
-				{
-					StartCracking:  false,
-					UserId:         userID,
-					ClientUuid:     *handshake.ClientUUID,
-					HandshakeUuid:  handshake.UUID,
-					HashcatOptions: *handshake.HashcatOptions,
-					HashcatPcap:    *handshake.HandshakePCAP,
-				},
-			},
-		}
-
-		if err := stream.Send(response); err != nil {
-			return status.Errorf(codes.Internal, fmt.Sprintf("%s %v", customErrors.ErrCannotAnswerToClient, err))
-		}
-	}
-}
-
 func (s *ServerContext) HashcatTaskChat(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
 	errChannel := make(chan error, 1) // Buffered channel to avoid blocking
 
@@ -196,4 +135,131 @@ func (s *ServerContext) HashcatTaskChat(stream pb.HDSTemplateService_HashcatTask
 	}
 
 	return <-errChannel
+}
+
+func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
+	ticker := time.NewTicker(1 * time.Second) // Do not flood client. Update tasks every second
+	defer ticker.Stop()
+
+	for {
+		<-ticker.C // blocking channel
+
+		handshakes, err := s.getPendingHandshakes()
+		if err != nil {
+			return err
+		}
+
+		tasks := s.prepareTasks(handshakes)
+		if len(tasks) == 0 {
+			continue
+		}
+
+		if err := s.sendTasksToStream(stream, tasks); err != nil {
+			return err
+		}
+
+		if err := s.updateTaskStatuses(tasks); err != nil {
+			return err
+		}
+	}
+}
+
+// ---------- Helper Functions ----------
+
+// getPendingHandshakes retrieves handshakes with pending status.
+func (s *ServerContext) getPendingHandshakes() ([]*entities.Handshake, error) {
+	handshakes, _, err := s.Usecase.GetHandshakesByStatus(constants.PendingStatus)
+	if err != nil {
+		return nil, fmt.Errorf("%s %s", customErrors.ErrGetHandshakeStatus, err.Error())
+	}
+	return handshakes, nil
+}
+
+// prepareTasks converts handshakes into tasks for clients.
+func (s *ServerContext) prepareTasks(handshakes []*entities.Handshake) []*pb.ClientTask {
+	tasks := make([]*pb.ClientTask, 0)
+	for _, handshake := range handshakes {
+		if handshake.ClientUUID == nil || handshake.HashcatOptions == nil || handshake.HandshakePCAP == nil {
+			log.Errorf(
+				"%s Missing ClientUUID, HashcatOptions, or HandshakePCAP for Handshake UUID '%s'. Task skipped.",
+				customErrors.ErrGetHandshakeStatus,
+				handshake.UUID,
+			)
+			continue
+		}
+
+		tasks = append(tasks, &pb.ClientTask{
+			StartCracking:  true,
+			UserId:         handshake.UserUUID,
+			ClientUuid:     *handshake.ClientUUID,
+			HandshakeUuid:  handshake.UUID,
+			HashcatOptions: *handshake.HashcatOptions,
+			HashcatPcap:    *handshake.HandshakePCAP,
+		})
+	}
+	return tasks
+}
+
+// sendTasksToStream sends tasks to the gRPC stream.
+func (s *ServerContext) sendTasksToStream(stream pb.HDSTemplateService_HashcatTaskChatServer, tasks []*pb.ClientTask) error {
+	err := stream.Send(&pb.ClientTaskMessageFromServer{Tasks: tasks})
+	if err != nil {
+		return fmt.Errorf("%s %v", customErrors.ErrCannotAnswerToClient, err)
+	}
+	return nil
+}
+
+// updateTaskStatuses updates the status of sent tasks.
+func (s *ServerContext) updateTaskStatuses(tasks []*pb.ClientTask) error {
+	for _, task := range tasks {
+		_, err := s.Usecase.UpdateClientTask(
+			task.GetUserId(),
+			task.GetHandshakeUuid(),
+			task.GetClientUuid(),
+			constants.WorkingStatus,
+			task.GetHashcatOptions(),
+			"",
+			task.GetHashcatPcap(),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to update task status for handshake '%s': %v", task.GetHandshakeUuid(), err)
+		}
+	}
+	return nil
+}
+
+func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
+	for {
+		// Receive message from client
+		msg, err := stream.Recv()
+		if err != nil {
+			// check if client has disconnected
+			if status.Code(err) == codes.Canceled {
+				return status.Errorf(codes.NotFound, customErrors.ErrGRPCClosedConnection.Error())
+			}
+			return status.Errorf(codes.Unknown, fmt.Sprintf("%s %v", customErrors.ErrGRPCFailedToReceive, err))
+		}
+
+		log.Printf("[GRPC]: HashcatChat ->Received from client: %v", msg)
+
+		// Process the received message
+		data, err := s.Usecase.GetDataFromToken(msg.GetJwt())
+		if err != nil {
+			return status.Errorf(codes.Unauthenticated, fmt.Sprintf("%s %v", customErrors.ErrInvalidToken, err))
+		}
+
+		userID := data[constants.UserIDKey].(string)
+		_, err = s.Usecase.UpdateClientTask(
+			userID,
+			msg.GetHandshakeUuid(),
+			msg.GetClientUuid(),
+			msg.GetStatus(),
+			msg.GetHashcatOptions(),
+			msg.GetHashcatLogs(),
+			msg.GetCrackedHandshake(),
+		)
+		if err != nil {
+			return status.Errorf(codes.Internal, fmt.Sprintf("%s %v", customErrors.ErrOnUpdateTask, err))
+		}
+	}
 }

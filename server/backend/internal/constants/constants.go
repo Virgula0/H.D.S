@@ -61,10 +61,7 @@ const (
 
 // Statuses for handshake assignments
 const (
-	NothingStatus   = "nothing"
-	PendingStatus   = "pending"
-	WorkingStatus   = "working"
-	CrackStatus     = "cracked"
-	ErrorStatus     = "error"
-	ExhaustedStatus = "exhausted"
+	NothingStatus = "nothing"
+	PendingStatus = "pending"
+	WorkingStatus = "working"
 )

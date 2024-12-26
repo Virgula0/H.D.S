@@ -4,7 +4,9 @@ package grpcserver_test
 import (
 	"context"
 	_ "context"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	"github.com/Virgula0/progetto-dp/server/entities"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -42,6 +44,63 @@ func (s *GRPCServerTestSuite) Test_GRPC_Connection() {
 			// Use assert to check the response
 
 			s.Require().Equal(tt.expectedOutput.Message, resp.Message, "Unexpected response from Test RPC")
+		})
+	}
+}
+
+func (s *GRPCServerTestSuite) Test_GRPC_Login() {
+	// Define test cases
+	tests := []struct {
+		testname       string
+		request        *pb.AuthRequest
+		expectedOutput func(resp *pb.UniformResponse, err error) bool
+	}{
+		{
+			testname: "Valid username",
+			request: &pb.AuthRequest{
+				Username: s.UserFixture.Username,
+				Password: s.UserFixture.Password,
+			},
+			expectedOutput: func(resp *pb.UniformResponse, err error) bool {
+				s.Require().NoError(err, "Test RPC failed")
+				return resp.Details != "" && resp.Status == "logged_in"
+			},
+		},
+		{
+			testname: "Not Valid Username",
+			request: &pb.AuthRequest{
+				Username: "test",
+				Password: s.UserFixture.Password,
+			},
+			expectedOutput: func(resp *pb.UniformResponse, err error) bool {
+				s.Require().Contains(err.Error(), "invalid credentials", "invalid credentials fail")
+				return true
+			},
+		},
+		{
+			testname: "Not Valid Password",
+			request: &pb.AuthRequest{
+				Username: s.UserFixture.Username,
+				Password: utils.GenerateToken(10),
+			},
+			expectedOutput: func(resp *pb.UniformResponse, err error) bool {
+				s.Require().Contains(err.Error(), "invalid credentials", "invalid credentials fail")
+				return true
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.testname, func() {
+			// Perform the gRPC request
+			client := s.Client
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			resp, err := client.Login(ctx, tt.request)
+			log.Println(err)
+			// Use assert to check the response
+			s.Require().True(tt.expectedOutput(resp, err))
 		})
 	}
 }
@@ -270,17 +329,6 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_UpdateClientTaskSuccess
 		HashcatOptions: "updated",
 	}
 
-	responseExpected := &pb.ClientTaskMessageFromServer{
-		Tasks: []*pb.ClientTask{
-			{
-				UserId:         s.UserClientRegistered.UserUUID,
-				ClientUuid:     s.UserClientRegistered.ClientUUID,
-				HandshakeUuid:  s.HandshakeValidID,
-				HashcatOptions: "updated",
-			},
-		},
-	}
-
 	s.Run(testName, func() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20) // Timeout after 20 seconds
 		defer cancel()
@@ -290,13 +338,5 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_UpdateClientTaskSuccess
 
 		err = stream.Send(request)
 		s.Require().NoError(err, "Failed to send request to the server")
-
-		response, recvErr := stream.Recv()
-		s.Require().NoError(recvErr, "Failed to receive response from the server")
-
-		s.Require().Equal(responseExpected.Tasks[0].UserId, response.Tasks[0].UserId, "Unexpected response from Test RPC")
-		s.Require().Equal(responseExpected.Tasks[0].ClientUuid, response.Tasks[0].ClientUuid, "Unexpected response from Test RPC")
-		s.Require().Equal(responseExpected.Tasks[0].UserId, response.Tasks[0].UserId, "Unexpected response from Test RPC")
-		s.Require().Equal(responseExpected.Tasks[0].HashcatOptions, response.Tasks[0].HashcatOptions, "Unexpected response from Test RPC")
 	})
 }

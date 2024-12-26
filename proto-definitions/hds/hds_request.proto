@@ -5,6 +5,11 @@ message HelloRequest {
   string name = 1;
 }
 
+message AuthRequest{
+  string username = 1;
+  string password = 2;
+}
+
 message GetClientInfoRequest {
   string jwt = 1;
   string machine_id =2;

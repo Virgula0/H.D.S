@@ -12,7 +12,7 @@ DROP TABLE IF EXISTS role;
 DROP TABLE IF EXISTS user;
 
 CREATE TABLE IF NOT EXISTS user (
-     UUID varchar(36),
+    UUID varchar(36),
     USERNAME varchar(255) UNIQUE,
     PASSWORD varchar(255),
     PRIMARY KEY(UUID)
