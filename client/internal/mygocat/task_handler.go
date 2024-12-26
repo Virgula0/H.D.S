@@ -1,7 +1,7 @@
 package mygocat
 
 import (
-	"crypto/md5"
+	"crypto/md5" // #nosec G501
 	"fmt"
 	"github.com/Virgula0/progetto-dp/client/internal/constants"
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
@@ -40,6 +40,8 @@ func ListenForHashcatTasks(stream grpc.BidiStreamingClient[hds.ClientTaskMessage
 }
 
 // identifyTask looks for a task matching the current client and returns a handshake struct if found.
+//
+//nolint:gocritic // false positive on nested reducing
 func identifyTask(tasks []*hds.ClientTask, clientUUID string) (*entities.Handshake, bool) {
 	var handshake = &entities.Handshake{
 		Status:           constants.PendingStatus,
@@ -106,7 +108,7 @@ func processHandshakeTask(
 	// Generate a random filename for the Hashcat-ready file
 	hashcatFilePath := filepath.Join(
 		constants.TempHashcatFileDir,
-		fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(20))))+constants.HashcatExtension,
+		fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(20))))+constants.HashcatExtension, // #nosec G401
 	)
 
 	// Convert PCAP to Hashcat format
@@ -123,8 +125,7 @@ func processHandshakeTask(
 	}
 
 	if !fileExists {
-		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
-
+		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, "conversion was not successful, hcxtools output file not found")
 	}
 
 	log.Println("[CLIENT] Running hashcat...")

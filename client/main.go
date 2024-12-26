@@ -18,13 +18,27 @@ func main() {
 	}
 
 	// Initialize gRPC client
-	client := grpcclient.InitClient()
-	defer client.ClientCloser()
+	client, err := grpcclient.InitClient()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize GUI login window; if exit is true, terminate the application
 	if exit := gui.InitLoginWindow(client); exit {
 		os.Exit(1)
 	}
+
+	defer client.ClientCloser()
+
+	//nolint:gocritic
+	/*
+		go func() {
+			if exit := gui.RunGUI(gui.StateUpdateCh); exit {
+				os.Exit(1)
+			}
+		}()
+	*/
 
 	// Run the authenticator in the background (renew JWT tokens, etc.)
 	go client.Authenticator()

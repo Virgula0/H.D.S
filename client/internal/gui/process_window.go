@@ -27,7 +27,7 @@ const (
 
 var StateUpdateCh = make(chan StateUpdate, 1)
 
-// GuiLogger periodically sends GUI updates until the context is cancelled.
+// GuiLogger periodically sends GUI updates until the context is canceled.
 func GuiLogger(otherInfos map[string]string, ctx context.Context) {
 	for {
 		StateUpdateCh <- StateUpdate{
@@ -69,7 +69,7 @@ type StateUpdate struct {
 }
 
 // applyStateUpdate overwrites the GUI state with incoming data.
-func applyStateUpdate(state *ProcessWindowInfo, update StateUpdate) {
+func applyStateUpdate(state *ProcessWindowInfo, update *StateUpdate) {
 	state.isConnected = update.IsConnected
 	state.statusLabel = update.StatusLabel
 	state.pcapFile = update.PCAPFile
@@ -81,7 +81,7 @@ func applyStateUpdate(state *ProcessWindowInfo, update StateUpdate) {
 
 // RunGUI starts the Raylib window and listens for updates via the channel.
 // RunGUI starts the main Raylib-based GUI loop.
-func RunGUI(stateUpdateCh <-chan StateUpdate) {
+func RunGUI(stateUpdateCh <-chan StateUpdate) bool {
 	initializeWindow()
 	defer rl.CloseWindow()
 
@@ -94,7 +94,7 @@ func RunGUI(stateUpdateCh <-chan StateUpdate) {
 	var (
 		logOffsetY   float32 = 0
 		logBoxHeight float32 = DefaultLogHeight
-		isResizing   bool    = false
+		isResizing           = false
 	)
 
 	// Main application loop
@@ -108,6 +108,8 @@ func RunGUI(stateUpdateCh <-chan StateUpdate) {
 		// Draw all GUI elements
 		drawGUI(guiState, uiFont, logOffsetY, logBoxHeight)
 	}
+
+	return rl.WindowShouldClose()
 }
 
 // initializeWindow sets up the Raylib window and framerate.
@@ -138,7 +140,7 @@ func newDefaultGUIState() *ProcessWindowInfo {
 func processStateUpdates(ch <-chan StateUpdate, state *ProcessWindowInfo) {
 	select {
 	case update := <-ch:
-		applyStateUpdate(state, update)
+		applyStateUpdate(state, &update)
 	default:
 		// No updates pending
 	}
@@ -222,7 +224,7 @@ func handleLogBoxResizing(mousePos rl.Vector2, logBoxHeight *float32, isResizing
 }
 
 // drawGUI draws the GUI each frame, including the single log string.
-func drawGUI(state *ProcessWindowInfo, font rl.Font, logOffsetY float32, logHeight float32) {
+func drawGUI(state *ProcessWindowInfo, font rl.Font, logOffsetY, logHeight float32) {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.RayWhite)
 

@@ -17,7 +17,8 @@ var (
 	PCAPExtension    = ".pcap"
 	HashcatExtension = ".hashcat"
 
-	GrpcURL = os.Getenv("GRPC_URL")
+	GrpcURL     = os.Getenv("GRPC_URL")
+	GrpcTimeout = os.Getenv("GRPC_TIMEOUT")
 )
 
 var ListOfDirToCreate = []string{TempPCAPStorage, TempHashcatFileDir}

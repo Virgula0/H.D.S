@@ -7,90 +7,128 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-// GUI Constants
-const (
-	screenWidth  = 400
-	screenHeight = 300
-)
-
 // InitLoginWindow initializes and displays the login window.
 func InitLoginWindow(client *grpcclient.Client) bool {
-	// Initialize Raylib
-	rl.SetTraceLogLevel(rl.LogError)
-	rl.InitWindow(screenWidth, screenHeight, "Login Window")
+	initWindow()
 	defer rl.CloseWindow()
-	rl.SetTargetFPS(60)
 
-	// Input State
-	username := ""
-	password := ""
-	errorMessage := ""
-	usernameFocused := true
-	passwordFocused := false
+	// State
+	state := loginState{
+		username:        "",
+		password:        "",
+		errorMessage:    "",
+		usernameFocused: true,
+		passwordFocused: false,
+	}
 
-	// Rectangle positions
-	usernameRect := rl.NewRectangle(100, 90, 200, 30)
-	passwordRect := rl.NewRectangle(100, 140, 200, 30)
-	loginButtonRect := rl.NewRectangle(150, 200, 100, 40)
+	// UI Rectangles
+	ui := loginUI{
+		usernameRect:    rl.NewRectangle(100, 90, 200, 30),
+		passwordRect:    rl.NewRectangle(100, 140, 200, 30),
+		loginButtonRect: rl.NewRectangle(150, 200, 100, 40),
+	}
 
 	for !rl.WindowShouldClose() {
-		// Input Handling
-		if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-			mousePoint := rl.GetMousePosition()
-			usernameFocused = rl.CheckCollisionPointRec(mousePoint, usernameRect)
-			passwordFocused = rl.CheckCollisionPointRec(mousePoint, passwordRect)
+		handleInput(&state, &ui)
+		if handleLogin(client, &state, &ui) {
+			return false
 		}
-
-		// Text Input
-		if usernameFocused {
-			username = HandleTextInput(username)
-		}
-		if passwordFocused {
-			password = HandleTextInput(password)
-		}
-
-		// Check for Login Button Press
-		if rl.IsMouseButtonPressed(rl.MouseLeftButton) && rl.CheckCollisionPointRec(rl.GetMousePosition(), loginButtonRect) {
-			if resp, err := client.Authenticate(username, password); err == nil {
-				client.Credentials.Auth.Username = username
-				client.Credentials.Auth.Password = password
-				*client.Credentials.JWT = resp.Details
-				return false
-			} else {
-				errorMessage = "Invalid username or password"
-			}
-		}
-
-		// Drawing
-		rl.BeginDrawing()
-		rl.ClearBackground(rl.RayWhite)
-
-		// Title
-		rl.DrawText("Login", 170, 30, 20, rl.DarkGray)
-
-		// Username Input Box
-		rl.DrawRectangleRec(usernameRect, rl.LightGray)
-		rl.DrawText("Username:", 100, 70, 10, rl.DarkGray)
-		rl.DrawText(username, int32(usernameRect.X+5), int32(usernameRect.Y+5), 20, rl.Black)
-
-		// Password Input Box
-		rl.DrawRectangleRec(passwordRect, rl.LightGray)
-		rl.DrawText("Password:", 100, 120, 10, rl.DarkGray)
-		rl.DrawText(strings.Repeat("*", len(password)), int32(passwordRect.X+5), int32(passwordRect.Y+5), 20, rl.Black)
-
-		// Login Button
-		rl.DrawRectangleRec(loginButtonRect, rl.SkyBlue)
-		rl.DrawText("Login", int32(loginButtonRect.X+20), int32(loginButtonRect.Y+10), 20, rl.Black)
-
-		// Error Message
-		if errorMessage != "" {
-			rl.DrawText(errorMessage, 100, 250, 15, rl.Red)
-		}
-
-		rl.EndDrawing()
+		renderLoginWindow(&state, &ui)
 	}
 
 	return rl.WindowShouldClose()
+}
+
+// ---------- STRUCTURES ----------
+
+// loginState manages the state of the login window.
+type loginState struct {
+	username        string
+	password        string
+	errorMessage    string
+	usernameFocused bool
+	passwordFocused bool
+}
+
+// loginUI holds the UI component positions.
+type loginUI struct {
+	usernameRect    rl.Rectangle
+	passwordRect    rl.Rectangle
+	loginButtonRect rl.Rectangle
+}
+
+// ---------- INITIALIZATION ----------
+
+func initWindow() {
+	rl.SetTraceLogLevel(rl.LogError)
+	rl.InitWindow(400, 300, "Login Window")
+	rl.SetTargetFPS(60)
+}
+
+// ---------- INPUT HANDLING ----------
+
+func handleInput(state *loginState, ui *loginUI) {
+	if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+		mousePoint := rl.GetMousePosition()
+		state.usernameFocused = rl.CheckCollisionPointRec(mousePoint, ui.usernameRect)
+		state.passwordFocused = rl.CheckCollisionPointRec(mousePoint, ui.passwordRect)
+	}
+
+	if state.usernameFocused {
+		state.username = HandleTextInput(state.username)
+	}
+	if state.passwordFocused {
+		state.password = HandleTextInput(state.password)
+	}
+}
+
+// ---------- LOGIN LOGIC ----------
+
+func handleLogin(client *grpcclient.Client, state *loginState, ui *loginUI) bool {
+	if rl.IsMouseButtonPressed(rl.MouseLeftButton) && rl.CheckCollisionPointRec(rl.GetMousePosition(), ui.loginButtonRect) {
+		resp, err := client.Authenticate(state.username, state.password)
+		if err == nil {
+			client.Credentials.Auth.Username = state.username
+			client.Credentials.Auth.Password = state.password
+			*client.Credentials.JWT = resp.GetDetails()
+			return true
+		}
+		state.errorMessage = "Invalid username or password"
+	}
+	return false
+}
+
+// ---------- RENDERING ----------
+
+func renderLoginWindow(state *loginState, ui *loginUI) {
+	rl.BeginDrawing()
+	rl.ClearBackground(rl.RayWhite)
+
+	// Title
+	rl.DrawText("Login", 170, 30, 20, rl.DarkGray)
+
+	// Username Input Box
+	drawInputBox("Username:", state.username, ui.usernameRect, 70)
+
+	// Password Input Box
+	drawInputBox("Password:", strings.Repeat("*", len(state.password)), ui.passwordRect, 120)
+
+	// Login Button
+	rl.DrawRectangleRec(ui.loginButtonRect, rl.SkyBlue)
+	rl.DrawText("Login", int32(ui.loginButtonRect.X+20), int32(ui.loginButtonRect.Y+10), 20, rl.Black)
+
+	// Error Message
+	if state.errorMessage != "" {
+		rl.DrawText(state.errorMessage, 100, 250, 15, rl.Red)
+	}
+
+	rl.EndDrawing()
+}
+
+func drawInputBox(label, value string, rect rl.Rectangle, labelY int32) {
+	rl.DrawRectangleRec(rect, rl.LightGray)
+	rl.DrawText(label, int32(rect.X), labelY, 10, rl.DarkGray)
+	rl.DrawText(value, int32(rect.X+5), int32(rect.Y+5), 20, rl.Black)
 }
 
 // HandleTextInput captures text input for username and password fields.
@@ -98,12 +136,12 @@ func HandleTextInput(text string) string {
 	key := rl.GetCharPressed()
 	for key > 0 {
 		if key >= 32 && key <= 125 {
-			text += string(rune(key))
+			text += string(key)
 		}
 		key = rl.GetCharPressed()
 	}
 
-	if rl.IsKeyPressed(rl.KeyBackspace) && len(text) > 0 {
+	if rl.IsKeyPressed(rl.KeyBackspace) && text != "" {
 		text = text[:len(text)-1]
 	}
 	return text

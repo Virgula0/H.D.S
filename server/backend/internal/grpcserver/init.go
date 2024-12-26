@@ -67,7 +67,7 @@ func (s *Server) Run(ctx context.Context, opt *Option) error {
 	return nil
 }
 
-func logInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, uHandler grpc.UnaryHandler) (interface{}, error) {
+func logInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, uHandler grpc.UnaryHandler) (any, error) {
 	start := time.Now()
 	h, err := uHandler(ctx, req)
 	log.Infof("Request - Method:%s\tDuration:%s\tError:%v\n", info.FullMethod, time.Since(start), err)

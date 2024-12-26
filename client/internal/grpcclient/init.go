@@ -25,22 +25,28 @@ type Client struct {
 	Credentials *LoginInfo
 }
 
-func InitClient() *Client {
+func InitClient() (*Client, error) {
 	ticker := time.NewTicker(time.Second * 5)
 	var conn *grpc.ClientConn
 	var err error
 	for {
-		conn, err = grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+		conn, err = grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 		if err == nil {
-			log.Println("[CLIENT] Connected to ", constants.GrpcURL)
+			log.Infof("[CLIENT] Connected with: %s", constants.GrpcURL)
 			break
 		}
-		log.Println("[CLIENT] Error while attempting to connect to grpc server. Re-attempting in 5 seconds.")
+
+		log.Errorf("[CLIENT] Error while attempting to connect to grpc server. Re-attempting in 5 seconds.")
 		<-ticker.C
 	}
 
-	clientContext, cancel := context.WithCancel(context.Background())
+	duration, err := time.ParseDuration(constants.GrpcTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	clientContext, cancel := context.WithTimeout(context.Background(), time.Duration(duration.Seconds())*time.Hour)
 
 	return &Client{
 		client:        conn,
@@ -52,7 +58,7 @@ func InitClient() *Client {
 			JWT:  new(string),
 			Auth: new(entities.AuthRequest),
 		},
-	}
+	}, nil
 }
 
 func (c *Client) Authenticator() {
@@ -61,7 +67,7 @@ func (c *Client) Authenticator() {
 		<-ticker.C
 		// Every hour re-auth and re-update JWT
 		if resp, err := c.Authenticate(c.Credentials.Auth.Username, c.Credentials.Auth.Password); err == nil {
-			*c.Credentials.JWT = resp.Details
+			*c.Credentials.JWT = resp.GetDetails()
 		} else {
 			log.Fatal(err)
 		}

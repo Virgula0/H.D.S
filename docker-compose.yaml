@@ -7,6 +7,8 @@ services:
         DISPLAY: ${DISPLAY} # Pass display variable from terminal
     environment:
       - DISPLAY=${DISPLAY} # Pass display variable from terminal
+      - GRPC_URL=0.0.0.0:7777
+      - GRPC_TIMEOUT=10
     depends_on:
       - server
     volumes:

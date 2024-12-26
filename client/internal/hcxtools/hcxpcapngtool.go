@@ -1,3 +1,4 @@
+//nolint:gocritic
 package hcxtools
 
 /*
@@ -22,7 +23,7 @@ func ConvertPCAPToHashcatFormat(inputFile, outputFile string) error {
 	// Convert Go string slices to C strings
 	for i, arg := range args {
 		argv[i] = C.CString(arg)
-		defer C.free(unsafe.Pointer(argv[i])) // Free memory once done
+		defer C.free(unsafe.Pointer(argv[i]))
 	}
 
 	// Call the convert_pcap function from the shared library

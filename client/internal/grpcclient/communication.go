@@ -2,7 +2,6 @@ package grpcclient
 
 import (
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
-	"github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	pb "github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -11,7 +10,7 @@ import (
 
 var Logs = new(strings.Builder)
 
-func (c *Client) HashcatChat() (grpc.BidiStreamingClient[hds.ClientTaskMessageFromClient, hds.ClientTaskMessageFromServer], error) {
+func (c *Client) HashcatChat() (grpc.BidiStreamingClient[pb.ClientTaskMessageFromClient, pb.ClientTaskMessageFromServer], error) {
 	return c.PBInstance.HashcatTaskChat(c.ClientContext)
 }
 

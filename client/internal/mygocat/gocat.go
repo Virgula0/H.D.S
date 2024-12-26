@@ -7,7 +7,6 @@ import (
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
 	"github.com/Virgula0/progetto-dp/client/internal/grpcclient"
 	"github.com/Virgula0/progetto-dp/client/internal/gui"
-	"github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	pb "github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	"github.com/mandiant/gocat/v6"
 	"github.com/mandiant/gocat/v6/hcargp"
@@ -26,52 +25,119 @@ var gocatOptions = gocat.Options{
 // gocatCallback handles events from gocat and sends updates to the server stream.
 func gocatCallback(
 	resultsmap map[string]*string,
-	stream grpc.BidiStreamingClient[hds.ClientTaskMessageFromClient, hds.ClientTaskMessageFromServer],
+	stream grpc.BidiStreamingClient[pb.ClientTaskMessageFromClient, pb.ClientTaskMessageFromServer],
 	msg *pb.ClientTaskMessageFromClient,
 ) gocat.EventCallback {
 
 	return func(hc unsafe.Pointer, payload interface{}) {
-		switch pl := payload.(type) {
-		case gocat.LogPayload:
-			if DebugTest {
-				grpcclient.Logs.WriteString(fmt.Sprintf("LOG [%s] %s\n", pl.Level, pl.Message))
-				log.Infof("LOG [%s] %s\n", pl.Level, pl.Message)
-			}
-		case gocat.ActionPayload:
-			if DebugTest {
-				grpcclient.Logs.WriteString(fmt.Sprintf("ACTION [%d] %s\n", pl.HashcatEvent, pl.Message))
-				log.Infof("LOG [%s] %s\n", pl.Level, pl.Message)
-			}
-		case gocat.CrackedPayload:
-			if DebugTest {
-				grpcclient.Logs.WriteString(fmt.Sprintf("CRACKED %s -> %s\n", pl.Hash, pl.Value))
-				log.Infof("CRACKED %s -> %s\n", pl.Hash, pl.Value)
-			}
-			if resultsmap != nil {
-				resultsmap[pl.Hash] = hcargp.GetStringPtr(pl.Value)
-			}
-		case gocat.FinalStatusPayload:
-			if DebugTest {
-				grpcclient.Logs.WriteString(fmt.Sprintf("FINAL STATUS -> %v\n", pl.Status))
-				log.Infof("FINAL STATUS -> %v\n", pl.Status)
-			}
-		case gocat.TaskInformationPayload:
-			if DebugTest {
-				grpcclient.Logs.WriteString(fmt.Sprintf("TASK INFO -> %v\n", pl))
-				log.Infof("TASK INFO -> %v\n", pl)
-			}
-		}
+		handlePayload(payload, resultsmap)
 
-		// Send updated logs/stats to the server
+		// Update logs/stats and send them to the server
 		msg.HashcatLogs = grpcclient.Logs.String()
 		if err := stream.Send(msg); err != nil {
-			return
+			log.Errorf("Failed to send message to server: %v", err)
 		}
 	}
 }
 
+// ---------- PAYLOAD HANDLERS ----------
+
+// handlePayload dispatches the payload to specific handlers based on its type.
+func handlePayload(payload any, resultsmap map[string]*string) {
+	switch pl := payload.(type) {
+	case gocat.LogPayload:
+		handleLogPayload(&pl)
+	case gocat.ActionPayload:
+		handleActionPayload(&pl)
+	case gocat.CrackedPayload:
+		handleCrackedPayload(&pl, resultsmap)
+	case gocat.FinalStatusPayload:
+		handleFinalStatusPayload(&pl)
+	case gocat.TaskInformationPayload:
+		handleTaskInformationPayload(&pl)
+	case gocat.Status:
+		handleTaskStatus(&pl)
+	case gocat.DeviceStatus:
+		handleDeviceStatus(&pl)
+	case gocat.ErrCrackedPayload:
+		handleErrCrackedPayload(&pl)
+	case nil:
+		return
+	default:
+		log.Warnf("Unhandled payload type: %v:%T ", pl, payload)
+	}
+}
+
+// ---------- SPECIFIC HANDLER FUNCTIONS ----------
+
+func handleLogPayload(pl *gocat.LogPayload) {
+	if DebugTest {
+		logMessage := fmt.Sprintf("LOG [%s] %s\n", pl.Level, pl.Message)
+		grpcclient.Logs.WriteString(logMessage)
+		log.Info(logMessage)
+	}
+}
+
+func handleActionPayload(pl *gocat.ActionPayload) {
+	if DebugTest {
+		logMessage := fmt.Sprintf("ACTION [%d] %s\n", pl.HashcatEvent, pl.Message)
+		grpcclient.Logs.WriteString(logMessage)
+		log.Info(logMessage)
+	}
+}
+
+func handleCrackedPayload(pl *gocat.CrackedPayload, resultsmap map[string]*string) {
+	if DebugTest {
+		logMessage := fmt.Sprintf("CRACKED %s -> %s\n", pl.Hash, pl.Value)
+		grpcclient.Logs.WriteString(logMessage)
+		log.Info(logMessage)
+	}
+	if resultsmap != nil {
+		resultsmap[pl.Hash] = hcargp.GetStringPtr(pl.Value)
+	}
+}
+
+func handleFinalStatusPayload(pl *gocat.FinalStatusPayload) {
+	if DebugTest {
+		logMessage := fmt.Sprintf("FINAL STATUS -> %v\n", pl.Status)
+		grpcclient.Logs.WriteString(logMessage)
+		log.Info(logMessage)
+	}
+}
+
+func handleTaskInformationPayload(pl *gocat.TaskInformationPayload) {
+	if DebugTest {
+		logMessage := fmt.Sprintf("TASK INFO -> %v\n", pl)
+		grpcclient.Logs.WriteString(logMessage)
+		log.Info(logMessage)
+	}
+}
+
+func handleTaskStatus(pl *gocat.Status) {
+	if DebugTest {
+		logMessage := fmt.Sprintf("CURRENT STATUS -> %v\n", pl)
+		grpcclient.Logs.WriteString(logMessage)
+		log.Info(logMessage)
+	}
+}
+
+func handleDeviceStatus(pl *gocat.DeviceStatus) {
+	if DebugTest {
+		logMessage := fmt.Sprintf("DEVICE STATUS -> %v\n", pl)
+		grpcclient.Logs.WriteString(logMessage)
+		log.Info(logMessage)
+	}
+}
+
+func handleErrCrackedPayload(pl *gocat.ErrCrackedPayload) {
+	if DebugTest {
+		logMessage := fmt.Sprintf("DEVICE STATUS -> %v\n", pl)
+		grpcclient.Logs.WriteString(logMessage)
+		log.Info(logMessage)
+	}
+}
 func RunGoCat(
-	stream grpc.BidiStreamingClient[hds.ClientTaskMessageFromClient, hds.ClientTaskMessageFromServer],
+	stream grpc.BidiStreamingClient[pb.ClientTaskMessageFromClient, pb.ClientTaskMessageFromServer],
 	msgToServer *pb.ClientTaskMessageFromClient,
 	randomHashcatFileName, pcapGenerated string,
 	handshake *entities.Handshake,
