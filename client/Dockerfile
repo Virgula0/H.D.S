@@ -15,11 +15,11 @@ RUN apt update -y && \
     ca-certificates \
     libz-dev \
     libssl-dev \
-    uuid-runtime \
+    dbus \
     # Graphic libraries for raylib
     libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
 
-#RUN dbus-uuidgen > /etc/machine-id
+RUN dbus-uuidgen > /etc/machine-id
 
 # Set some ENV
 ENV HASHCAT_SRC_PATH=/app/hashcat
