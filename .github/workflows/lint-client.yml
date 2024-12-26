@@ -1,4 +1,4 @@
-name: Linter
+name: Lint client
 
 on:
   push:
@@ -43,11 +43,11 @@ jobs:
 
       - name: Compile proto files
         run: |
-          cd server
+          cd client
           make proto 
 
       - name: Run golangci-lint:client
         run: |
           cd client
           go mod tidy
-          make lint 
+          make lint
