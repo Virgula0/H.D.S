@@ -18,8 +18,8 @@ jobs:
     timeout-minutes: 20
 
     env:
-      HASHCAT_SRC_PATH: ${{ github.workspace }}/external/hashcat
-      CGO_CFLAGS: "-I${{ github.workspace }}/external/hashcat/OpenCL -I${{ github.workspace }}/external/hashcat/deps/LZMA-SDK/C -I${{ github.workspace }}/external/hashcat/deps/zlib -I${{ github.workspace }}/external/hashcat/deps/zlib/contrib -I${{ github.workspace }}/external/hashcat/deps/OpenCL-Headers"
+      HASHCAT_SRC_PATH: ${{ github.workspace }}/hashcat
+      CGO_CFLAGS: "-I${{ github.workspace }}/hashcat/OpenCL -I${{ github.workspace }}/hashcat/deps/LZMA-SDK/C -I${{ github.workspace }}/hashcat/deps/zlib -I${{ github.workspace }}/hashcat/deps/zlib/contrib -I${{ github.workspace }}/hashcat/deps/OpenCL-Headers"
 
     steps:
       - name: Checkout repository
@@ -47,8 +47,8 @@ jobs:
 
       - name: Persist Environment Variables
         run: |
-          echo "HASHCAT_SRC_PATH=${{ github.workspace }}/hashcat-src" >> $GITHUB_ENV
-          echo 'CGO_CFLAGS="-I${{ github.workspace }}/hashcat-src/OpenCL -I${{ github.workspace }}/hashcat-src/deps/LZMA-SDK/C -I${{ github.workspace }}/hashcat-src/deps/zlib -I${{ github.workspace }}/hashcat-src/deps/zlib/contrib -I${{ github.workspace }}/hashcat-src/deps/OpenCL-Headers $CGO_CFLAGS"' >> $GITHUB_ENV
+          echo "HASHCAT_SRC_PATH=${{ github.workspace }}/hashcat" >> $GITHUB_ENV
+          echo 'CGO_CFLAGS="-I${{ github.workspace }}/hashcat/OpenCL -I${{ github.workspace }}/hashcat/deps/LZMA-SDK/C -I${{ github.workspace }}/hashcat/deps/zlib -I${{ github.workspace }}/hashcat/deps/zlib/contrib -I${{ github.workspace }}/hashcat/deps/OpenCL-Headers $CGO_CFLAGS"' >> $GITHUB_ENV
 
       - name: Verify Installation and Environment Variables
         run: |
