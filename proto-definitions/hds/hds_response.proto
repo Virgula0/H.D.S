@@ -5,6 +5,11 @@ message HelloResponse {
   string message = 1;
 }
 
+message UniformResponse {
+  string status = 1;
+  string details = 2;
+}
+
 message GetClientInfoResponse {
   bool is_registered = 1;
   string user_uuid = 2;

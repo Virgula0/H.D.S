@@ -31,3 +31,13 @@ client/protobuf
 client/hashcat.dictstat*
 client/hashcat.pid
 client/hashcat.induct
+client/hashcat/
+client/gocat
+client/*.hcstat2
+client/*.hctune
+client/OpenCL
+client/kernels
+client/modules
+client/main
+client/*.so
+client/hashcat.outfiles

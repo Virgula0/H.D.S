@@ -1,88 +1,79 @@
 package main
 
 import (
-	"fmt"
-	"unsafe"
-
-	gocat "github.com/mandiant/gocat/v6"
-	"github.com/mandiant/gocat/v6/hcargp"
+	"github.com/Virgula0/progetto-dp/client/internal/constants"
+	"github.com/Virgula0/progetto-dp/client/internal/environment"
+	"github.com/Virgula0/progetto-dp/client/internal/grpcclient"
+	"github.com/Virgula0/progetto-dp/client/internal/gui"
+	"github.com/Virgula0/progetto-dp/client/internal/mygocat"
+	"github.com/Virgula0/progetto-dp/client/internal/utils"
+	log "github.com/sirupsen/logrus"
+	"os"
 )
 
-const wordlistExample = "/usr/share/seclists/Passwords/darkc0de.txt"
-const fileToCrack = "output.hashcat"
-const DebugTest = true
-
-func callbackForTests(resultsmap map[string]*string) gocat.EventCallback {
-	return func(hc unsafe.Pointer, payload interface{}) {
-		switch pl := payload.(type) {
-		case gocat.LogPayload:
-			if DebugTest {
-				fmt.Printf("LOG [%s] %s\n", pl.Level, pl.Message)
-			}
-		case gocat.ActionPayload:
-			if DebugTest {
-				fmt.Printf("ACTION [%d] %s\n", pl.HashcatEvent, pl.Message)
-			}
-		case gocat.CrackedPayload:
-			if DebugTest {
-				fmt.Printf("CRACKED %s -> %s\n", pl.Hash, pl.Value)
-			}
-			if resultsmap != nil {
-				resultsmap[pl.Hash] = hcargp.GetStringPtr(pl.Value)
-			}
-		case gocat.FinalStatusPayload:
-			if DebugTest {
-				fmt.Printf("FINAL STATUS -> %v\n", pl.Status)
-			}
-		case gocat.TaskInformationPayload:
-			if DebugTest {
-				fmt.Printf("TASK INFO -> %v\n", pl)
-			}
-		}
-	}
-}
-
 func main() {
+	// Initialize application environment
+	if _, err := environment.InitEnvironment(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Initialize gRPC client
+	client, err := grpcclient.InitClient()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Initialize GUI login window; if exit is true, terminate the application
+	if exit := gui.InitLoginWindow(client); exit {
+		os.Exit(1)
+	}
+
+	defer client.ClientCloser()
+
+	//nolint:gocritic
 	/*
-		rl.InitWindow(1200, 800, "raylib [core] example - basic window")
-		defer rl.CloseWindow()
-
-		rl.SetTargetFPS(60)
-
-		for !rl.WindowShouldClose() {
-			rl.BeginDrawing()
-
-			rl.ClearBackground(rl.RayWhite)
-			rl.DrawText("Congrats! You created your first window!", 190, 200, 20, rl.LightGray)
-
-			rl.EndDrawing()
-		}
+		// TODO: fix graphics in another PR
+		go func() {
+			if exit := gui.RunGUI(gui.StateUpdateCh); exit {
+				os.Exit(1)
+			}
+		}()
 	*/
 
-	crackedHashes := map[string]*string{}
+	// Run the authenticator in the background (renew JWT tokens, etc.)
+	go client.Authenticator()
 
-	tt := gocat.Options{
-		ExecutablePath:    "/usr/local/bin",
-		SharedPath:        "/tmp",
-		PatchEventContext: true,
-	}
-
-	hashcat, err := gocat.New(tt, callbackForTests(crackedHashes))
-	defer hashcat.Free()
-
+	// Gather machine and hostname info
+	machineID, err := utils.MachineID()
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		log.Panic(err.Error())
 	}
 
-	// potfile remembers cracked hashcat
-	err = hashcat.RunJob("-a", "3", "-m", "22000", "--potfile-disable", "--logfile-disable", fileToCrack, "okok")
-
+	hostnameBytes, err := utils.ReadFileBytes(constants.HostnameFile)
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		log.Errorf("Unable to read hostname file: %s", err.Error())
+	}
+	hostname := string(hostnameBytes)
+
+	// Retrieve client info from server
+	info, err := client.GetClientInfo(hostname, machineID)
+	if err != nil {
+		log.Panic(err.Error())
+	}
+	clientUUID := info.GetClientUuid()
+
+	// Open the HashcatChat stream
+	stream, err := client.HashcatChat()
+	if err != nil {
+		log.Panic(err.Error())
 	}
 
-	fmt.Println(crackedHashes)
-
+	// Continuously listen for new tasks
+	for {
+		if err := mygocat.ListenForHashcatTasks(stream, client, clientUUID); err != nil {
+			log.Errorf("[CLIENT] Connection closed or error occurred: %s", err.Error())
+			return
+		}
+	}
 }

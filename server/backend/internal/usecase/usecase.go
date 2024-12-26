@@ -28,7 +28,7 @@ func NewUsecase(repo *repository.Repository) *Usecase {
 func (uc *Usecase) GetDataFromToken(tokenInput string) (jwt.MapClaims, error) {
 	claims := jwt.MapClaims{}
 
-	token, err := jwt.ParseWithClaims(tokenInput, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenInput, claims, func(token *jwt.Token) (any, error) {
 		return constants.JwtSecretKey, nil
 	})
 
