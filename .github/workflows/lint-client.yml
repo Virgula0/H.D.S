@@ -30,12 +30,9 @@ jobs:
           packages: libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
           version: 1.0
 
-      - name: Copy hashcat
-        run: |
-          cp -r external/hashcat hashcat
-
       - name: Build and Install Hashcat
         run: |
+          git clone https://github.com/hashcat/hashcat.git
           cd hashcat
           git checkout v6.1.1
           make install SHARED=1 ENABLE_BRAIN=0
