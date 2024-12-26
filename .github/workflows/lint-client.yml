@@ -34,19 +34,18 @@ jobs:
         run: |
           git clone https://github.com/hashcat/hashcat.git
           cd hashcat
-          mkdir /usr/local/include/hashcat
-          mkdir /usr/local/share/doc
-          mkdir /usr/local/share/doc/hashcat
+          sudo mkdir /usr/local/share/doc
+          sudo mkdir /usr/local/share/doc/hashcat
           git checkout v6.1.1
-          make install SHARED=1 ENABLE_BRAIN=0
-          mkdir -p /usr/local/include/hashcat
-          cp deps/LZMA-SDK/C/LzmaDec.h /usr/local/include/hashcat/
-          cp deps/LZMA-SDK/C/7zTypes.h /usr/local/include/hashcat/
-          cp deps/LZMA-SDK/C/Lzma2Dec.h /usr/local/include/hashcat/
-          cp -r ./OpenCL/inc_types.h /usr/local/include/hashcat/
-          cp -r ./deps/zlib/contrib /usr/local/include/hashcat
-          ln -s /usr/local/lib/libhashcat.so.6.1.1 /usr/local/lib/libhashcat.so
-          ln -s /usr/local/lib/libhashcat.so.6.1.1 /usr/lib/libhashcat.so.6.1.1
+          sudo make install SHARED=1 ENABLE_BRAIN=0
+          sudo mkdir -p /usr/local/include/hashcat
+          sudo cp deps/LZMA-SDK/C/LzmaDec.h /usr/local/include/hashcat/
+          sudo cp deps/LZMA-SDK/C/7zTypes.h /usr/local/include/hashcat/
+          sudo cp deps/LZMA-SDK/C/Lzma2Dec.h /usr/local/include/hashcat/
+          sudo cp -r ./OpenCL/inc_types.h /usr/local/include/hashcat/
+          sudo cp -r ./deps/zlib/contrib /usr/local/include/hashcat
+          sudo ln -s /usr/local/lib/libhashcat.so.6.1.1 /usr/local/lib/libhashcat.so
+          sudo ln -s /usr/local/lib/libhashcat.so.6.1.1 /usr/lib/libhashcat.so.6.1.1
 
       - name: Persist Environment Variables
         run: |
