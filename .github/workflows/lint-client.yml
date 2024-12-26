@@ -33,18 +33,11 @@ jobs:
       - name: Copy hashcat
         run: |
           cp -r external/hashcat hashcat
-          
-      - name: Clone Hashcat and Checkout v6.1.1
-        run: |
-          cd ${{ github.workspace }}/hashcat-src
-          git init
-          git remote add origin https://github.com/hashcat/hashcat.git
-          git fetch --tags
-          git checkout v6.1.1
 
       - name: Build and Install Hashcat
         run: |
-          cd ${{ github.workspace }}/hashcat-src
+          cd hashcat
+          git checkout v6.1.1
           make install SHARED=1 ENABLE_BRAIN=0
           mkdir -p /usr/local/include/hashcat
           cp deps/LZMA-SDK/C/LzmaDec.h /usr/local/include/hashcat/
