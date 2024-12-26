@@ -34,6 +34,10 @@ jobs:
         run: |
           git clone https://github.com/hashcat/hashcat.git
           cd hashcat
+          mkdir /usr/local/lib
+          mkdir /usr/local/include/hashcat
+          mkdir /usr/local/share/doc
+          mkdir /usr/local/share/doc/hashcat
           git checkout v6.1.1
           make install SHARED=1 ENABLE_BRAIN=0
           mkdir -p /usr/local/include/hashcat
