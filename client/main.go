@@ -1,4 +1,3 @@
-//nolint:all // test
 package main
 
 import (
