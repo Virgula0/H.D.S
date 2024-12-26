@@ -34,8 +34,6 @@ jobs:
         run: |
           git clone https://github.com/hashcat/hashcat.git
           cd hashcat
-          sudo mkdir /usr/local/share/doc
-          sudo mkdir /usr/local/share/doc/hashcat
           git checkout v6.1.1
           sudo make install SHARED=1 ENABLE_BRAIN=0
           sudo mkdir -p /usr/local/include/hashcat
