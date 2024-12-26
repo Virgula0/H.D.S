@@ -17,14 +17,45 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    env:
+      HASHCAT_SRC_PATH: ${{ github.workspace }}/hashcat
+      CGO_CFLAGS: "-I${{ github.workspace }}/hashcat/OpenCL -I${{ github.workspace }}/hashcat/deps/LZMA-SDK/C -I${{ github.workspace }}/hashcat/deps/zlib -I${{ github.workspace }}/hashcat/deps/zlib/contrib -I${{ github.workspace }}/hashcat/deps/OpenCL-Headers"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
+          packages: libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev build-essential libminizip-dev opencl-headers ocl-icd-libopencl1
           version: 1.0
+
+      - name: Build and Install Hashcat
+        run: |
+          git clone https://github.com/hashcat/hashcat.git
+          cd hashcat
+          git checkout v6.1.1
+          sudo make install SHARED=1 ENABLE_BRAIN=0
+          sudo mkdir -p /usr/local/include/hashcat
+          sudo cp deps/LZMA-SDK/C/LzmaDec.h /usr/local/include/hashcat/
+          sudo cp deps/LZMA-SDK/C/7zTypes.h /usr/local/include/hashcat/
+          sudo cp deps/LZMA-SDK/C/Lzma2Dec.h /usr/local/include/hashcat/
+          sudo cp -r ./OpenCL/inc_types.h /usr/local/include/hashcat/
+          sudo cp -r ./deps/zlib/contrib /usr/local/include/hashcat
+          sudo ln -s /usr/local/lib/libhashcat.so.6.1.1 /usr/local/lib/libhashcat.so
+          sudo ln -s /usr/local/lib/libhashcat.so.6.1.1 /usr/lib/libhashcat.so.6.1.1
+
+      - name: Persist Environment Variables
+        run: |
+          echo "HASHCAT_SRC_PATH=${{ github.workspace }}/hashcat" >> $GITHUB_ENV
+          echo 'CGO_CFLAGS="-I${{ github.workspace }}/hashcat/OpenCL -I${{ github.workspace }}/hashcat/deps/LZMA-SDK/C -I${{ github.workspace }}/hashcat/deps/zlib -I${{ github.workspace }}/hashcat/deps/zlib/contrib -I${{ github.workspace }}/hashcat/deps/OpenCL-Headers $CGO_CFLAGS"' >> $GITHUB_ENV
+
+      - name: Verify Installation and Environment Variables
+        run: |
+          echo "HASHCAT_SRC_PATH=$HASHCAT_SRC_PATH"
+          echo "CGO_CFLAGS=$CGO_CFLAGS"
+          ls -l /usr/local/include/hashcat
+          ls -l /usr/local/lib/libhashcat.so
 
       - name: Set up Go
         uses: actions/setup-go@v4
