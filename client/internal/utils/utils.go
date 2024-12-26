@@ -1,4 +1,4 @@
-// #nosec G501 // remove md5 warnings
+// #nosec G501,G401 // remove md5 warnings
 package utils
 
 import (
