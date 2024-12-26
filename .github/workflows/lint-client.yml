@@ -32,7 +32,7 @@ jobs:
 
       - name: Copy hashcat
         run: |
-          cp /externals/hashcat hashcat
+          cp external/hashcat hashcat
           
       - name: Clone Hashcat and Checkout v6.1.1
         run: |
