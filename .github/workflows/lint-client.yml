@@ -40,7 +40,7 @@ jobs:
           sudo cp deps/LZMA-SDK/C/LzmaDec.h /usr/local/include/hashcat/
           sudo cp deps/LZMA-SDK/C/7zTypes.h /usr/local/include/hashcat/
           sudo cp deps/LZMA-SDK/C/Lzma2Dec.h /usr/local/include/hashcat/
-          sudo cp -r ./OpenCL/inc_types.h /usr/local/includegit /hashcat/
+          sudo cp -r ./OpenCL/inc_types.h /usr/local/include/hashcat/
           sudo cp -r ./deps/zlib/contrib /usr/local/include/hashcat
           sudo ln -s /usr/local/lib/libhashcat.so.6.1.1 /usr/local/lib/libhashcat.so
           sudo ln -s /usr/local/lib/libhashcat.so.6.1.1 /usr/lib/libhashcat.so.6.1.1
