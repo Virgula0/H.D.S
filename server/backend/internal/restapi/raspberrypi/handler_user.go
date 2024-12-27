@@ -1,6 +1,7 @@
 package raspberrypi
 
 import (
+	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	"github.com/Virgula0/progetto-dp/server/entities"
 	"net/http"
 
@@ -18,6 +19,10 @@ type CustomRaspberryPIResponse struct {
 	UserUUID        string
 	RaspberryPIUUID string
 	MachineID       string
+}
+
+type ReturnRaspberryPiDevicesRequest struct {
+	Page uint `query:"page" validate:"required,gte=0"`
 }
 
 type ReturnRaspberryPiDevicesResponse struct {
@@ -38,7 +43,17 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rspDevices, counted, err := u.Usecase.GetRaspberryPI(userID.String(), 1) // TODO: handle offset from request
+	var request ReturnRaspberryPiDevicesRequest
+
+	if err := utils.ValidateQueryParameters(&request, r); err != nil {
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
+			StatusCode: http.StatusInternalServerError,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	rspDevices, counted, err := u.Usecase.GetRaspberryPI(userID.String(), request.Page)
 
 	if counted == 0 {
 		c.JSON(http.StatusNotFound, entities.UniformResponse{

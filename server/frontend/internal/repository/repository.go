@@ -134,7 +134,7 @@ func (repo *Repository) GetUserHandshakes(token string, page int) (*entities.Get
 		return nil, err
 	}
 
-	if err := json.Unmarshal(responseBytes, &handshakes); err != nil {
+	if err = json.Unmarshal(responseBytes, &handshakes); err != nil {
 		return nil, err
 	}
 
