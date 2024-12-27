@@ -70,5 +70,5 @@ func (u Page) PerformLogin(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Redirect to posts
-	http.Redirect(w, r, constants.HandshakePage, http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.HandshakePage), http.StatusFound)
 }

@@ -17,3 +17,8 @@ type Handshake struct {
 	CrackedHandshake *string `db:"CRACKED_HANDSHAKE"`
 	HandshakePCAP    *string `db:"HANDSHAKE_PCAP"`
 }
+
+type GetHandshakeResponse struct {
+	Length     int `json:"length"`
+	Handshakes []*Handshake
+}

@@ -1,1 +1,35 @@
-test
+{{ range .Handshakes }}
+    {{ if .ClientUUID }}
+        {{ .ClientUUID }}
+    {{ else }}
+        Unassigned
+    {{ end }}
+    {{ .UUID }}
+    {{ .SSID }}
+    {{ .BSSID }}
+    {{ .UploadedDate }}
+    {{ .Status }}
+    {{ if .CrackedDate }}
+        {{ .CrackedDate }}
+    {{ else }}
+        Not cracked yet
+    {{ end }}
+    {{ if .HashcatOptions }}
+        {{ .HashcatOptions }}
+    {{ else }}
+        Empty
+    {{ end }}
+    {{ if .HashcatLogs }}
+        {{ .HashcatLogs }}
+    {{ else }}
+        No recent logs
+    {{ end }}
+    {{ if .CrackedHandshake }}
+        {{ .CrackedHandshake }}
+    {{ else }}
+        Not cracked yet
+    {{ end }}
+{{ .CrackedHandshake }}
+{{ end }}
+
+{{ .Test }}

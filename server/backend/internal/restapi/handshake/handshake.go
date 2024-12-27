@@ -1,6 +1,7 @@
 package handshake
 
 import (
+	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	"net/http"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
@@ -13,9 +14,8 @@ type Handler struct {
 	Usecase *usecase.Usecase
 }
 
-type GetHandshakeResponse struct {
-	Length     int `json:"length"`
-	Handshakes []*entities.Handshake
+type GetHandshakesRequest struct {
+	Page uint `query:"page" validate:"required,gte=0"`
 }
 
 func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +31,17 @@ func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handshakes, counted, err := u.Usecase.GetHandshakes(userID.String(), 1) // TODO: handle offset from request
+	var request GetHandshakesRequest
+
+	if err := utils.ValidateQueryParameters(&request, r); err != nil {
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
+			StatusCode: http.StatusInternalServerError,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	handshakes, counted, err := u.Usecase.GetHandshakes(userID.String(), request.Page)
 
 	if counted == 0 {
 		c.JSON(http.StatusNotFound, entities.UniformResponse{
@@ -49,7 +59,7 @@ func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.JSON(http.StatusOK, GetHandshakeResponse{
+	c.JSON(http.StatusOK, entities.GetHandshakeResponse{
 		Length:     counted,
 		Handshakes: handshakes,
 	})

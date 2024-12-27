@@ -13,6 +13,7 @@ const SessionTokenName = "session_token"
 const AuthToken = "token"
 
 const JSONContentType = "application/json"
+const HTMLContentType = "text/html"
 
 // Views
 
@@ -32,10 +33,10 @@ const (
 )
 
 // Endpoints BE
-
 const (
 	BackendVerifyEndpoint   = "verify"
 	BackendAuthEndpoint     = "auth"
 	BackendLogoutEndpoint   = "logout"
 	BackendRegisterEndpoint = "register"
+	BackendGetHandshakes    = "handshakes"
 )

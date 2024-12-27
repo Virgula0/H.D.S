@@ -61,7 +61,7 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	// HANDSHAKES
 	handshakeRouterTemplate := router.PathPrefix(RouteIndex).Subrouter()
 	handshakeRouterTemplate.
-		HandleFunc(Handshake, handshakeInstance.HandshakeTemplate).
+		HandleFunc(Handshake, handshakeInstance.ListHandshakes).
 		Methods("GET")
 	handshakeRouterTemplate.Use(authenticated.TokenValidation)
 

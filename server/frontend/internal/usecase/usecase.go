@@ -27,11 +27,12 @@ func NewUsecase(repo *repository.Repository, templates *template.Template) *Usec
 }
 
 // RenderTemplate renders an HTML template
-func (uc Usecase) RenderTemplate(w http.ResponseWriter, name string, data interface{}) {
+func (uc Usecase) RenderTemplate(w http.ResponseWriter, name string, data any) {
 	if uc.templates == nil {
 		http.Error(w, "templates not configured", http.StatusInternalServerError)
 	}
 
+	w.Header().Set("Content-Type", constants.HTMLContentType)
 	err := uc.templates.ExecuteTemplate(w, name, data)
 
 	if err != nil {
@@ -120,4 +121,8 @@ func (uc Usecase) PerformLogout(token string) (*entities.UniformResponse, error)
 
 func (uc Usecase) PerformRegistration(username, password, confirmation string) (*entities.UniformResponse, error) {
 	return uc.repo.PerformRegister(username, password, confirmation)
+}
+
+func (uc Usecase) GetUserHandshakes(token string, page int) (*entities.GetHandshakeResponse, error) {
+	return uc.repo.GetUserHandshakes(token, page)
 }

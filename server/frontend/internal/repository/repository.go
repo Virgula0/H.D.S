@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/entities"
@@ -69,7 +70,7 @@ func (repo *Repository) GenericHTTPRequestToBackend(method, endpoint string, hea
 	return repo.GenericHTTPRequest(constants.BackendBaseURL, method, endpoint, headers, requestData)
 }
 
-func (repo *Repository) genericReponseRefactored(requestData any, endpoint, method string, headers map[string]string) (*entities.UniformResponse, error) {
+func (repo *Repository) uniformResponseRefactored(requestData any, endpoint, method string, headers map[string]string) (*entities.UniformResponse, error) {
 
 	// Marshal the data into JSON
 	jsonData, err := json.Marshal(requestData)
@@ -99,7 +100,7 @@ func (repo *Repository) PerformLogin(username, password string) (*entities.Unifo
 		"password": password,
 	}
 
-	return repo.genericReponseRefactored(requestData, constants.BackendAuthEndpoint, http.MethodPost, nil)
+	return repo.uniformResponseRefactored(requestData, constants.BackendAuthEndpoint, http.MethodPost, nil)
 }
 
 func (repo *Repository) PerformLogout(token string) (*entities.UniformResponse, error) {
@@ -107,7 +108,7 @@ func (repo *Repository) PerformLogout(token string) (*entities.UniformResponse, 
 		"Authorization": fmt.Sprintf("Bearer %s", token),
 	}
 
-	return repo.genericReponseRefactored(nil, constants.BackendLogoutEndpoint, http.MethodGet, headers)
+	return repo.uniformResponseRefactored(nil, constants.BackendLogoutEndpoint, http.MethodGet, headers)
 }
 
 func (repo *Repository) PerformRegister(username, password, confirmation string) (*entities.UniformResponse, error) {
@@ -117,5 +118,25 @@ func (repo *Repository) PerformRegister(username, password, confirmation string)
 		"confirmation": confirmation,
 	}
 
-	return repo.genericReponseRefactored(requestData, constants.BackendRegisterEndpoint, http.MethodPost, nil)
+	return repo.uniformResponseRefactored(requestData, constants.BackendRegisterEndpoint, http.MethodPost, nil)
+}
+
+func (repo *Repository) GetUserHandshakes(token string, page int) (*entities.GetHandshakeResponse, error) {
+	var handshakes *entities.GetHandshakeResponse
+
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", token),
+	}
+
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodGet, fmt.Sprintf("%s?page=%s", constants.BackendGetHandshakes, strconv.Itoa(page)), headers, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(responseBytes, &handshakes); err != nil {
+		return nil, err
+	}
+
+	return handshakes, nil
 }

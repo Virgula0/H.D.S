@@ -13,6 +13,10 @@ type Initializer struct {
 	http.ResponseWriter
 }
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 func (w *Initializer) JSON(statusCode int, toMarshal any) {
 	w.Header().Set("Content-Type", constants.JSONContentType)
 	w.WriteHeader(statusCode)
