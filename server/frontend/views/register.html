@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="/styles/bootstrap-4.3.1.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/custom.css">
+    <title>H.D.S Register</title>
+</head>
+<body class="d-flex flex-column min-vh-100">
+<div class="container flex-grow-1 d-flex align-items-center justify-content-center py-5">
+    <div class="row justify-content-center w-100">
+        <div class="col-md-6 col-lg-5">
+            {{if .Error}}
+            <div class="alert alert-danger mb-4">
+                {{.Error}}
+            </div>
+            {{end}}
+            <div class="card shadow-sm">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <img src="/images/logo.png" alt="H.D.S Logo" class="logo mb-4">
+                        <h4 class="mb-1">Create an Account</h4>
+                        <p class="text-muted">(Only if admin have enabled it)</p>
+                    </div>
+                    <form action="/register" method="POST">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" placeholder="Enter username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="passwordInput">Password</label>
+                            <input type="password" class="form-control" id="passwordInput" name="password" placeholder="Enter password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPasswordInput">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirmPasswordInput" name="confirmation" placeholder="Confirm password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Register</button>
+                    </form>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <p class="text-muted">Already have an account? <a href="/login">Log in</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer mt-auto py-3">
+    <div class="container text-center">
+        <a href="/" class="text-muted mx-2">Welcome</a>
+        <span class="text-muted">|</span>
+        <a href="/login" class="text-muted mx-2">Login</a>
+        <span class="text-muted">|</span>
+        <a href="/register" class="text-muted mx-2">Register</a>
+    </div>
+</footer>
+
+<script src="/scripts/jquery-3.3.1.slim.min.js"></script>
+<script src="/scripts/popper.min.js"></script>
+<script src="/scripts/bootstrap-4.3.1.min.js"></script>
+<script src="/scripts/theme-toggle.js"></script>
+</body>
+</html>
+

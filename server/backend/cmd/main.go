@@ -115,9 +115,11 @@ func RunBackend() {
 		log.Fatalf("Cannot create TCP server instance! %s", err.Error())
 	}
 
-	err = tcpInstance.RunTCPServer()
+	go func() {
+		err = tcpInstance.RunTCPServer()
 
-	if err != nil {
-		log.Fatalf("Cannot run TCP server! %s", err.Error())
-	}
+		if err != nil {
+			log.Fatalf("Cannot run TCP server! %s", err.Error())
+		}
+	}()
 }

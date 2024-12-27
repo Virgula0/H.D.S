@@ -1,0 +1,142 @@
+:root {
+    --primary-color: #007bff;
+    --primary-hover-color: #0056b3;
+    --bg-light: #f8f9fa;
+    --text-light: #212529;
+    --bg-dark: #1a1a1a;
+    --text-dark: #ffffff;
+    --card-bg-light: #ffffff;
+    --card-bg-dark: #2c2c2c;
+    --input-bg-light: #ffffff;
+    --input-bg-dark: #3a3a3a;
+    --input-border-light: #ced4da;
+    --input-border-dark: #4a4a4a;
+    --muted-light: #6c757d;
+    --muted-dark: #b0b0b0;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-light);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode {
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+}
+
+.card {
+    background-color: var(--card-bg-light);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode .card {
+    background-color: var(--card-bg-dark);
+    color: var(--text-dark);
+}
+
+.form-control {
+    background-color: var(--input-bg-light);
+    border-color: var(--input-border-light);
+    color: var(--text-light);
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+body.dark-mode .form-control {
+    background-color: var(--input-bg-dark);
+    border-color: var(--input-border-dark);
+    color: var(--text-dark);
+}
+
+.text-muted {
+    color: var(--muted-light) !important;
+    transition: color 0.3s;
+}
+
+body.dark-mode .text-muted {
+    color: var(--muted-dark) !important;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover-color);
+    border-color: var(--primary-hover-color);
+}
+
+a {
+    color: var(--primary-color);
+    transition: color 0.3s;
+}
+
+a:hover {
+    color: var(--primary-hover-color);
+}
+
+body.dark-mode a {
+    color: var(--primary-hover-color);
+}
+
+body.dark-mode a:hover {
+    color: var(--primary-color);
+}
+
+.logo {
+    max-width: 100px;
+    height: auto;
+    border-radius: 50%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+body.dark-mode .theme-toggle {
+    background-color: var(--primary-hover-color);
+    border-color: var(--primary-hover-color);
+}
+
+.custom-checkbox .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.custom-checkbox .custom-control-label::before {
+    border-radius: 3px;
+}
+
+.custom-checkbox .custom-control-input:focus ~ .custom-control-label::before {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+body.dark-mode .custom-checkbox .custom-control-label::before {
+    background-color: var(--input-bg-dark);
+    border-color: var(--input-border-dark);
+}
+
+body.dark-mode .custom-checkbox .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: var(--primary-hover-color);
+    border-color: var(--primary-hover-color);
+}
