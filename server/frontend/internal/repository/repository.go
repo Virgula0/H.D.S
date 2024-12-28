@@ -160,3 +160,23 @@ func (repo *Repository) GetUserClients(token string, page int) (*entities.Return
 
 	return clients, nil
 }
+
+func (repo *Repository) GetUserDevices(token string, page int) (*entities.ReturnRaspberryPiDevicesResponse, error) {
+	var clients *entities.ReturnRaspberryPiDevicesResponse
+
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", token),
+	}
+
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodGet, fmt.Sprintf("%s?page=%s", constants.BackendGetRaspberryPi, strconv.Itoa(page)), headers, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err = json.Unmarshal(responseBytes, &clients); err != nil {
+		return nil, err
+	}
+
+	return clients, nil
+}

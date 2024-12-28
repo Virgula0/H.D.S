@@ -130,3 +130,6 @@ func (uc Usecase) GetUserHandshakes(token string, page int) (*entities.GetHandsh
 func (uc Usecase) GetUserClients(token string, page int) (*entities.ReturnClientsInstalledResponse, error) {
 	return uc.repo.GetUserClients(token, page)
 }
+func (uc Usecase) GetUserDevices(token string, page int) (*entities.ReturnRaspberryPiDevicesResponse, error) {
+	return uc.repo.GetUserDevices(token, page)
+}

@@ -21,15 +21,19 @@ const (
 	LoginView     = "login.html"
 	RegisterView  = "register.html"
 	HandshakeView = "handshake.html"
+	ClientView    = "clients.html"
+	DeviceView    = "raspberrypi.html"
 )
 
 // Endpoints FE
 const (
-	RouteIndex    = "/"
-	Login         = "/login"
-	HandshakePage = "/handshakes"
-	Register      = "/register"
-	Logout        = "/logout"
+	RouteIndex      = "/"
+	Login           = "/login"
+	HandshakePage   = "/handshakes"
+	ClientPage      = "/clients"
+	RaspberryPIPage = "/raspberrypi"
+	Register        = "/register"
+	Logout          = "/logout"
 )
 
 // Endpoints BE
@@ -40,4 +44,5 @@ const (
 	BackendRegisterEndpoint = "register"
 	BackendGetHandshakes    = "handshakes"
 	BackendGetClients       = "clients"
+	BackendGetRaspberryPi   = "devices"
 )

@@ -25,10 +25,16 @@
     <div class="bg-dark border-right" id="sidebar-wrapper">
         <div class="sidebar-heading text-white">H.D.S Dashboard</div>
         <div class="list-group list-group-flush">
+            <a href="/clients" class="list-group-item list-group-item-action bg-dark text-white">
+                <i class="fas fa-users mr-2"></i>Clients
+            </a>
+            <a href="/raspberrypi" class="list-group-item list-group-item-action bg-dark text-white">
+                <i class="fas fa-microchip mr-2"></i>RaspberryPi
+            </a>
             <a href="#" class="list-group-item list-group-item-action bg-dark text-white">
                 <i class="fas fa-cog mr-2"></i>Settings
             </a>
-            <a href="#" class="list-group-item list-group-item-action bg-dark text-white">
+            <a href="/logout" class="list-group-item list-group-item-action bg-dark text-white">
                 <i class="fas fa-sign-out-alt mr-2"></i>Logout
             </a>
         </div>
@@ -60,7 +66,7 @@
         <div class="container-fluid">
             <div class="row mt-4">
                 <div class="col-md-4">
-                    <a href="#handshakes" class="card-link">
+                    <a href="/handshakes" class="card-link">
                         <div class="card card-blue mb-4">
                             <div class="card-body">
                                 <h5 class="card-title">Handshakes</h5>
@@ -70,7 +76,7 @@
                     </a>
                 </div>
                 <div class="col-md-4">
-                    <a href="#clients" class="card-link">
+                    <a href="/clients" class="card-link">
                         <div class="card card-orange mb-4">
                             <div class="card-body">
                                 <h5 class="card-title">Clients</h5>
@@ -80,7 +86,7 @@
                     </a>
                 </div>
                 <div class="col-md-4">
-                    <a href="#raspberrypi" class="card-link">
+                    <a href="/raspberrypi" class="card-link">
                         <div class="card card-grey mb-4">
                             <div class="card-body">
                                 <h5 class="card-title">RaspberryPI</h5>
@@ -90,6 +96,12 @@
                     </a>
                 </div>
             </div>
+
+            {{if .Error}}
+            <div class="alert alert-danger mb-4">
+                {{.Error}}
+            </div>
+            {{end}}
 
             <div class="row mt-4" id="handshakes">
                 <div class="col-12">
@@ -244,7 +256,7 @@
                     <div class="form-group">
                         <label for="clientUUID">Assigned Client</label>
                         <select class="form-control" id="clientUUID" name="clientUUID">
-                            <!-- We'll populate this from the var clientUUIDs in handshake-dashboard.js -->
+                            <!-- We'll populate this from the var clientUUIDs in dashboard.js -->
                         </select>
                     </div>
                 </form>
@@ -315,10 +327,17 @@
     </div>
 </div>
 
+<div id="loadingOverlay" class="loading-overlay">
+    <!-- Use Bootstrap's spinner -->
+    <div class="spinner-border text-light" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+</div>
+
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-<script src="/scripts/handshake-dashboard.js"></script>
+<script src="/scripts/dashboard.js"></script>
 </body>
 </html>

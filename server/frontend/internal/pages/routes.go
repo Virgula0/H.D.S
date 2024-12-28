@@ -2,6 +2,8 @@ package pages
 
 import (
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/middlewares"
+	"github.com/Virgula0/progetto-dp/server/frontend/internal/pages/clients"
+	"github.com/Virgula0/progetto-dp/server/frontend/internal/pages/raspberrypi"
 	"github.com/gorilla/mux"
 
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/constants"
@@ -17,12 +19,16 @@ const Login = constants.Login
 const Register = constants.Register
 const Logout = constants.Logout
 const Handshake = constants.HandshakePage
+const Clients = constants.ClientPage
+const Devices = constants.RaspberryPIPage
 
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	loginInstance := login.Page{Usecase: h.Usecase}
 	registerInstance := register.Page{Usecase: h.Usecase}
 	logoutInstance := logout.Page{Usecase: h.Usecase}
 	handshakeInstance := handshakes.Page{Usecase: h.Usecase}
+	clientsInstance := clients.Page{Usecase: h.Usecase}
+	devicesInstance := raspberrypi.Page{Usecase: h.Usecase}
 	authenticated := middlewares.TokenAuth{Usecase: h.Usecase}
 
 	router.Use(middlewares.LogginMiddlware)
@@ -64,5 +70,19 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 		HandleFunc(Handshake, handshakeInstance.ListHandshakes).
 		Methods("GET")
 	handshakeRouterTemplate.Use(authenticated.TokenValidation)
+
+	// Clients
+	clientsRouterTemplate := router.PathPrefix(RouteIndex).Subrouter()
+	clientsRouterTemplate.
+		HandleFunc(Clients, clientsInstance.ListClients).
+		Methods("GET")
+	clientsRouterTemplate.Use(authenticated.TokenValidation)
+
+	// RaspberryPI
+	devicesRouterTemplate := router.PathPrefix(RouteIndex).Subrouter()
+	devicesRouterTemplate.
+		HandleFunc(Devices, devicesInstance.ListRaspberryPI).
+		Methods("GET")
+	devicesRouterTemplate.Use(authenticated.TokenValidation)
 
 }

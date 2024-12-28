@@ -1,3 +1,16 @@
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5); /* semi-transparent overlay */
+    z-index: 9999; /* on top of everything */
+}
+
 :root {
     --primary-color: #007bff;
     --primary-hover-color: #0056b3;
@@ -22,7 +35,7 @@ body {
     font-family: 'Poppins', sans-serif;
     background-color: var(--bg-light);
     color: var(--text-light);
-    transition: background-color 0.3s ease, color 0.3s ease; /* Update 1 */
+    transition: background-color 0.3s ease, color 0.3s ease;
     overflow-x: hidden;
 }
 
@@ -88,7 +101,7 @@ body.dark-mode a:hover {
 
 .navbar {
     background-color: var(--bg-light);
-    transition: background-color 0.3s ease; /* Update 2 */
+    transition: background-color 0.3s ease;
 }
 
 body.dark-mode .navbar {
@@ -126,15 +139,16 @@ body.dark-mode .page-item.disabled .page-link {
     color: var(--muted-dark);
 }
 
+/* Modals */
 .modal-content {
     background-color: var(--bg-light);
     color: var(--text-light);
-    opacity: 0;
-    transition: opacity 0.3s ease; /* Update 2 */
+    opacity: 1; /* Default visible; remove or change if you want fade */
+    transition: opacity 0.3s ease;
 }
 
 .modal.show .modal-content {
-    opacity: 1; /* Update 2 */
+    opacity: 1;
 }
 
 body.dark-mode .modal-content {
@@ -157,6 +171,7 @@ body.dark-mode .modal-content select.form-control option {
     color: var(--text-dark);
 }
 
+/* Table styling */
 .table {
     color: inherit;
     font-size: 0.875rem;
@@ -166,6 +181,7 @@ body.dark-mode .modal-content select.form-control option {
     font-size: 0.8rem;
 }
 
+/* Status indicators */
 .status-dot {
     display: inline-block;
     width: 8px;
@@ -175,11 +191,12 @@ body.dark-mode .modal-content select.form-control option {
 }
 
 .status-cracked { background-color: #28a745; }
-.status-error { background-color: #dc3545; }
+.status-error   { background-color: #dc3545; }
 .status-pending { background-color: #ffc107; }
 .status-nothing { background-color: #6c757d; }
-.status-other { background-color: #17a2b8; }
+.status-other   { background-color: #17a2b8; }
 
+/* Colored cards */
 .card-blue {
     background-color: var(--blue);
     color: var(--text-light);
@@ -193,6 +210,11 @@ body.dark-mode .modal-content select.form-control option {
 .card-grey {
     background-color: var(--grey);
     color: var(--text-light);
+}
+
+/* Sidebar toggling */
+#wrapper.toggled #sidebar-wrapper {
+    margin-left: 0;
 }
 
 #sidebar-wrapper {
@@ -210,20 +232,21 @@ body.dark-mode .modal-content select.form-control option {
     width: 15rem;
 }
 
+/* Page content */
 #page-content-wrapper {
     min-width: 100vw;
-    opacity: 0;
-    transition: opacity 0.3s ease; /* Update 2 */
+    /* Default visible so page doesn’t stay blank if JS fails */
+    opacity: 1;
+    transition: opacity 0.3s ease;
 }
 
+/* If you want to fade in once loaded, you can apply .loaded => no real difference
+   except if you set default to 0. But let's keep it 1 so it's always visible. */
 #page-content-wrapper.loaded {
-    opacity: 1; /* Update 2 */
+    opacity: 1;
 }
 
-#wrapper.toggled #sidebar-wrapper {
-    margin-left: 0;
-}
-
+/* Media Query for wider screens */
 @media (min-width: 768px) {
     #sidebar-wrapper {
         margin-left: 0;
@@ -239,6 +262,7 @@ body.dark-mode .modal-content select.form-control option {
     }
 }
 
+/* Sensitive info blur effect */
 .sensitive-info {
     filter: blur(4px);
     transition: filter 0.3s ease;
@@ -248,6 +272,7 @@ body.dark-mode .modal-content select.form-control option {
     filter: blur(0);
 }
 
+/* Fix for modal + body scrolling issues */
 body.modal-open {
     overflow: auto !important;
     padding-right: 0 !important;

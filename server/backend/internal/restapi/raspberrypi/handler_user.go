@@ -14,20 +14,8 @@ type Handler struct {
 	Usecase *usecase.Usecase
 }
 
-// Needed to avoid to display encryption key
-type CustomRaspberryPIResponse struct {
-	UserUUID        string
-	RaspberryPIUUID string
-	MachineID       string
-}
-
 type ReturnRaspberryPiDevicesRequest struct {
-	Page uint `query:"page" validate:"required,gte=0"`
-}
-
-type ReturnRaspberryPiDevicesResponse struct {
-	Length  int                          `json:"length"`
-	Devices []*CustomRaspberryPIResponse `json:"devices"`
+	Page uint `query:"page" validate:"required,min=0"`
 }
 
 func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
@@ -71,10 +59,10 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	temp := make([]*CustomRaspberryPIResponse, 0)
+	temp := make([]*entities.CustomRaspberryPIResponse, 0)
 
 	for _, dev := range rspDevices {
-		tt := CustomRaspberryPIResponse{
+		tt := entities.CustomRaspberryPIResponse{
 			UserUUID:        dev.UserUUID,
 			RaspberryPIUUID: dev.RaspberryPIUUID,
 			MachineID:       dev.MachineID,
@@ -83,7 +71,7 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 		temp = append(temp, &tt)
 	}
 
-	c.JSON(http.StatusOK, ReturnRaspberryPiDevicesResponse{
+	c.JSON(http.StatusOK, entities.ReturnRaspberryPiDevicesResponse{
 		Length:  counted,
 		Devices: temp,
 	})
