@@ -495,6 +495,7 @@ $(document).ready(function() {
     });
     $(document).on("click", ".hashcat-logs-btn", function() {
         const logs = $(this).data("logs");
+        //TODO: this .jtml can be exploited, change
         $("#hashcatLogsContent").html(logs.replace(/\n/g, '<br>') || "No scan run");
         $("#hashcatLogsModal").modal("show");
     });
