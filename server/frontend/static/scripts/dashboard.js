@@ -483,38 +483,8 @@ $(document).ready(function() {
     // DELETE HANDSHAKE (still done via JS + $.post)
     $(document).on("click", ".delete-btn", function() {
         const uuid = $(this).data("uuid");
-        $("#deleteConfirmModal").data("uuid", uuid).modal("show");
-    });
-
-    $("#confirmDelete").click(function() {
-        const uuid = $("#deleteConfirmModal").data("uuid");
-        showLoading();
-        $.post("/delete/handshake", { uuid: uuid }, function(response) {
-            hideLoading();
-            if (response.success) {
-                alert("Handshake deleted successfully");
-                location.reload();
-            } else {
-                alert("Error deleting handshake: " + response.error);
-            }
-        });
-        $("#deleteConfirmModal").modal("hide");
-    });
-
-    // SUBMIT CRACK (handshakes)
-    $("#submitCrack").click(function() {
-        const formData = $("#crackForm").serialize();
-        showLoading();
-        $.post("/crack/handshake", formData, function(response) {
-            hideLoading();
-            if (response.success) {
-                alert("Crack job submitted successfully");
-                $("#crackModal").modal("hide");
-                location.reload();
-            } else {
-                alert("Error submitting crack job: " + response.error);
-            }
-        });
+        $("#deleteUUID").val(uuid);
+        $("#deleteConfirmModal").modal("show");
     });
 
     // Hashcat options / logs
@@ -568,16 +538,6 @@ $(document).ready(function() {
         $("#wordlist").prop("disabled", false);
     }
 
-    // ===============================
-    // CLIENT & RASPBERRYPI DELETION
-    // ===============================
-    // Removed direct fetch calls.
-    // Now handled by forms in HTML:
-    // <form method="POST" action="/delete-client"> ... </form>
-    // or <form method="POST" action="/delete-raspberrypi"> ... </form>
-    // Possibly triggered by some onsubmit or "Confirm" in the modal.
-
-    // For example, your modal "confirm" button could call: document.getElementById('deleteClientForm').submit();
 
     // =========================
     // PAGINATION W/ AJAX (handshake)
