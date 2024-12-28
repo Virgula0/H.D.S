@@ -50,31 +50,34 @@ func loadUsers(repo *repository.Repository) error {
 		}
 
 		if constants.DebugEnabled != "" {
-			randomHash := fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))) // #nosec G401 disable weak hash alert, it is not used for crypto stuff
 
-			_, err = repo.CreateClient(user.User.UserUUID, randomHash, "127.0.0.1", "TestAdmin")
+			for i := 0; i < 11; i++ {
+				randomHash := fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))) // #nosec G401 disable weak hash alert, it is not used for crypto stuff
 
-			if err != nil {
-				e := fmt.Errorf("failed to seed client table: %v", err)
-				log.Println(e)
-				return e
-			}
+				_, err = repo.CreateClient(user.User.UserUUID, randomHash, "127.0.0.1", "TestAdmin")
 
-			// #nosec G401 disable weak hash alert, it is not used for crypto stuff
-			_, err := repo.CreateRaspberryPI(user.User.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), fmt.Sprintf("%x%x", md5.Sum([]byte(utils.GenerateToken(10))), md5.Sum([]byte(utils.GenerateToken(10)))))
+				if err != nil {
+					e := fmt.Errorf("failed to seed client table: %v", err)
+					log.Println(e)
+					return e
+				}
 
-			if err != nil {
-				e := fmt.Errorf("failed to seed rsp table: %v", err)
-				log.Println(e)
-				return e
-			}
+				// #nosec G401 disable weak hash alert, it is not used for crypto stuff
+				_, err := repo.CreateRaspberryPI(user.User.UserUUID, fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))), fmt.Sprintf("%x%x", md5.Sum([]byte(utils.GenerateToken(10))), md5.Sum([]byte(utils.GenerateToken(10)))))
 
-			_, err = repo.CreateHandshake(user.User.UserUUID, "TEST", "XX:XX:XX:XX:XX:XX", constants.NothingStatus, utils.StringToBase64String("test.pcap"))
+				if err != nil {
+					e := fmt.Errorf("failed to seed rsp table: %v", err)
+					log.Println(e)
+					return e
+				}
 
-			if err != nil {
-				e := fmt.Errorf("failed to seed handshake table: %v", err)
-				log.Println(e)
-				return e
+				_, err = repo.CreateHandshake(user.User.UserUUID, "TEST", "XX:XX:XX:XX:XX:XX", constants.NothingStatus, utils.StringToBase64String("test.pcap"))
+
+				if err != nil {
+					e := fmt.Errorf("failed to seed handshake table: %v", err)
+					log.Println(e)
+					return e
+				}
 			}
 		}
 	}

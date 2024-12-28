@@ -126,3 +126,7 @@ func (uc Usecase) PerformRegistration(username, password, confirmation string) (
 func (uc Usecase) GetUserHandshakes(token string, page int) (*entities.GetHandshakeResponse, error) {
 	return uc.repo.GetUserHandshakes(token, page)
 }
+
+func (uc Usecase) GetUserClients(token string, page int) (*entities.ReturnClientsInstalledResponse, error) {
+	return uc.repo.GetUserClients(token, page)
+}

@@ -140,3 +140,23 @@ func (repo *Repository) GetUserHandshakes(token string, page int) (*entities.Get
 
 	return handshakes, nil
 }
+
+func (repo *Repository) GetUserClients(token string, page int) (*entities.ReturnClientsInstalledResponse, error) {
+	var clients *entities.ReturnClientsInstalledResponse
+
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", token),
+	}
+
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodGet, fmt.Sprintf("%s?page=%s", constants.BackendGetClients, strconv.Itoa(page)), headers, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err = json.Unmarshal(responseBytes, &clients); err != nil {
+		return nil, err
+	}
+
+	return clients, nil
+}

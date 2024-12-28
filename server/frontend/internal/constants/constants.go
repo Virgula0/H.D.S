@@ -39,4 +39,5 @@ const (
 	BackendLogoutEndpoint   = "logout"
 	BackendRegisterEndpoint = "register"
 	BackendGetHandshakes    = "handshakes"
+	BackendGetClients       = "clients"
 )

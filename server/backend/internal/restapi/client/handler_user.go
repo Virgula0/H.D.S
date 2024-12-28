@@ -13,14 +13,8 @@ import (
 type Handler struct {
 	Usecase *usecase.Usecase
 }
-
 type ReturnClientDevicesRequest struct {
-	Page uint `query:"page" validate:"required,gte=0"`
-}
-
-type ReturnClientsInstalledResponse struct {
-	Length  int                `json:"length"`
-	Clients []*entities.Client `json:"clients"`
+	Page uint `query:"page" validate:"required,min=1"`
 }
 
 func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +58,7 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.JSON(http.StatusOK, ReturnClientsInstalledResponse{
+	c.JSON(http.StatusOK, entities.ReturnClientsInstalledResponse{
 		Length:  counted,
 		Clients: clientsInstalled,
 	})

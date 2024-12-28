@@ -11,3 +11,8 @@ type Client struct {
 	LatestConnectionTime string `db:"LATEST_CONNECTION"`
 	MachineID            string `db:"MACHINE_ID"`
 }
+
+type ReturnClientsInstalledResponse struct {
+	Length  int       `json:"length"`
+	Clients []*Client `json:"clients"`
+}

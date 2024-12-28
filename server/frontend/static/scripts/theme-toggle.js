@@ -25,13 +25,13 @@
 
     function toggleTheme() {
         document.body.classList.toggle('dark-mode');
-        const theme = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
-        localStorage.setItem('theme', theme);
+        const theme = document.body.classList.contains('dark-mode') ? 'true' : 'false';
+        localStorage.setItem('darkMode', theme);
     }
 
     function initTheme() {
-        const currentTheme = localStorage.getItem('theme') || 'light';
-        document.body.classList.toggle('dark-mode', currentTheme === 'dark');
+        const currentTheme = localStorage.getItem('darkMode') || 'false';
+        document.body.classList.toggle('dark-mode', currentTheme === 'true');
         const themeToggle = createThemeToggle();
         themeToggle.addEventListener('click', toggleTheme);
     }

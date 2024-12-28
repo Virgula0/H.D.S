@@ -15,7 +15,7 @@ type Handler struct {
 }
 
 type GetHandshakesRequest struct {
-	Page uint `query:"page" validate:"required,gte=0"`
+	Page uint `query:"page" validate:"required,min=1"`
 }
 
 func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
