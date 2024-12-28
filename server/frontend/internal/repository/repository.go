@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"strconv"
@@ -179,4 +180,34 @@ func (repo *Repository) GetUserDevices(token string, page int) (*entities.Return
 	}
 
 	return clients, nil
+}
+
+func (repo *Repository) SendCrackingRequest(token string, request *entities.UpdateHandshakeTaskViaAPIRequest) (*entities.UpdateHandshakeTaskViaAPIResponse, error) {
+	var update *entities.UpdateHandshakeTaskViaAPIResponse
+
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", token),
+	}
+
+	// Marshal the data into JSON
+	jsonData, err := json.Marshal(request)
+	log.Println(err)
+
+	if err != nil {
+		return nil, err
+	}
+
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodPost, fmt.Sprintf("%s", constants.BackendUpdateClientTask), headers, jsonData)
+
+	log.Println(string(responseBytes))
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err = json.Unmarshal(responseBytes, &update); err != nil {
+		return nil, err
+	}
+
+	return update, nil
 }

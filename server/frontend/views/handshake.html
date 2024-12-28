@@ -161,11 +161,15 @@
                                             </button>
                                         </td>
                                         <td>
-                                            {{ if .CrackedHandshake }}
-                                            <span class="sensitive-info">{{ .CrackedHandshake }}</span>
-                                            {{ else }}
-                                            Not cracked yet
-                                            {{ end }}
+                                            {{with .CrackedHandshake }}
+                                                {{if eqStr . ""}}
+                                                    Not cracked yet
+                                                        {{- else -}}
+                                                        <span class="sensitive-info">{{ . }}</span>
+                                                        {{ end }}
+                                                    {{ else }}
+                                                Not cracked yet
+                                            {{- end -}}
                                         </td>
                                     </tr>
                                     {{ end }}
@@ -218,53 +222,53 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body">
-                <form id="crackForm">
-                    <input type="hidden" id="crackUUID" name="uuid">
+            <form id="crackForm" action="/submit-task" method="POST">
+                <div class="modal-body">
+                        <input type="hidden" id="crackUUID" name="uuid">
 
-                    <!-- Attack Mode -->
-                    <div class="form-group">
-                        <label for="attackMode">Attack Mode</label>
-                        <select class="form-control" id="attackMode" name="attackMode">
-                            <!-- Options will be dynamically inserted here -->
-                        </select>
-                    </div>
+                        <!-- Attack Mode -->
+                        <div class="form-group">
+                            <label for="attackMode">Attack Mode</label>
+                            <select class="form-control" id="attackMode" name="attackMode">
+                                <!-- Options will be dynamically inserted here -->
+                            </select>
+                        </div>
 
-                    <!-- Hash Mode -->
-                    <div class="form-group">
-                        <label for="hashMode">Hash Mode</label>
-                        <select class="form-control" id="hashMode" name="hashMode">
-                            <!-- Options will be dynamically inserted here -->
-                        </select>
-                    </div>
+                        <!-- Hash Mode -->
+                        <div class="form-group">
+                            <label for="hashMode">Hash Mode</label>
+                            <select class="form-control" id="hashMode" name="hashMode">
+                                <!-- Options will be dynamically inserted here -->
+                            </select>
+                        </div>
 
-                    <!-- Wordlist -->
-                    <div class="form-group">
-                        <label for="wordlist">Wordlist</label>
-                        <select class="form-control" id="wordlist" name="wordlist">
-                            <option value="rockyou.txt">rockyou.txt</option>
-                        </select>
-                    </div>
+                        <!-- Wordlist -->
+                        <div class="form-group">
+                            <label for="wordlist">Wordlist</label>
+                            <select class="form-control" id="wordlist" name="wordlist">
+                                <option value="wordlists/rockyou.txt">rockyou.txt</option>
+                            </select>
+                        </div>
 
-                    <!-- Other Options -->
-                    <div class="form-group">
-                        <label for="otherOptions">Other Options (will be appended to mandatory)</label>
-                        <textarea class="form-control" id="otherOptions" name="otherOptions" rows="3"></textarea>
-                    </div>
+                        <!-- Other Options -->
+                        <div class="form-group">
+                            <label for="otherOptions">Other Options (will be appended to mandatory)</label>
+                            <textarea class="form-control" id="otherOptions" name="otherOptions" rows="3"></textarea>
+                        </div>
 
-                    <!-- Assigned Client -->
-                    <div class="form-group">
-                        <label for="clientUUID">Assign Client</label>
-                        <select class="form-control" id="clientUUID" name="clientUUID">
-                            <!-- We'll populate this from the var clientUUIDs in dashboard.js -->
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="submitCrack">Submit</button>
-            </div>
+                        <!-- Assigned Client -->
+                        <div class="form-group">
+                            <label for="clientUUID">Assign Client</label>
+                            <select class="form-control" id="clientUUID" name="clientUUID">
+                                <!-- We'll populate this from the var clientUUIDs in dashboard.js -->
+                            </select>
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" id="submitCrack">Submit</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

@@ -14,6 +14,7 @@ const AuthToken = "token"
 
 const JSONContentType = "application/json"
 const HTMLContentType = "text/html"
+const FileToCrackString = "FILE_TO_CRACK"
 
 // Views
 
@@ -34,6 +35,7 @@ const (
 	RaspberryPIPage = "/raspberrypi"
 	Register        = "/register"
 	Logout          = "/logout"
+	SubmitTask      = "/submit-task"
 )
 
 // Endpoints BE
@@ -45,4 +47,5 @@ const (
 	BackendGetHandshakes    = "handshakes"
 	BackendGetClients       = "clients"
 	BackendGetRaspberryPi   = "devices"
+	BackendUpdateClientTask = "assign"
 )

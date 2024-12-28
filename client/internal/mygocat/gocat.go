@@ -175,7 +175,7 @@ func RunGoCat(
 	if err != nil {
 		return &pb.ClientTaskMessageFromClient{
 			Jwt:            *client.Credentials.JWT,
-			HashcatLogs:    err.Error(),
+			HashcatLogs:    fmt.Sprintf("[%s] with command '%s'", err.Error(), replaced),
 			Status:         constants.ErrorStatus,
 			HandshakeUuid:  handshake.UUID,
 			ClientUuid:     *handshake.ClientUUID,

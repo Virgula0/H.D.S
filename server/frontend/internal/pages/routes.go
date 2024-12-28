@@ -21,6 +21,7 @@ const Logout = constants.Logout
 const Handshake = constants.HandshakePage
 const Clients = constants.ClientPage
 const Devices = constants.RaspberryPIPage
+const HandshakeSubmission = constants.SubmitTask
 
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	loginInstance := login.Page{Usecase: h.Usecase}
@@ -70,6 +71,12 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 		HandleFunc(Handshake, handshakeInstance.ListHandshakes).
 		Methods("GET")
 	handshakeRouterTemplate.Use(authenticated.TokenValidation)
+
+	handshakeRouter := router.PathPrefix(RouteIndex).Subrouter()
+	handshakeRouter.
+		HandleFunc(HandshakeSubmission, handshakeInstance.UpdateTask).
+		Methods("POST")
+	handshakeRouter.Use(authenticated.TokenValidation)
 
 	// Clients
 	clientsRouterTemplate := router.PathPrefix(RouteIndex).Subrouter()

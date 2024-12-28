@@ -94,3 +94,55 @@ func (u Page) ListHandshakes(w http.ResponseWriter, r *http.Request) {
 		"InstalledClients": strings.Join(availableClients, ";"),
 	})
 }
+
+type UpdateTaskRequest struct {
+	AssignedClientUUID string `form:"clientUUID" validate:"required"`
+	HandshakeUUID      string `form:"uuid" validate:"required"`
+	AttackMode         string `form:"attackMode" validate:"required"`
+	HashMode           string `form:"hashMode" validate:"required"`
+	Wordlist           string `form:"wordlist"`
+	OtherOptions       string `form:"otherOptions"`
+}
+
+func (u Page) UpdateTask(w http.ResponseWriter, r *http.Request) {
+	var request UpdateTaskRequest
+	token := r.Context().Value(constants.AuthToken)
+
+	// Check if the token exists
+	if token == nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.Login, url.QueryEscape(customErrors.ErrNotAuthenticated.Error())), http.StatusFound)
+		return
+	}
+
+	if err := utils.ValidatePOSTFormRequest(&request, r); err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	// do checks and then submit
+
+	space := ""
+	if request.OtherOptions != "" {
+		space = " "
+	}
+	command := fmt.Sprintf("-a %s -m %s --potfile-disable --logfile-disable %s %s%s%s", request.AttackMode, request.HashMode, constants.FileToCrackString, request.Wordlist, space, request.OtherOptions)
+
+	formatted := &entities.UpdateHandshakeTaskViaAPIRequest{
+		HandshakeUUID:      request.HandshakeUUID,
+		AssignedClientUUID: request.AssignedClientUUID,
+		HashcatOptions:     command,
+	}
+	crackingRequest, err := u.Usecase.SendCrackingRequest(token.(string), formatted)
+
+	if err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	if crackingRequest.Success {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.HandshakePage), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, crackingRequest.Reason), http.StatusFound)
+}

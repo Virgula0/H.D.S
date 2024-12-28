@@ -37,11 +37,12 @@ func runService(router *CustomRouter, templates *template.Template) error {
 }
 
 var templateMapFunctions = template.FuncMap{
-	"add": usecase.AddForTemplate,
-	"sub": usecase.SubForTemplate,
-	"seq": usecase.SeqForTemplate,
-	"lt":  usecase.LtForTemplate,
-	"eq":  usecase.EqualForTemplate,
+	"add":   usecase.AddForTemplate,
+	"sub":   usecase.SubForTemplate,
+	"seq":   usecase.SeqForTemplate,
+	"lt":    usecase.LtForTemplate,
+	"eq":    usecase.EqualForTemplate,
+	"eqStr": usecase.EqualStringForTemplate,
 }
 
 func createServer(handler http.Handler, host, port string) *http.Server {

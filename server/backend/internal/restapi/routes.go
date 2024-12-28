@@ -20,6 +20,7 @@ const RouteLogout = "/logout"
 const GetClients = "/clients"
 const GetDevices = "/devices"
 const GetHandshakes = "/handshakes"
+const UpdateClientTask = "/assign"
 
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
@@ -68,5 +69,8 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	// Get handshake by user -- AUTHENTICATED --
 	handshakesRouter := router.PathPrefix(RouteIndex).Subrouter()
 	handshakesRouter.HandleFunc(GetHandshakes, handshakesHandler.GetHandshakes).Methods("GET")
+	handshakesRouter.Use(authMiddleware.EnsureTokenIsValid)
+
+	handshakesRouter.HandleFunc(UpdateClientTask, handshakesHandler.UpdateClientTask).Methods("POST")
 	handshakesRouter.Use(authMiddleware.EnsureTokenIsValid)
 }

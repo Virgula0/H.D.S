@@ -34,8 +34,8 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 	var request ReturnRaspberryPiDevicesRequest
 
 	if err := utils.ValidateQueryParameters(&request, r); err != nil {
-		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
-			StatusCode: http.StatusInternalServerError,
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
+			StatusCode: http.StatusBadRequest,
 			Details:    err.Error(),
 		})
 		return

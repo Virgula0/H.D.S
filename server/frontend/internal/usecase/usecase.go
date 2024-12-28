@@ -42,6 +42,10 @@ func (uc Usecase) RenderTemplate(w http.ResponseWriter, name string, data any) {
 
 // TEMPLATING FUNCTIONS
 
+func EqualStringForTemplate(a, b string) bool {
+	return a == b
+}
+
 func EqualForTemplate(a, b int) bool {
 	return a == b
 }
@@ -132,4 +136,8 @@ func (uc Usecase) GetUserClients(token string, page int) (*entities.ReturnClient
 }
 func (uc Usecase) GetUserDevices(token string, page int) (*entities.ReturnRaspberryPiDevicesResponse, error) {
 	return uc.repo.GetUserDevices(token, page)
+}
+
+func (uc Usecase) SendCrackingRequest(token string, request *entities.UpdateHandshakeTaskViaAPIRequest) (*entities.UpdateHandshakeTaskViaAPIResponse, error) {
+	return uc.repo.SendCrackingRequest(token, request)
 }

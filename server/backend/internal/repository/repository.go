@@ -433,15 +433,12 @@ func (repo *Repository) CreateRaspberryPI(userUUID, machineID, encryptionKey str
 	return rspNewID, nil
 }
 
-// UpdateClientTask REST-API/GRPC - UpdateClientTask updates a new client task
-func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
+// updateClientTaskCommon contains shared logic for updating a client task.
+func (repo *Repository) updateClientTaskCommon(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string, restMode bool) (*entities.Handshake, error) {
 	selectQuery := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
 
 	columnsFunc := func() (any, []any) {
-		// Each time called, we make a fresh instance
 		handshake := &entities.Handshake{}
-
-		// Return the entity plus the columns slice
 		cols := []any{
 			&handshake.UserUUID,
 			&handshake.ClientUUID,
@@ -463,46 +460,56 @@ func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClient
 	if err != nil {
 		return nil, err
 	}
-
 	if len(handshakes) == 0 {
 		return nil, errors.ErrElementNotFound
 	}
 
-	// Ensure that the result is of type Handshake
-	hhh, ok := handshakes[0].(*entities.Handshake)
-
+	handshake, ok := handshakes[0].(*entities.Handshake)
 	if !ok {
 		return nil, errors.ErrInvalidType
 	}
 
-	// check if handshake is not already assigned
-	if hhh.ClientUUID != nil {
-		switch hhh.Status {
-		case constants.PendingStatus, constants.WorkingStatus: // , -> or
+	// Specific REST API behavior: Check if the client is busy
+	if restMode && handshake.ClientUUID != nil {
+		switch handshake.Status {
+		case constants.PendingStatus, constants.WorkingStatus:
 			return nil, errors.ErrClientIsBusy
 		}
 	}
 
-	updateQuery := fmt.Sprintf("UPDATE %s SET uuid_assigned_client = ?, status = ?, hashcat_options = ?, hashcat_logs = ?, cracked_handshake = ? WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
+	// Update query
+	updateQuery := fmt.Sprintf(
+		"UPDATE %s SET uuid_assigned_client = ?, status = ?, hashcat_options = ?, hashcat_logs = ?, cracked_handshake = ? WHERE uuid_user = ? AND uuid = ?",
+		entities.HandshakeTableName,
+	)
 	_, err = repo.db.Exec(updateQuery, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get updated data
+	// Fetch updated handshake
 	handshakes, err = repo.queryEntities(selectQuery, columnsFunc, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
 	}
-
 	if len(handshakes) == 0 {
 		return nil, errors.ErrElementNotFound
 	}
 
-	converted, ok := handshakes[0].(*entities.Handshake)
+	updatedHandshake, ok := handshakes[0].(*entities.Handshake)
 	if !ok {
 		return nil, errors.ErrInvalidType
 	}
 
-	return converted, nil
+	return updatedHandshake, nil
+}
+
+// UpdateClientTask - GRPC version without client busy check
+func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
+	return repo.updateClientTaskCommon(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, false)
+}
+
+// UpdateClientTaskRest - REST version with client busy check
+func (repo *Repository) UpdateClientTaskRest(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
+	return repo.updateClientTaskCommon(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, true)
 }
