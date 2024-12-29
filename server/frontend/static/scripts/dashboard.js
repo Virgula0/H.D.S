@@ -466,9 +466,12 @@ $(document).ready(function() {
         $clientSelect.append('<option value="">-- Select a client --</option>');
         const uuidArray = clientUUIDs.split(";");
         uuidArray.forEach(uuid => {
-            const trimmed = uuid.trim();
+            const splitted = uuid.split(":");
+            const name = splitted[0];
+            const realUUID = splitted[1];
+            const trimmed = realUUID.trim();
             if (trimmed) {
-                $clientSelect.append(`<option value="${trimmed}">${trimmed}</option>`);
+                $clientSelect.append(`<option value="${trimmed}">${name.trim()}</option>`);
             }
         });
     }
@@ -490,12 +493,12 @@ $(document).ready(function() {
     // Hashcat options / logs
     $(document).on("click", ".hashcat-options-btn", function() {
         const options = $(this).data("options");
-        $("#hashcatOptionsContent").text(options || "No scan run");
+        $("#hashcatOptionsContent").text(options !== "<nil>" ? options : "No scan run");
         $("#hashcatOptionsModal").modal("show");
     });
     $(document).on("click", ".hashcat-logs-btn", function() {
         const logs = $(this).data("logs");
-        //TODO: this .jtml can be exploited, change
+        //TODO: this .html can be exploited, change
         $("#hashcatLogsContent").html(logs.replace(/\n/g, '<br>') || "No scan run");
         $("#hashcatLogsModal").modal("show");
     });

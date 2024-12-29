@@ -282,3 +282,12 @@ body.modal-open {
 .modal {
     padding-right: 0 !important;
 }
+
+.hashcat-logs-content {
+    max-height: 60vh; /* Limit modal body height */
+    overflow-y: auto; /* Enable vertical scrolling */
+    white-space: pre-wrap; /* Preserve whitespace and wrap long text */
+    word-wrap: break-word; /* Ensure long words break correctly */
+    font-family: monospace; /* Use a monospace font for logs */
+    font-size: 0.9rem;
+}

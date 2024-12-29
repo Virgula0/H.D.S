@@ -13,7 +13,7 @@ const SessionTokenName = "session_token"
 const AuthToken = "token"
 
 const JSONContentType = "application/json"
-const HTMLContentType = "text/html"
+const HTMLContentType = "text/html;charset=UTF-8"
 const FileToCrackString = "FILE_TO_CRACK"
 
 // Views

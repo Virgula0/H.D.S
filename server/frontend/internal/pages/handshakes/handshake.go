@@ -22,8 +22,8 @@ type HandshakeTemplate struct {
 	Page uint `query:"page"`
 }
 
-// ListHandshakes renders the login page template with an error message (if any)
-func (u Page) ListHandshakes(w http.ResponseWriter, r *http.Request) {
+// TemplateHandshake renders the login page template with an error message (if any)
+func (u Page) TemplateHandshake(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 
 	errorMessage := r.URL.Query().Get("error")
@@ -77,7 +77,7 @@ func (u Page) ListHandshakes(w http.ResponseWriter, r *http.Request) {
 
 	availableClients := make([]string, 0)
 	for _, client := range clients {
-		availableClients = append(availableClients, client.ClientUUID)
+		availableClients = append(availableClients, fmt.Sprintf("%s:%s", client.Name, client.ClientUUID))
 	}
 
 	postsPerPage := 5
@@ -120,13 +120,17 @@ func (u Page) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// do checks and then submit
-
-	space := ""
+	otherOptions := ""
 	if request.OtherOptions != "" {
-		space = " "
+		otherOptions = " " + request.OtherOptions
 	}
-	command := fmt.Sprintf("-a %s -m %s --potfile-disable --logfile-disable %s %s%s%s", request.AttackMode, request.HashMode, constants.FileToCrackString, request.Wordlist, space, request.OtherOptions)
 
+	wordlist := ""
+	if request.Wordlist != "" {
+		wordlist = " " + request.Wordlist
+	}
+
+	command := fmt.Sprintf("-a %s -m %s --potfile-disable --logfile-disable %s%s%s", request.AttackMode, request.HashMode, constants.FileToCrackString, wordlist, otherOptions)
 	formatted := &entities.UpdateHandshakeTaskViaAPIRequest{
 		HandshakeUUID:      request.HandshakeUUID,
 		AssignedClientUUID: request.AssignedClientUUID,
@@ -139,10 +143,12 @@ func (u Page) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if crackingRequest.Success {
-		http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.HandshakePage), http.StatusFound)
+	if !crackingRequest.Success {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, crackingRequest.Reason), http.StatusFound)
+
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, crackingRequest.Reason), http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.HandshakePage), http.StatusFound)
+
 }
