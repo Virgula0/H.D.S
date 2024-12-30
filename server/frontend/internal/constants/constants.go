@@ -40,16 +40,22 @@ const (
 	Register        = "/register"
 	Logout          = "/logout"
 	SubmitTask      = "/submit-task"
+	DeleteClient    = "/delete-client"
+	DeleteRaspberry = "/delete-raspberrypi"
+	DeleteHandshake = "/delete-handshake"
 )
 
 // Endpoints BE
 const (
-	BackendVerifyEndpoint   = "verify"
-	BackendAuthEndpoint     = "auth"
-	BackendLogoutEndpoint   = "logout"
-	BackendRegisterEndpoint = "register"
-	BackendGetHandshakes    = "handshakes"
-	BackendGetClients       = "clients"
-	BackendGetRaspberryPi   = "devices"
-	BackendUpdateClientTask = "assign"
+	BackendVerifyEndpoint    = "verify"
+	BackendAuthEndpoint      = "auth"
+	BackendLogoutEndpoint    = "logout"
+	BackendRegisterEndpoint  = "register"
+	BackendGetHandshakes     = "handshakes"
+	BackendGetClients        = "clients"
+	BackendGetRaspberryPi    = "devices"
+	BackendUpdateClientTask  = "assign"
+	BackendDeleteClient      = "delete/client"
+	BackendDeleteHandshake   = "delete/handshake"
+	BackendDeleteRaspberryPI = "delete/raspberrypi"
 )

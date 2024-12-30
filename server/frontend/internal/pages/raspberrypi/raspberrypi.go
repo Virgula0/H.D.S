@@ -2,6 +2,7 @@ package raspberrypi
 
 import (
 	"fmt"
+	"github.com/Virgula0/progetto-dp/server/entities"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/constants"
 	customErrors "github.com/Virgula0/progetto-dp/server/frontend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/response"
@@ -63,4 +64,35 @@ func (u Page) ListRaspberryPI(w http.ResponseWriter, r *http.Request) {
 		"TotalPages":   totalPages,
 		"Error":        errorMessage,
 	})
+}
+
+type DeleteRaspberryPIRequest struct {
+	UUID string `form:"uuid" validate:"required"`
+}
+
+func (u Page) DeleteRaspberryPI(w http.ResponseWriter, r *http.Request) {
+	var request DeleteRaspberryPIRequest
+	token := r.Context().Value(constants.AuthToken)
+
+	// Check if the token exists
+	if token == nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.Login, url.QueryEscape(customErrors.ErrNotAuthenticated.Error())), http.StatusFound)
+		return
+	}
+
+	if err := utils.ValidatePOSTFormRequest(&request, r); err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.RaspberryPIPage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	result, err := u.Usecase.DeleteRaspberryPIRequest(token.(string), &entities.DeleteRaspberryPIRequest{
+		RaspberryPIUUID: request.UUID,
+	})
+
+	if err != nil && result != nil && !result.Status {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.RaspberryPIPage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.RaspberryPIPage), http.StatusFound)
 }

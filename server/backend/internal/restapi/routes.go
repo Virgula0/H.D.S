@@ -21,6 +21,9 @@ const GetClients = "/clients"
 const GetDevices = "/devices"
 const GetHandshakes = "/handshakes"
 const UpdateClientTask = "/assign"
+const DeleteClient = "/delete/client"
+const DeleteRaspberryPI = "/delete/raspberrypi"
+const DeleteHandshake = "/delete/handshake"
 
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
@@ -61,9 +64,15 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	installedClientsRouter.HandleFunc(GetClients, installedClientsHandler.ReturnClientsInstalled).Methods("GET")
 	installedClientsRouter.Use(authMiddleware.EnsureTokenIsValid)
 
+	installedClientsRouter.HandleFunc(DeleteClient, installedClientsHandler.DeleteClient).Methods("DELETE")
+	installedClientsRouter.Use(authMiddleware.EnsureTokenIsValid)
+
 	// Get raspberry-pi installed by user -- AUTHENTICATED --
 	installedDevicesRouter := router.PathPrefix(RouteIndex).Subrouter()
 	installedDevicesRouter.HandleFunc(GetDevices, installedDevicesHandler.GetRaspberryPIDevices).Methods("GET")
+	installedDevicesRouter.Use(authMiddleware.EnsureTokenIsValid)
+
+	installedDevicesRouter.HandleFunc(DeleteRaspberryPI, installedDevicesHandler.DeleteRaspberryPI).Methods("DELETE")
 	installedDevicesRouter.Use(authMiddleware.EnsureTokenIsValid)
 
 	// Get handshake by user -- AUTHENTICATED --
@@ -72,5 +81,8 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	handshakesRouter.Use(authMiddleware.EnsureTokenIsValid)
 
 	handshakesRouter.HandleFunc(UpdateClientTask, handshakesHandler.UpdateClientTask).Methods("POST")
+	handshakesRouter.Use(authMiddleware.EnsureTokenIsValid)
+
+	handshakesRouter.HandleFunc(DeleteHandshake, handshakesHandler.DeleteHandshake).Methods("DELETE")
 	handshakesRouter.Use(authMiddleware.EnsureTokenIsValid)
 }

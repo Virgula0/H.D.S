@@ -13,6 +13,7 @@ import (
 
 	"github.com/Virgula0/progetto-dp/server/entities"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/constants"
+	customErrors "github.com/Virgula0/progetto-dp/server/frontend/internal/errors"
 )
 
 type Repository struct {
@@ -59,6 +60,10 @@ func (repo *Repository) GenericHTTPRequest(baseURL, method, endpoint string, hea
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, customErrors.ErrPageNotFound
+	}
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -192,15 +197,12 @@ func (repo *Repository) SendCrackingRequest(token string, request *entities.Upda
 
 	// Marshal the data into JSON
 	jsonData, err := json.Marshal(request)
-	log.Println(err)
 
 	if err != nil {
 		return nil, err
 	}
 
 	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodPost, constants.BackendUpdateClientTask, headers, jsonData)
-
-	log.Println(string(responseBytes))
 
 	if err != nil {
 		return nil, err
@@ -211,4 +213,91 @@ func (repo *Repository) SendCrackingRequest(token string, request *entities.Upda
 	}
 
 	return update, nil
+}
+
+func (repo *Repository) DeleteClient(token string, request *entities.DeleteClientRequest) (*entities.DeleteClientResponse, error) {
+	var dd *entities.DeleteClientResponse
+
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", token),
+	}
+
+	// Marshal the data into JSON
+	jsonData, err := json.Marshal(request)
+
+	if err != nil {
+		return nil, err
+	}
+
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodDelete, constants.BackendDeleteClient, headers, jsonData)
+
+	log.Println(string(responseBytes))
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(responseBytes, &dd); err != nil {
+		return nil, err
+	}
+
+	return dd, nil
+}
+
+func (repo *Repository) DeleteRaspberryPI(token string, request *entities.DeleteRaspberryPIRequest) (*entities.DeleteRaspberryPIResponse, error) {
+	var dd *entities.DeleteRaspberryPIResponse
+
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", token),
+	}
+
+	// Marshal the data into JSON
+	jsonData, err := json.Marshal(request)
+
+	if err != nil {
+		return nil, err
+	}
+
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodDelete, constants.BackendDeleteRaspberryPI, headers, jsonData)
+
+	log.Println(string(responseBytes))
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(responseBytes, &dd); err != nil {
+		return nil, err
+	}
+
+	return dd, nil
+}
+
+func (repo *Repository) DeleteHandshake(token string, request *entities.DeleteHandshakesRequest) (*entities.DeleteHandshakesResponse, error) {
+	var dd *entities.DeleteHandshakesResponse
+
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", token),
+	}
+
+	// Marshal the data into JSON
+	jsonData, err := json.Marshal(request)
+
+	if err != nil {
+		return nil, err
+	}
+
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodDelete, constants.BackendDeleteHandshake, headers, jsonData)
+
+	log.Println(string(responseBytes))
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(responseBytes, &dd); err != nil {
+		return nil, err
+	}
+
+	return dd, nil
 }

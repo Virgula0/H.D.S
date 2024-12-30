@@ -181,7 +181,7 @@ func (s *ServerContext) prepareTasks(handshakes []*entities.Handshake) []*pb.Cli
 	for _, handshake := range handshakes {
 		if handshake.ClientUUID == nil || handshake.HashcatOptions == nil || handshake.HandshakePCAP == nil {
 			log.Errorf(
-				"%s Missing ClientUUID, HashcatOptions, or HandshakePCAP for Handshake UUID '%s'. Task skipped.",
+				"%s Missing RaspberryPIUUID, HashcatOptions, or HandshakePCAP for Handshake HandshakeUUID '%s'. Task skipped.",
 				customErrors.ErrGetHandshakeStatus,
 				handshake.UUID,
 			)

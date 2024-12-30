@@ -75,5 +75,42 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 		Length:  counted,
 		Devices: temp,
 	})
+}
 
+func (u Handler) DeleteRaspberryPI(w http.ResponseWriter, r *http.Request) {
+	c := response.Initializer{ResponseWriter: w}
+
+	userID, err := u.Usecase.GetUserIDFromToken(r)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
+			StatusCode: http.StatusInternalServerError,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	var request entities.DeleteRaspberryPIRequest
+
+	if err = utils.ValidateJSON(&request, r); err != nil {
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
+			StatusCode: http.StatusBadRequest,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	deleted, err := u.Usecase.DeleteRaspberryPI(userID.String(), request.RaspberryPIUUID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
+			StatusCode: http.StatusInternalServerError,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, entities.DeleteRaspberryPIResponse{
+		Status: deleted,
+	})
 }

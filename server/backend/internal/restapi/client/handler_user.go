@@ -63,3 +63,41 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		Clients: clientsInstalled,
 	})
 }
+
+func (u Handler) DeleteClient(w http.ResponseWriter, r *http.Request) {
+	c := response.Initializer{ResponseWriter: w}
+
+	userID, err := u.Usecase.GetUserIDFromToken(r)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
+			StatusCode: http.StatusInternalServerError,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	var request entities.DeleteClientRequest
+
+	if err = utils.ValidateJSON(&request, r); err != nil {
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
+			StatusCode: http.StatusBadRequest,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	deleted, err := u.Usecase.DeleteClient(userID.String(), request.ClientUUID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
+			StatusCode: http.StatusInternalServerError,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, entities.DeleteClientResponse{
+		Status: deleted,
+	})
+}

@@ -292,7 +292,7 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_ErrorWhenClientTriesToU
 	testName := "Error when client tries to update a hashcat row of another user"
 	request := &pb.ClientTaskMessageFromClient{
 		Jwt:        s.NormalUserTokenFixture,
-		ClientUuid: s.UserClientRegistered.ClientUUID, // Registered and valid client UUID!
+		ClientUuid: s.UserClientRegistered.ClientUUID, // Registered and valid client HandshakeUUID!
 	}
 
 	s.Run(testName, func() {

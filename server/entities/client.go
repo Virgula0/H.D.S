@@ -16,3 +16,11 @@ type ReturnClientsInstalledResponse struct {
 	Length  int       `json:"length"`
 	Clients []*Client `json:"clients"`
 }
+
+type DeleteClientRequest struct {
+	ClientUUID string `json:"client_id" validate:"required"`
+}
+
+type DeleteClientResponse struct {
+	Status bool `json:"status"`
+}

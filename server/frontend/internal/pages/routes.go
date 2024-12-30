@@ -23,7 +23,11 @@ const Handshake = constants.HandshakePage
 const Clients = constants.ClientPage
 const Devices = constants.RaspberryPIPage
 const HandshakeSubmission = constants.SubmitTask
+const DeleteRaspberryPI = constants.DeleteRaspberry
+const DeleteClient = constants.DeleteClient
+const DeleteHandshake = constants.DeleteHandshake
 
+//nolint:funlen // this function does not have logic, init routes can have a huge length
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	loginInstance := login.Page{Usecase: h.Usecase}
 	registerInstance := register.Page{Usecase: h.Usecase}
@@ -80,6 +84,11 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 		Methods("POST")
 	handshakeRouter.Use(authenticated.TokenValidation)
 
+	handshakeRouter.
+		HandleFunc(DeleteHandshake, handshakeInstance.DeleteHandshake).
+		Methods("POST")
+	handshakeRouter.Use(authenticated.TokenValidation)
+
 	// Clients
 	clientsRouterTemplate := router.PathPrefix(RouteIndex).Subrouter()
 	clientsRouterTemplate.
@@ -87,11 +96,21 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 		Methods("GET")
 	clientsRouterTemplate.Use(authenticated.TokenValidation)
 
+	clientsRouterTemplate.
+		HandleFunc(DeleteClient, clientsInstance.DeleteClient).
+		Methods("POST")
+	clientsRouterTemplate.Use(authenticated.TokenValidation)
+
 	// RaspberryPI
 	devicesRouterTemplate := router.PathPrefix(RouteIndex).Subrouter()
 	devicesRouterTemplate.
 		HandleFunc(Devices, devicesInstance.ListRaspberryPI).
 		Methods("GET")
+	devicesRouterTemplate.Use(authenticated.TokenValidation)
+
+	devicesRouterTemplate.
+		HandleFunc(DeleteRaspberryPI, devicesInstance.DeleteRaspberryPI).
+		Methods("POST")
 	devicesRouterTemplate.Use(authenticated.TokenValidation)
 
 	// Welcome page
