@@ -12,9 +12,9 @@ const UserIDKey = "userID"
 var JSONContentType = "application/json"
 var JwtSecretKey = []byte(utils.GenerateToken(128))
 
-type TokenKey string
+type MyTokenKey string
 
-var TokenConstant = TokenKey("token")
+var TokenConstant = MyTokenKey("token")
 
 const Limit = 5
 

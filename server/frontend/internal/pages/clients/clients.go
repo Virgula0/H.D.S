@@ -16,7 +16,7 @@ type Page struct {
 }
 
 type ClientTemplate struct {
-	Page uint `query:"page"`
+	Page int `query:"page"`
 }
 
 // ListClients renders clients installed by users
@@ -39,10 +39,10 @@ func (u Page) ListClients(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page := 1
+	var page = 1
 
 	if request.Page != 0 {
-		page = int(request.Page)
+		page = request.Page
 	}
 
 	clients, err := u.Usecase.GetUserClients(token.(string), page)

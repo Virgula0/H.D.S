@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/base64"
 	"regexp"
 	"strings"
 )
@@ -25,26 +24,4 @@ func IsJWT(token string) bool {
 	}
 
 	return true
-}
-
-// isBase64URLEncoded checks if a string is Base64 URL encoded.
-func isBase64URLEncoded(s string) bool {
-	_, err := base64.RawURLEncoding.DecodeString(s)
-	return err == nil
-}
-
-func Base64StringToString(input string) (string, error) {
-	decoded, err := base64.StdEncoding.DecodeString(input)
-
-	if err != nil {
-		return "", err
-	}
-
-	return string(decoded), nil
-}
-
-// IsValidUUIDv4 checks if a string is a valid UUID v4.
-func IsValidUUIDv4(uuid string) bool {
-	re := regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89ABab][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
-	return re.MatchString(uuid)
 }

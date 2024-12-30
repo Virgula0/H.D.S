@@ -2,6 +2,7 @@ package repository
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -44,7 +45,7 @@ func NewRepository() (*Repository, error) {
 }
 
 func (repo *Repository) GenericHTTPRequest(baseURL, method, endpoint string, headers map[string]string, requestData []byte) ([]byte, error) {
-	req, err := http.NewRequest(method, fmt.Sprintf("%s%s", baseURL, endpoint), bytes.NewBuffer(requestData))
+	req, err := http.NewRequestWithContext(context.Background(), method, fmt.Sprintf("%s%s", baseURL, endpoint), bytes.NewBuffer(requestData))
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +136,7 @@ func (repo *Repository) GetUserHandshakes(token string, page int) (*entities.Get
 		return nil, err
 	}
 
-	if err = json.Unmarshal(responseBytes, &handshakes); err != nil {
+	if err := json.Unmarshal(responseBytes, &handshakes); err != nil {
 		return nil, err
 	}
 
@@ -155,7 +156,7 @@ func (repo *Repository) GetUserClients(token string, page int) (*entities.Return
 		return nil, err
 	}
 
-	if err = json.Unmarshal(responseBytes, &clients); err != nil {
+	if err := json.Unmarshal(responseBytes, &clients); err != nil {
 		return nil, err
 	}
 
@@ -175,7 +176,7 @@ func (repo *Repository) GetUserDevices(token string, page int) (*entities.Return
 		return nil, err
 	}
 
-	if err = json.Unmarshal(responseBytes, &clients); err != nil {
+	if err := json.Unmarshal(responseBytes, &clients); err != nil {
 		return nil, err
 	}
 
@@ -197,7 +198,7 @@ func (repo *Repository) SendCrackingRequest(token string, request *entities.Upda
 		return nil, err
 	}
 
-	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodPost, fmt.Sprintf("%s", constants.BackendUpdateClientTask), headers, jsonData)
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodPost, constants.BackendUpdateClientTask, headers, jsonData)
 
 	log.Println(string(responseBytes))
 
@@ -205,7 +206,7 @@ func (repo *Repository) SendCrackingRequest(token string, request *entities.Upda
 		return nil, err
 	}
 
-	if err = json.Unmarshal(responseBytes, &update); err != nil {
+	if err := json.Unmarshal(responseBytes, &update); err != nil {
 		return nil, err
 	}
 

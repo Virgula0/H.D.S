@@ -10,7 +10,10 @@ const TimeOut = 10
 var BackendBaseURL = fmt.Sprintf("http://%s:%s/v1/", os.Getenv("BACKEND_HOST"), os.Getenv("BACKEND_PORT"))
 
 const SessionTokenName = "session_token"
-const AuthToken = "token"
+
+type CustomType string
+
+var AuthToken = CustomType("token")
 
 const JSONContentType = "application/json"
 const HTMLContentType = "text/html;charset=UTF-8"

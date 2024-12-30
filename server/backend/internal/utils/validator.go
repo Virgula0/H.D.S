@@ -13,17 +13,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// Initialize the validator
+// Validator instance
 var validate = validator.New()
 
-// ValidateJSON Gets a struct with JSON annotations fields and validate it using validator
-// http.Request is passed for checking if it is actually JSON
+// ValidateJSON parses and validates JSON data from the request body into the given struct.
 func ValidateJSON(request any, r *http.Request) error {
-
-	// Check if request is a pointer.
-	// The only way we have to do so is using reflection
-	if reflect.TypeOf(request).Kind() != reflect.Ptr {
-		panic("Request in validator is not a pointer")
+	if err := ensurePointer(request); err != nil {
+		panic(err)
 	}
 
 	body, err := io.ReadAll(r.Body)
@@ -32,48 +28,49 @@ func ValidateJSON(request any, r *http.Request) error {
 	}
 	defer r.Body.Close()
 
-	if unmarshalErr := json.Unmarshal(body, request); unmarshalErr != nil {
-		return fmt.Errorf("%s: %w", backendErrors.ErrInvalidJSON, unmarshalErr)
+	if err := json.Unmarshal(body, request); err != nil {
+		return fmt.Errorf("%s: %w", backendErrors.ErrInvalidJSON, err)
 	}
 
-	// Validate the unmarshalled struct
-	err = validate.Struct(request)
-	if err != nil {
-		// If validation fails, return the first validation error
-		var validationErrors validator.ValidationErrors
-		if errors.As(err, &validationErrors) {
-			return validationErrors[0] // Return the first error
-		}
-		return err // Return the validation error
-	}
-
-	return nil
+	return validateStruct(request)
 }
 
+// ValidateGenericStruct validates a struct using the validator.
 func ValidateGenericStruct(obj any) error {
-	err := validate.Struct(obj)
-	if err != nil {
-		// If validation fails, return the first validation error
-		var validationErrors validator.ValidationErrors
-		if errors.As(err, &validationErrors) {
-			return validationErrors[0] // Return the first error
-		}
-		return err // Return the validation error
-	}
-	return nil
+	return validateStruct(obj)
 }
 
-// ValidateQueryParameters validates query parameters against a struct with 'query' tags.
+// ValidateQueryParameters binds and validates query parameters against a struct with 'query' tags.
 func ValidateQueryParameters(obj any, r *http.Request) error {
-	// Ensure obj is a pointer
+	if err := ensurePointer(obj); err != nil {
+		return err
+	}
+
+	return bindAndValidate(obj, r.URL.Query(), "query")
+}
+
+// ensurePointer verifies that the object is a pointer.
+func ensurePointer(obj any) error {
 	if reflect.TypeOf(obj).Kind() != reflect.Ptr {
 		return errors.New("obj must be a pointer")
 	}
+	return nil
+}
 
-	// Get query parameters from URL
-	queryParams := r.URL.Query()
+// validateStruct validates the given struct and returns the first validation error if any.
+func validateStruct(obj any) error {
+	if err := validate.Struct(obj); err != nil {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			return fmt.Errorf("validation error: %s", validationErrors[0].Error())
+		}
+		return err
+	}
+	return nil
+}
 
-	// Use reflection to bind query parameters to struct fields
+// bindAndValidate binds data from a map to a struct using reflection and validates it.
+func bindAndValidate(obj any, data map[string][]string, tagKey string) error {
 	val := reflect.ValueOf(obj).Elem()
 	typ := val.Type()
 
@@ -81,67 +78,83 @@ func ValidateQueryParameters(obj any, r *http.Request) error {
 		field := val.Field(i)
 		fieldType := typ.Field(i)
 
-		// Get the 'query' tag
-		tag := fieldType.Tag.Get("query")
-		if tag == "" {
+		// Get the tag
+		tag := fieldType.Tag.Get(tagKey)
+		if tag == "" || !field.CanSet() {
 			continue
 		}
 
-		// Get value from query parameters using the tag
-		queryValue := queryParams.Get(tag)
-		if queryValue == "" {
+		// Get the value from data
+		values, exists := data[tag]
+		if !exists || len(values) == 0 {
 			continue
 		}
+		value := values[0]
 
-		// Ensure the field can be set
-		if !field.CanSet() {
-			continue
-		}
-
-		// Set the value based on the field type
-		switch field.Kind() {
-		case reflect.String:
-			field.SetString(queryValue)
-		case reflect.Int, reflect.Int64:
-			if intValue, err := strconv.ParseInt(queryValue, 10, 64); err == nil {
-				field.SetInt(intValue)
-			} else {
-				return fmt.Errorf("invalid integer value for '%s'", tag)
-			}
-		case reflect.Uint, reflect.Uint64:
-			if uintValue, err := strconv.ParseUint(queryValue, 10, 64); err == nil {
-				field.SetUint(uintValue)
-			} else {
-				return fmt.Errorf("invalid unsigned integer value for '%s'", tag)
-			}
-		case reflect.Float64, reflect.Float32:
-			if floatValue, err := strconv.ParseFloat(queryValue, 64); err == nil {
-				field.SetFloat(floatValue)
-			} else {
-				return fmt.Errorf("invalid float value for '%s'", tag)
-			}
-		case reflect.Bool:
-			if boolValue, err := strconv.ParseBool(queryValue); err == nil {
-				field.SetBool(boolValue)
-			} else {
-				return fmt.Errorf("invalid boolean value for '%s'", tag)
-			}
-		default:
-			// Logging unhandled types (optional)
-			fmt.Printf("Unhandled field type: %v\n", field.Kind())
+		// Set the field value
+		if err := setFieldValue(field, value, tag); err != nil {
+			return err
 		}
 	}
 
-	// Validate the struct using validator
-	err := validate.Struct(obj)
+	return validateStruct(obj)
+}
+
+// setFieldValue sets the value of a struct field based on its type.
+func setFieldValue(field reflect.Value, value, tag string) error {
+	switch field.Kind() {
+	case reflect.String:
+		field.SetString(value)
+	case reflect.Int, reflect.Int64:
+		return parseAndSetInt(field, value, tag)
+	case reflect.Uint, reflect.Uint64:
+		return parseAndSetUint(field, value, tag)
+	case reflect.Float32, reflect.Float64:
+		return parseAndSetFloat(field, value, tag)
+	case reflect.Bool:
+		return parseAndSetBool(field, value, tag)
+	default:
+		fmt.Printf("Unhandled field type: %v\n", field.Kind())
+	}
+	return nil
+}
+
+// parseAndSetInt parses and sets an integer field.
+func parseAndSetInt(field reflect.Value, value, tag string) error {
+	intValue, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		// Return the first validation error
-		var validationErrors validator.ValidationErrors
-		if errors.As(err, &validationErrors) {
-			return fmt.Errorf("validation error: %s", validationErrors[0].Error())
-		}
-		return err
+		return fmt.Errorf("invalid integer value for '%s'", tag)
 	}
+	field.SetInt(intValue)
+	return nil
+}
 
+// parseAndSetUint parses and sets an unsigned integer field.
+func parseAndSetUint(field reflect.Value, value, tag string) error {
+	uintValue, err := strconv.ParseUint(value, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid unsigned integer value for '%s'", tag)
+	}
+	field.SetUint(uintValue)
+	return nil
+}
+
+// parseAndSetFloat parses and sets a float field.
+func parseAndSetFloat(field reflect.Value, value, tag string) error {
+	floatValue, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return fmt.Errorf("invalid float value for '%s'", tag)
+	}
+	field.SetFloat(floatValue)
+	return nil
+}
+
+// parseAndSetBool parses and sets a boolean field.
+func parseAndSetBool(field reflect.Value, value, tag string) error {
+	boolValue, err := strconv.ParseBool(value)
+	if err != nil {
+		return fmt.Errorf("invalid boolean value for '%s'", tag)
+	}
+	field.SetBool(boolValue)
 	return nil
 }

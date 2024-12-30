@@ -19,7 +19,7 @@ type Page struct {
 }
 
 type HandshakeTemplate struct {
-	Page uint `query:"page"`
+	Page int `query:"page"`
 }
 
 // TemplateHandshake renders the login page template with an error message (if any)
@@ -42,10 +42,10 @@ func (u Page) TemplateHandshake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page := 1
+	var page = 1
 
 	if request.Page != 0 {
-		page = int(request.Page)
+		page = request.Page
 	}
 
 	handshakes, err := u.Usecase.GetUserHandshakes(token.(string), page)
@@ -58,7 +58,7 @@ func (u Page) TemplateHandshake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Iterate until data available, we need all clients installed by user
-	clientPage := 1
+	var clientPage = 1
 	available := 1
 	var clients = make([]*entities.Client, 0)
 

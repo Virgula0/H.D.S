@@ -28,15 +28,12 @@ func NewUsecase(repo *repository.Repository, templates *template.Template) *Usec
 
 // RenderTemplate renders an HTML template
 func (uc Usecase) RenderTemplate(w http.ResponseWriter, name string, data any) {
-	if uc.templates == nil {
-		http.Error(w, "templates not configured", http.StatusInternalServerError)
-	}
-
 	w.Header().Set("Content-Type", constants.HTMLContentType)
 	err := uc.templates.ExecuteTemplate(w, name, data)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("template error %s", err.Error()), http.StatusInternalServerError)
+		return
 	}
 }
 

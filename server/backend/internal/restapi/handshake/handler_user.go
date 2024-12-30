@@ -34,7 +34,7 @@ func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
 
 	var request GetHandshakesRequest
 
-	if err := utils.ValidateQueryParameters(&request, r); err != nil {
+	if err = utils.ValidateQueryParameters(&request, r); err != nil {
 		c.JSON(http.StatusBadRequest, entities.UniformResponse{
 			StatusCode: http.StatusBadRequest,
 			Details:    err.Error(),
@@ -81,7 +81,7 @@ func (u Handler) UpdateClientTask(w http.ResponseWriter, r *http.Request) {
 
 	var request entities.UpdateHandshakeTaskViaAPIRequest
 
-	if err := utils.ValidateJSON(&request, r); err != nil {
+	if err = utils.ValidateJSON(&request, r); err != nil {
 		c.JSON(http.StatusBadRequest, entities.UniformResponse{
 			StatusCode: http.StatusBadRequest,
 			Details:    err.Error(),
