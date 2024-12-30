@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"strconv"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/Virgula0/progetto-dp/server/entities"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/constants"
-	customErrors "github.com/Virgula0/progetto-dp/server/frontend/internal/errors"
 )
 
 type Repository struct {
@@ -60,10 +58,6 @@ func (repo *Repository) GenericHTTPRequest(baseURL, method, endpoint string, hea
 		return nil, err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, customErrors.ErrPageNotFound
-	}
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -231,8 +225,6 @@ func (repo *Repository) DeleteClient(token string, request *entities.DeleteClien
 
 	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodDelete, constants.BackendDeleteClient, headers, jsonData)
 
-	log.Println(string(responseBytes))
-
 	if err != nil {
 		return nil, err
 	}
@@ -260,8 +252,6 @@ func (repo *Repository) DeleteRaspberryPI(token string, request *entities.Delete
 
 	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodDelete, constants.BackendDeleteRaspberryPI, headers, jsonData)
 
-	log.Println(string(responseBytes))
-
 	if err != nil {
 		return nil, err
 	}
@@ -288,8 +278,6 @@ func (repo *Repository) DeleteHandshake(token string, request *entities.DeleteHa
 	}
 
 	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodDelete, constants.BackendDeleteHandshake, headers, jsonData)
-
-	log.Println(string(responseBytes))
 
 	if err != nil {
 		return nil, err

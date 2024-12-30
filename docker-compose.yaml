@@ -1,3 +1,9 @@
+version: '3.8'
+
+networks:
+  dp-network:
+    driver: bridge
+
 services:
   client:
     container_name: dp-client
@@ -10,20 +16,21 @@ services:
       - GRPC_URL=dp-server:7777
       - GRPC_TIMEOUT=10s
     depends_on:
-      - server
+      server:
+        condition: service_healthy
     volumes:
-      # - ./client:/app/client
       - /tmp/.X11-unix:/tmp/.X11-unix # X11 forwarding
-      - /usr/share/seclists/Passwords:/usr/share/seclists/Passwords
+    networks:
+      - dp-network
 
-  # TODO: add a good healtcheck because otherwise this will try to connect to tcp server before is starts
   raspberrypi:
     container_name: emulate-raspberrypi
     build:
       context: raspberry-pi
       dockerfile: Dockerfile
     depends_on:
-      - server
+      server:
+        condition: service_healthy
     environment:
       - SERVER_HOST=server
       - SERVER_PORT=4747
@@ -32,6 +39,8 @@ services:
       - TEST=True
       - HOME_WIFI=Vodafone-A60818803 # Change with your SSID xD
     entrypoint: go run main.go run --username=admin --password=test1234 # these credentials won't work if DEBUG of server is disabled
+    networks:
+      - dp-network
 
   server:
     container_name: dp-server
@@ -59,9 +68,19 @@ services:
       - TCP_ADDRESS=0.0.0.0
       - TCP_PORT=4749
     ports:
-      - 4747:4747 # TODO: code development only, MUST BE REMOVED
-      - 4749:4749
+      - 4748:4748 # TODO: code development only, MUST BE REMOVED
+      # - 4748:4748 # TODO: code development only, MUST BE REMOVED
+
+      #- 4749:4749
     entrypoint: make run
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' -X POST -d '{}' http://localhost:4747/v1/login || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 10s
+    networks:
+      - dp-network
 
   database:
     build: database
@@ -69,7 +88,7 @@ services:
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: "yes"
     restart: unless-stopped
-    ports: 
+    ports:
       - "3306:3306"
     healthcheck:
       test:
@@ -85,3 +104,5 @@ services:
       timeout: 20s
       retries: 10
 
+    networks:
+      - dp-network
