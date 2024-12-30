@@ -29,7 +29,15 @@ body.dark-mode {
 
 .card {
     background-color: var(--card-bg-light);
-    transition: background-color 0.3s, color 0.3s;
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s, color 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 body.dark-mode .card {
@@ -62,12 +70,19 @@ body.dark-mode .text-muted {
 .btn-primary {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
-    transition: background-color 0.3s, border-color 0.3s;
+    border-radius: 30px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
 }
 
 .btn-primary:hover {
     background-color: var(--primary-hover-color);
     border-color: var(--primary-hover-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
 }
 
 a {
@@ -139,4 +154,76 @@ body.dark-mode .custom-checkbox .custom-control-label::before {
 body.dark-mode .custom-checkbox .custom-control-input:checked ~ .custom-control-label::before {
     background-color: var(--primary-hover-color);
     border-color: var(--primary-hover-color);
+}
+
+/* GitHub statistics cards */
+.stat-card {
+    background-color: var(--card-bg-light);
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card-body {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.stat-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--muted-light);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0;
+    color: var(--text-light);
+}
+
+body.dark-mode .stat-card {
+    background-color: var(--card-bg-dark);
+}
+
+body.dark-mode .stat-title {
+    color: var(--muted-dark);
+}
+
+body.dark-mode .stat-value {
+    color: var(--text-dark);
+}
+
+/* Improved typography */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+}
+
+.lead {
+    font-size: 1.1rem;
+    font-weight: 400;
+}
+
+/* Footer improvements */
+.footer {
+    background-color: var(--bg-light);
+    border-top: 1px solid var(--input-border-light);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+body.dark-mode .footer {
+    background-color: var(--bg-dark);
+    border-top-color: var(--input-border-dark);
 }

@@ -24,6 +24,7 @@ const (
 	HandshakeView = "handshake.html"
 	ClientView    = "clients.html"
 	DeviceView    = "raspberrypi.html"
+	WelcomeView   = "welcome.html"
 )
 
 // Endpoints FE

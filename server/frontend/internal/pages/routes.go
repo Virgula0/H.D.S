@@ -4,6 +4,7 @@ import (
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/middlewares"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/pages/clients"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/pages/raspberrypi"
+	"github.com/Virgula0/progetto-dp/server/frontend/internal/pages/welcome"
 	"github.com/gorilla/mux"
 
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/constants"
@@ -30,6 +31,7 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	handshakeInstance := handshakes.Page{Usecase: h.Usecase}
 	clientsInstance := clients.Page{Usecase: h.Usecase}
 	devicesInstance := raspberrypi.Page{Usecase: h.Usecase}
+	welcomeInstance := welcome.Page{Usecase: h.Usecase}
 	authenticated := middlewares.TokenAuth{Usecase: h.Usecase}
 
 	router.Use(middlewares.LogginMiddlware)
@@ -92,4 +94,9 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 		Methods("GET")
 	devicesRouterTemplate.Use(authenticated.TokenValidation)
 
+	// Welcome page
+	welcomeTemplate := router
+	welcomeTemplate.
+		HandleFunc(RouteIndex, welcomeInstance.WelcomeTemplate).
+		Methods("GET")
 }

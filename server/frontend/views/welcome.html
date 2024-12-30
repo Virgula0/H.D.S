@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="/styles/bootstrap-4.3.1.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/custom.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <title>Welcome to H.D.S</title>
+</head>
+<body class="d-flex flex-column min-vh-100">
+<button id="theme-toggle" class="btn btn-primary theme-toggle">
+    <i class="fas fa-moon"></i>
+</button>
+
+<div class="container flex-grow-1 py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <img src="/images/logo.png" alt="H.D.S Logo" class="logo mb-4">
+                        <h1 class="mb-3">Welcome to H.D.S</h1>
+                        <p class="lead text-muted">Hashcat Distributed Service</p>
+                    </div>
+                    <div class="mb-5">
+                        <h2 class="h4 mb-3">Project Description</h2>
+                        <p>H.D.S (hashcat-distributed-service) is a university project entirely written in Go that can find practical applications for distributing handshakes cracking tasks on multiple hashcat clients. It is mainly designed for cracking WPA2 handshakes capturing and converting `PCAP` files using bettercap plus a daemon designed to send such handshakes to the server in a simple, lightweight and handy way.</p>
+                        <p>The daemon checks for correct WPA captures by examining EAPOL messages, and if a full 4-way handshake is found, it will be sent to the user on the front-end. Clients wait for tasks submitted by users from the dashboard and proceed to use hashcat whenever requested.</p>
+                        <p>The project will be expanded to support all handshakes cracking tasks, not only WPAs.</p>
+                    </div>
+                    <div class="mb-5">
+                        <h2 class="h4 mb-4">GitHub Statistics</h2>
+                        <div id="github-stats" class="row">
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="stat-card">
+                                    <div class="stat-card-body">
+                                        <i class="fas fa-star stat-icon"></i>
+                                        <h5 class="stat-title">Stars</h5>
+                                        <p id="stars" class="stat-value">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="stat-card">
+                                    <div class="stat-card-body">
+                                        <i class="fas fa-code-branch stat-icon"></i>
+                                        <h5 class="stat-title">Forks</h5>
+                                        <p id="forks" class="stat-value">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="stat-card">
+                                    <div class="stat-card-body">
+                                        <i class="fas fa-exclamation-circle stat-icon"></i>
+                                        <h5 class="stat-title">Open Issues</h5>
+                                        <p id="issues" class="stat-value">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6 mb-4">
+                                <div class="stat-card">
+                                    <div class="stat-card-body">
+                                        <i class="fas fa-clock stat-icon"></i>
+                                        <h5 class="stat-title">Last Update</h5>
+                                        <p id="last-update" class="stat-value">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <a href="https://github.com/Virgula0/H.D.S" class="btn btn-primary btn-lg" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer mt-auto py-3">
+    <div class="container text-center">
+        <a href="/" class="text-muted mx-2">Welcome</a>
+        <span class="text-muted">|</span>
+        <a href="/login" class="text-muted mx-2">Login</a>
+        <span class="text-muted">|</span>
+        <a href="/register" class="text-muted mx-2">Register</a>
+    </div>
+</footer>
+
+<script src="/scripts/jquery-3.3.1.min.js"></script>
+<script src="/scripts/popper.min.js"></script>
+<script src="/scripts/bootstrap.min.js"></script>
+<script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+<script src="/scripts/theme-toggle.js"></script>
+<script src="/scripts/github-stats.js"></script>
+</body>
+</html>
+
