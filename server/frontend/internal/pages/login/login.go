@@ -2,8 +2,6 @@ package login
 
 import (
 	"fmt"
-	"github.com/Virgula0/progetto-dp/server/entities"
-	rr "github.com/Virgula0/progetto-dp/server/frontend/internal/response"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/utils"
 	"net/http"
 	"net/url"
@@ -34,15 +32,11 @@ type PerformLogin struct {
 }
 
 func (u Page) PerformLogin(w http.ResponseWriter, r *http.Request) {
-	c := rr.Initializer{ResponseWriter: w}
 
 	// Validate form input
 	var loginRequest PerformLogin
 	if err := utils.ValidatePOSTFormRequest(&loginRequest, r); err != nil {
-		c.JSON(http.StatusBadRequest, entities.UniformResponse{
-			StatusCode: http.StatusBadRequest,
-			Details:    err.Error(),
-		})
+		http.Redirect(w, r, fmt.Sprintf("%s?error=%s", constants.Login, err.Error()), http.StatusFound)
 		return
 	}
 

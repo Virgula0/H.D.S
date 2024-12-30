@@ -2,8 +2,6 @@ package register
 
 import (
 	"fmt"
-	"github.com/Virgula0/progetto-dp/server/entities"
-	rr "github.com/Virgula0/progetto-dp/server/frontend/internal/response"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/utils"
 	"net/http"
 	"net/url"
@@ -31,15 +29,11 @@ type PerformRegistrationRequest struct {
 }
 
 func (u Page) PerformRegistration(w http.ResponseWriter, r *http.Request) {
-	c := rr.Initializer{ResponseWriter: w}
 	var request PerformRegistrationRequest
 
 	// Validate form input
 	if err := utils.ValidatePOSTFormRequest(&request, r); err != nil {
-		c.JSON(http.StatusBadRequest, entities.UniformResponse{
-			StatusCode: http.StatusBadRequest,
-			Details:    err.Error(),
-		})
+		http.Redirect(w, r, fmt.Sprintf("%s?error=%s", constants.Register, err.Error()), http.StatusFound)
 		return
 	}
 

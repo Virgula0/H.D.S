@@ -5,7 +5,7 @@ import (
 	"html"
 	"net/http"
 
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"github.com/Virgula0/progetto-dp/server/entities"
@@ -35,7 +35,7 @@ func (w *Initializer) JSON(statusCode int, toMarshal any) {
 	marshaled, err := json.Marshal(toMarshal)
 
 	if err != nil {
-		log.Printf("[ERROR] While marshaling -> %s", err.Error())
+		log.Errorf("[ERROR] While marshaling -> %s", err.Error())
 	}
 
 	_, err = w.Write(marshaled)

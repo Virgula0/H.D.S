@@ -133,7 +133,6 @@ func ValidateQueryParameters(obj any, r *http.Request) error {
 	}
 
 	// Validate the struct using validator
-	validate := validator.New()
 	err := validate.Struct(obj)
 	if err != nil {
 		// Return the first validation error
