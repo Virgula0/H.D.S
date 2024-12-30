@@ -34,3 +34,11 @@ type UpdateHandshakeTaskViaAPIRequest struct {
 	AssignedClientUUID string `json:"clientUUID" validate:"required"`
 	HashcatOptions     string `json:"hashcatOptions" validate:"required"`
 }
+
+type DeleteHandshakesRequest struct {
+	HandshakeUUID string `json:"handshake_uuid"`
+}
+
+type DeleteHandshakesResponse struct {
+	Status bool `json:"status" validate:"required"`
+}

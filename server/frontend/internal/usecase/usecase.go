@@ -138,3 +138,15 @@ func (uc Usecase) GetUserDevices(token string, page int) (*entities.ReturnRaspbe
 func (uc Usecase) SendCrackingRequest(token string, request *entities.UpdateHandshakeTaskViaAPIRequest) (*entities.UpdateHandshakeTaskViaAPIResponse, error) {
 	return uc.repo.SendCrackingRequest(token, request)
 }
+
+func (uc Usecase) DeleteClientRequest(token string, request *entities.DeleteClientRequest) (*entities.DeleteClientResponse, error) {
+	return uc.repo.DeleteClient(token, request)
+}
+
+func (uc Usecase) DeleteRaspberryPIRequest(token string, request *entities.DeleteRaspberryPIRequest) (*entities.DeleteRaspberryPIResponse, error) {
+	return uc.repo.DeleteRaspberryPI(token, request)
+}
+
+func (uc Usecase) DeleteHandshakeRequest(token string, request *entities.DeleteHandshakesRequest) (*entities.DeleteHandshakesResponse, error) {
+	return uc.repo.DeleteHandshake(token, request)
+}

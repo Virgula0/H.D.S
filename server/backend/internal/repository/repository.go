@@ -513,3 +513,39 @@ func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClient
 func (repo *Repository) UpdateClientTaskRest(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
 	return repo.updateClientTaskCommon(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, true)
 }
+
+// DeleteClient - REST API - Delete a client
+func (repo *Repository) DeleteClient(userUUID, clientUUID string) (bool, error) {
+	deleteQuery := fmt.Sprintf("DELETE FROM %s WHERE uuid_user = ? AND uuid = ?", entities.ClientTableName)
+
+	_, err := repo.db.Exec(deleteQuery, userUUID, clientUUID)
+	if err != nil {
+		return false, fmt.Errorf("%s ERROR: %v", errors.ErrCannotDeleteElement, err)
+	}
+
+	return true, nil
+}
+
+// DeleteRaspberryPI - REST API - Delete a raspberry pi
+func (repo *Repository) DeleteRaspberryPI(userUUID, rspUUID string) (bool, error) {
+	deleteQuery := fmt.Sprintf("DELETE FROM %s WHERE uuid_user = ? AND uuid = ?", entities.RaspberryPiTableName)
+
+	_, err := repo.db.Exec(deleteQuery, userUUID, rspUUID)
+	if err != nil {
+		return false, fmt.Errorf("%s ERROR: %v", errors.ErrCannotDeleteElement, err)
+	}
+
+	return true, nil
+}
+
+// DeleteHandshake - REST API - Delete an handshake
+func (repo *Repository) DeleteHandshake(userUUID, handshakeUUID string) (bool, error) {
+	deleteQuery := fmt.Sprintf("DELETE FROM %s WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
+
+	_, err := repo.db.Exec(deleteQuery, userUUID, handshakeUUID)
+	if err != nil {
+		return false, fmt.Errorf("%s ERROR: %v", errors.ErrCannotDeleteElement, err)
+	}
+
+	return true, nil
+}

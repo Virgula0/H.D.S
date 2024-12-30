@@ -139,3 +139,15 @@ func (uc *Usecase) UpdateClientTaskRest(userUUID, handshakeUUID, assignedClientU
 func (uc *Usecase) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string) (handshakes []*entities.Handshake, length int, e error) {
 	return uc.repo.GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid)
 }
+
+func (uc *Usecase) DeleteClient(userUUID, clientUUID string) (bool, error) {
+	return uc.repo.DeleteClient(userUUID, clientUUID)
+}
+
+func (uc *Usecase) DeleteRaspberryPI(userUUID, rspUUID string) (bool, error) {
+	return uc.repo.DeleteRaspberryPI(userUUID, rspUUID)
+}
+
+func (uc *Usecase) DeleteHandshake(userUUID, handshakeUUID string) (bool, error) {
+	return uc.repo.DeleteHandshake(userUUID, handshakeUUID)
+}

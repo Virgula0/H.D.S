@@ -2,6 +2,7 @@ package clients
 
 import (
 	"fmt"
+	"github.com/Virgula0/progetto-dp/server/entities"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/constants"
 	customErrors "github.com/Virgula0/progetto-dp/server/frontend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/response"
@@ -65,4 +66,35 @@ func (u Page) ListClients(w http.ResponseWriter, r *http.Request) {
 		"TotalPages":  totalPages,
 		"Error":       errorMessage,
 	})
+}
+
+type DeleteClientRequest struct {
+	UUID string `form:"uuid" validate:"required"`
+}
+
+func (u Page) DeleteClient(w http.ResponseWriter, r *http.Request) {
+	var request DeleteClientRequest
+	token := r.Context().Value(constants.AuthToken)
+
+	// Check if the token exists
+	if token == nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.Login, url.QueryEscape(customErrors.ErrNotAuthenticated.Error())), http.StatusFound)
+		return
+	}
+
+	if err := utils.ValidatePOSTFormRequest(&request, r); err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.ClientPage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	result, err := u.Usecase.DeleteClientRequest(token.(string), &entities.DeleteClientRequest{
+		ClientUUID: request.UUID,
+	})
+
+	if err != nil && result != nil && !result.Status {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.ClientPage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.ClientPage), http.StatusFound)
 }

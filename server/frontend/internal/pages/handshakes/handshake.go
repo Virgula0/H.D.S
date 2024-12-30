@@ -152,3 +152,34 @@ func (u Page) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.HandshakePage), http.StatusFound)
 
 }
+
+type DeleteHandshakeReqeust struct {
+	UUID string `form:"uuid" validate:"required"`
+}
+
+func (u Page) DeleteHandshake(w http.ResponseWriter, r *http.Request) {
+	var request DeleteHandshakeReqeust
+	token := r.Context().Value(constants.AuthToken)
+
+	// Check if the token exists
+	if token == nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.Login, url.QueryEscape(customErrors.ErrNotAuthenticated.Error())), http.StatusFound)
+		return
+	}
+
+	if err := utils.ValidatePOSTFormRequest(&request, r); err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	result, err := u.Usecase.DeleteHandshakeRequest(token.(string), &entities.DeleteHandshakesRequest{
+		HandshakeUUID: request.UUID,
+	})
+
+	if err != nil && result != nil && !result.Status {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.HandshakePage), http.StatusFound)
+}

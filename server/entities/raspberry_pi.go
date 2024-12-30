@@ -20,3 +20,11 @@ type CustomRaspberryPIResponse struct {
 	RaspberryPIUUID string
 	MachineID       string
 }
+
+type DeleteRaspberryPIRequest struct {
+	RaspberryPIUUID string `json:"raspberry_piuuid" validate:"required"`
+}
+
+type DeleteRaspberryPIResponse struct {
+	Status bool `json:"status"`
+}
