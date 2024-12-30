@@ -16,6 +16,7 @@ var ErrRegistrationNotEnabled = errors.New("registration are not enabled")
 var ErrInvalidType = errors.New("failed conversion while fetching db for type: ")
 var ErrNoClientFound = errors.New("no client found")
 var ErrNotValidClientIP = errors.New("not valid client IP")
+var ErrClientIsBusy = errors.New("client is busy")
 
 // GRPC
 var ErrGRPCClosedConnection = errors.New("[GRPC]: HashcatChat -> Client has closed the connection ->")

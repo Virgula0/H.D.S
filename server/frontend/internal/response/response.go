@@ -2,17 +2,19 @@ package response
 
 import (
 	"encoding/json"
+	"github.com/Virgula0/progetto-dp/server/entities"
+	"github.com/Virgula0/progetto-dp/server/frontend/internal/constants"
+	log "github.com/sirupsen/logrus"
 	"html"
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
-	"github.com/Virgula0/progetto-dp/server/entities"
 )
 
 type Initializer struct {
 	http.ResponseWriter
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
 }
 
 func (w *Initializer) JSON(statusCode int, toMarshal any) {

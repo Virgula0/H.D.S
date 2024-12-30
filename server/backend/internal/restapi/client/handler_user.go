@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	"net/http"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
@@ -12,10 +13,8 @@ import (
 type Handler struct {
 	Usecase *usecase.Usecase
 }
-
-type ReturnClientsInstalledResponse struct {
-	Length  int                `json:"length"`
-	Clients []*entities.Client `json:"clients"`
+type ReturnClientDevicesRequest struct {
+	Page uint `query:"page" validate:"required,min=1"`
 }
 
 func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +30,17 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	clientsInstalled, counted, err := u.Usecase.GetClientsInstalled(userID.String(), 1) // TODO: handle offset from request
+	var request ReturnClientDevicesRequest
+
+	if err = utils.ValidateQueryParameters(&request, r); err != nil {
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
+			StatusCode: http.StatusBadRequest,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	clientsInstalled, counted, err := u.Usecase.GetClientsInstalled(userID.String(), request.Page)
 
 	if counted == 0 {
 		c.JSON(http.StatusNotFound, entities.UniformResponse{
@@ -49,7 +58,7 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	c.JSON(http.StatusOK, ReturnClientsInstalledResponse{
+	c.JSON(http.StatusOK, entities.ReturnClientsInstalledResponse{
 		Length:  counted,
 		Clients: clientsInstalled,
 	})

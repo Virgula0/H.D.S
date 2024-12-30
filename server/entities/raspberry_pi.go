@@ -8,3 +8,15 @@ type RaspberryPI struct {
 	MachineID       string `db:"MACHINE_ID"`
 	EncryptionKey   string `db:"ENCRYPTION_KEY"`
 }
+
+type ReturnRaspberryPiDevicesResponse struct {
+	Length  int                          `json:"length"`
+	Devices []*CustomRaspberryPIResponse `json:"devices"`
+}
+
+// Needed to avoid to display encryption key
+type CustomRaspberryPIResponse struct {
+	UserUUID        string
+	RaspberryPIUUID string
+	MachineID       string
+}

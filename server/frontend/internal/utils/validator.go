@@ -1,46 +1,33 @@
 package utils
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"reflect"
 	"strconv"
 
-	backendErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/go-playground/validator/v10"
+	log "github.com/sirupsen/logrus"
 )
 
 // Validator instance
 var validate = validator.New()
 
-// ValidateJSON parses and validates JSON data from the request body into the given struct.
-func ValidateJSON(request any, r *http.Request) error {
-	if err := ensurePointer(request); err != nil {
-		panic(err)
-	}
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
+// ValidatePOSTFormRequest binds and validates form fields from the request body.
+func ValidatePOSTFormRequest(obj any, r *http.Request) error {
+	if err := ensurePointer(obj); err != nil {
 		return err
 	}
-	defer r.Body.Close()
 
-	if err := json.Unmarshal(body, request); err != nil {
-		return fmt.Errorf("%s: %w", backendErrors.ErrInvalidJSON, err)
+	if err := r.ParseForm(); err != nil {
+		return fmt.Errorf("failed to parse form data: %w", err)
 	}
 
-	return validateStruct(request)
+	return bindAndValidate(obj, r.PostForm, "form")
 }
 
-// ValidateGenericStruct validates a struct using the validator.
-func ValidateGenericStruct(obj any) error {
-	return validateStruct(obj)
-}
-
-// ValidateQueryParameters binds and validates query parameters against a struct with 'query' tags.
+// ValidateQueryParameters validates query parameters against struct 'query' tags.
 func ValidateQueryParameters(obj any, r *http.Request) error {
 	if err := ensurePointer(obj); err != nil {
 		return err
@@ -49,22 +36,10 @@ func ValidateQueryParameters(obj any, r *http.Request) error {
 	return bindAndValidate(obj, r.URL.Query(), "query")
 }
 
-// ensurePointer verifies that the object is a pointer.
+// ensurePointer verifies that the given object is a pointer.
 func ensurePointer(obj any) error {
 	if reflect.TypeOf(obj).Kind() != reflect.Ptr {
 		return errors.New("obj must be a pointer")
-	}
-	return nil
-}
-
-// validateStruct validates the given struct and returns the first validation error if any.
-func validateStruct(obj any) error {
-	if err := validate.Struct(obj); err != nil {
-		var validationErrors validator.ValidationErrors
-		if errors.As(err, &validationErrors) {
-			return fmt.Errorf("validation error: %s", validationErrors[0].Error())
-		}
-		return err
 	}
 	return nil
 }
@@ -78,29 +53,38 @@ func bindAndValidate(obj any, data map[string][]string, tagKey string) error {
 		field := val.Field(i)
 		fieldType := typ.Field(i)
 
-		// Get the tag
+		// Fetch tag
 		tag := fieldType.Tag.Get(tagKey)
 		if tag == "" || !field.CanSet() {
 			continue
 		}
 
-		// Get the value from data
+		// Get value from data
 		values, exists := data[tag]
 		if !exists || len(values) == 0 {
 			continue
 		}
 		value := values[0]
 
-		// Set the field value
+		// Set field value
 		if err := setFieldValue(field, value, tag); err != nil {
 			return err
 		}
 	}
 
-	return validateStruct(obj)
+	// Struct validation
+	if err := validate.Struct(obj); err != nil {
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			return fmt.Errorf("validation error: %s", validationErrors[0].Error())
+		}
+		return err
+	}
+
+	return nil
 }
 
-// setFieldValue sets the value of a struct field based on its type.
+// setFieldValue sets a value to a struct field based on its type.
 func setFieldValue(field reflect.Value, value, tag string) error {
 	switch field.Kind() {
 	case reflect.String:
@@ -114,7 +98,7 @@ func setFieldValue(field reflect.Value, value, tag string) error {
 	case reflect.Bool:
 		return parseAndSetBool(field, value, tag)
 	default:
-		fmt.Printf("Unhandled field type: %v\n", field.Kind())
+		log.Errorf("unhandled field type: %v", field.Kind())
 	}
 	return nil
 }

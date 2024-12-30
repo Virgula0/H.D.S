@@ -17,3 +17,20 @@ type Handshake struct {
 	CrackedHandshake *string `db:"CRACKED_HANDSHAKE"`
 	HandshakePCAP    *string `db:"HANDSHAKE_PCAP"`
 }
+
+type GetHandshakeResponse struct {
+	Length     int `json:"length"`
+	Handshakes []*Handshake
+}
+
+type UpdateHandshakeTaskViaAPIResponse struct {
+	Success   bool
+	Reason    string
+	Handshake *Handshake
+}
+
+type UpdateHandshakeTaskViaAPIRequest struct {
+	HandshakeUUID      string `json:"handshakeUUID" validate:"required"`
+	AssignedClientUUID string `json:"clientUUID" validate:"required"`
+	HashcatOptions     string `json:"hashcatOptions" validate:"required"`
+}

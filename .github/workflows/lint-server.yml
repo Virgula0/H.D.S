@@ -1,4 +1,4 @@
-name: Lint server
+name: Lint server (FE+BE)
 
 on:
   push:

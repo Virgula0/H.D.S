@@ -99,7 +99,7 @@ func (repo *Repository) countQueryResults(query string, args ...any) (int, error
 }
 
 // queryEntities generic function for abstracting select statements in tables
-func (repo *Repository) queryEntities(query string, columns []any, entity any, args ...any) ([]any, error) {
+func (repo *Repository) queryEntities(query string, columnsFunc func() (any, []any), args ...any) ([]any, error) {
 	var ent []any
 
 	rows, err := repo.db.Query(query, args...)
@@ -112,11 +112,13 @@ func (repo *Repository) queryEntities(query string, columns []any, entity any, a
 
 	// Loop through the rows and scan into the provided entity
 	for rows.Next() {
-		if err := rows.Scan(columns...); err != nil {
+		rowEntity, rowColumns := columnsFunc()
+
+		if err := rows.Scan(rowColumns...); err != nil {
 			log.Error(err.Error())
 			return nil, errors.ErrInternalServerError
 		}
-		ent = append(ent, entity)
+		ent = append(ent, rowEntity)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -132,19 +134,24 @@ func (repo *Repository) GetClientsInstalledByUserID(userUUID string, offset uint
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.ClientTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.ClientTableName)
 
-	var client entities.Client
+	columnsFunc := func() (any, []any) {
+		// Each time called, we make a fresh instance
+		c := &entities.Client{}
 
-	columnsToBind := []any{
-		&client.UserUUID,
-		&client.ClientUUID,
-		&client.Name,
-		&client.LatestIP,
-		&client.CreationTime,
-		&client.LatestConnectionTime,
-		&client.MachineID,
+		// Return the entity plus the columns slice
+		cols := []any{
+			&c.UserUUID,
+			&c.ClientUUID,
+			&c.Name,
+			&c.LatestIP,
+			&c.CreationTime,
+			&c.LatestConnectionTime,
+			&c.MachineID,
+		}
+		return c, cols
 	}
 
-	results, err := repo.queryEntities(query, columnsToBind, &client, userUUID, (offset-1)*constants.Limit)
+	results, err := repo.queryEntities(query, columnsFunc, userUUID, (offset-1)*constants.Limit)
 
 	if err != nil {
 		return nil, -1, err
@@ -168,16 +175,21 @@ func (repo *Repository) GetRaspberryPiByUserID(userUUID string, offset uint) (rs
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.RaspberryPiTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.RaspberryPiTableName)
 
-	var rsp entities.RaspberryPI
+	columnsFunc := func() (any, []any) {
+		// Each time called, we make a fresh instance
+		rsp := &entities.RaspberryPI{}
 
-	columnsToBind := []any{
-		&rsp.UserUUID,
-		&rsp.RaspberryPIUUID,
-		&rsp.MachineID,
-		&rsp.EncryptionKey,
+		// Return the entity plus the columns slice
+		cols := []any{
+			&rsp.UserUUID,
+			&rsp.RaspberryPIUUID,
+			&rsp.MachineID,
+			&rsp.EncryptionKey,
+		}
+		return rsp, cols
 	}
 
-	results, err := repo.queryEntities(query, columnsToBind, &rsp, userUUID, (offset-1)*constants.Limit)
+	results, err := repo.queryEntities(query, columnsFunc, userUUID, (offset-1)*constants.Limit)
 
 	if err != nil {
 		return nil, -1, err
@@ -201,24 +213,29 @@ func (repo *Repository) GetHandshakesByUserID(userUUID string, offset uint) (han
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.HandshakeTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.HandshakeTableName)
 
-	var handshake entities.Handshake
+	columnsFunc := func() (any, []any) {
+		// Each time called, we make a fresh instance
+		handshake := &entities.Handshake{}
 
-	columnsToBind := []any{
-		&handshake.UserUUID,
-		&handshake.ClientUUID,
-		&handshake.UUID,
-		&handshake.SSID,
-		&handshake.BSSID,
-		&handshake.UploadedDate,
-		&handshake.Status,
-		&handshake.CrackedDate,
-		&handshake.HashcatOptions,
-		&handshake.HashcatLogs,
-		&handshake.CrackedHandshake,
-		&handshake.HandshakePCAP,
+		// Return the entity plus the columns slice
+		cols := []any{
+			&handshake.UserUUID,
+			&handshake.ClientUUID,
+			&handshake.UUID,
+			&handshake.SSID,
+			&handshake.BSSID,
+			&handshake.UploadedDate,
+			&handshake.Status,
+			&handshake.CrackedDate,
+			&handshake.HashcatOptions,
+			&handshake.HashcatLogs,
+			&handshake.CrackedHandshake,
+			&handshake.HandshakePCAP,
+		}
+		return handshake, cols
 	}
 
-	results, err := repo.queryEntities(query, columnsToBind, &handshake, userUUID, (offset-1)*constants.Limit)
+	results, err := repo.queryEntities(query, columnsFunc, userUUID, (offset-1)*constants.Limit)
 
 	if err != nil {
 		return nil, -1, err
@@ -242,24 +259,29 @@ func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes [
 	query := fmt.Sprintf("SELECT * FROM %s WHERE status = ?", entities.HandshakeTableName)
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE status = ? ", entities.HandshakeTableName)
 
-	var handshake entities.Handshake
+	columnsFunc := func() (any, []any) {
+		// Each time called, we make a fresh instance
+		handshake := &entities.Handshake{}
 
-	columnsToBind := []any{
-		&handshake.UserUUID,
-		&handshake.ClientUUID,
-		&handshake.UUID,
-		&handshake.SSID,
-		&handshake.BSSID,
-		&handshake.UploadedDate,
-		&handshake.Status,
-		&handshake.CrackedDate,
-		&handshake.HashcatOptions,
-		&handshake.HashcatLogs,
-		&handshake.CrackedHandshake,
-		&handshake.HandshakePCAP,
+		// Return the entity plus the columns slice
+		cols := []any{
+			&handshake.UserUUID,
+			&handshake.ClientUUID,
+			&handshake.UUID,
+			&handshake.SSID,
+			&handshake.BSSID,
+			&handshake.UploadedDate,
+			&handshake.Status,
+			&handshake.CrackedDate,
+			&handshake.HashcatOptions,
+			&handshake.HashcatLogs,
+			&handshake.CrackedHandshake,
+			&handshake.HandshakePCAP,
+		}
+		return handshake, cols
 	}
 
-	results, err := repo.queryEntities(query, columnsToBind, &handshake, filterStatus)
+	results, err := repo.queryEntities(query, columnsFunc, filterStatus)
 
 	if err != nil {
 		return nil, -1, err
@@ -284,24 +306,28 @@ func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND bssid = ? AND ssid = ?", entities.HandshakeTableName)
 	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s  WHERE uuid_user = ? AND bssid = ? AND ssid = ?", entities.HandshakeTableName)
 
-	var handshake entities.Handshake
+	columnsFunc := func() (any, []any) {
+		// Each time called, we make a fresh instance
+		handshake := &entities.Handshake{}
 
-	columnsToBind := []any{
-		&handshake.UserUUID,
-		&handshake.ClientUUID,
-		&handshake.UUID,
-		&handshake.SSID,
-		&handshake.BSSID,
-		&handshake.UploadedDate,
-		&handshake.Status,
-		&handshake.CrackedDate,
-		&handshake.HashcatOptions,
-		&handshake.HashcatLogs,
-		&handshake.CrackedHandshake,
-		&handshake.HandshakePCAP,
+		// Return the entity plus the columns slice
+		cols := []any{
+			&handshake.UserUUID,
+			&handshake.ClientUUID,
+			&handshake.UUID,
+			&handshake.SSID,
+			&handshake.BSSID,
+			&handshake.UploadedDate,
+			&handshake.Status,
+			&handshake.CrackedDate,
+			&handshake.HashcatOptions,
+			&handshake.HashcatLogs,
+			&handshake.CrackedHandshake,
+			&handshake.HandshakePCAP,
+		}
+		return handshake, cols
 	}
-
-	results, err := repo.queryEntities(query, columnsToBind, &handshake, userUUID, bssid, ssid)
+	results, err := repo.queryEntities(query, columnsFunc, userUUID, bssid, ssid)
 
 	if err != nil {
 		return nil, -1, err
@@ -407,63 +433,83 @@ func (repo *Repository) CreateRaspberryPI(userUUID, machineID, encryptionKey str
 	return rspNewID, nil
 }
 
-// UpdateClientTask REST-API/GRPC - UpdateClientTask updates a new client task
-func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
+// updateClientTaskCommon contains shared logic for updating a client task.
+func (repo *Repository) updateClientTaskCommon(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string, restMode bool) (*entities.Handshake, error) {
 	selectQuery := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
 
-	// Define a variable for the handshake
-	var handshake entities.Handshake
-
-	// Bind columns for querying
-	columnsToBind := []any{
-		&handshake.UserUUID,
-		&handshake.ClientUUID,
-		&handshake.UUID,
-		&handshake.SSID,
-		&handshake.BSSID,
-		&handshake.UploadedDate,
-		&handshake.Status,
-		&handshake.CrackedDate,
-		&handshake.HashcatOptions,
-		&handshake.HashcatLogs,
-		&handshake.CrackedHandshake,
-		&handshake.HandshakePCAP,
+	columnsFunc := func() (any, []any) {
+		handshake := &entities.Handshake{}
+		cols := []any{
+			&handshake.UserUUID,
+			&handshake.ClientUUID,
+			&handshake.UUID,
+			&handshake.SSID,
+			&handshake.BSSID,
+			&handshake.UploadedDate,
+			&handshake.Status,
+			&handshake.CrackedDate,
+			&handshake.HashcatOptions,
+			&handshake.HashcatLogs,
+			&handshake.CrackedHandshake,
+			&handshake.HandshakePCAP,
+		}
+		return handshake, cols
 	}
 
-	handshakes, err := repo.queryEntities(selectQuery, columnsToBind, &handshake, userUUID, handshakeUUID)
+	handshakes, err := repo.queryEntities(selectQuery, columnsFunc, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
 	}
-
 	if len(handshakes) == 0 {
 		return nil, errors.ErrElementNotFound
 	}
 
-	// Ensure that the result is of type Handshake
-	if _, ok := handshakes[0].(*entities.Handshake); !ok {
+	handshake, ok := handshakes[0].(*entities.Handshake)
+	if !ok {
 		return nil, errors.ErrInvalidType
 	}
 
-	updateQuery := fmt.Sprintf("UPDATE %s SET uuid_assigned_client = ?, status = ?, hashcat_options = ?, hashcat_logs = ?, cracked_handshake = ? WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
+	// Specific REST API behavior: Check if the client is busy
+	if restMode && handshake.ClientUUID != nil {
+		switch handshake.Status {
+		case constants.PendingStatus, constants.WorkingStatus:
+			return nil, errors.ErrClientIsBusy
+		}
+	}
+
+	// Update query
+	updateQuery := fmt.Sprintf(
+		"UPDATE %s SET uuid_assigned_client = ?, status = ?, hashcat_options = ?, hashcat_logs = ?, cracked_handshake = ? WHERE uuid_user = ? AND uuid = ?",
+		entities.HandshakeTableName,
+	)
 	_, err = repo.db.Exec(updateQuery, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get updated data
-	handshakes, err = repo.queryEntities(selectQuery, columnsToBind, &handshake, userUUID, handshakeUUID)
+	// Fetch updated handshake
+	handshakes, err = repo.queryEntities(selectQuery, columnsFunc, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
 	}
-
 	if len(handshakes) == 0 {
 		return nil, errors.ErrElementNotFound
 	}
 
-	converted, ok := handshakes[0].(*entities.Handshake)
+	updatedHandshake, ok := handshakes[0].(*entities.Handshake)
 	if !ok {
 		return nil, errors.ErrInvalidType
 	}
 
-	return converted, nil
+	return updatedHandshake, nil
+}
+
+// UpdateClientTask - GRPC version without client busy check
+func (repo *Repository) UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
+	return repo.updateClientTaskCommon(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, false)
+}
+
+// UpdateClientTaskRest - REST version with client busy check
+func (repo *Repository) UpdateClientTaskRest(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
+	return repo.updateClientTaskCommon(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, true)
 }

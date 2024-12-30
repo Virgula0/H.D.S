@@ -1,0 +1,293 @@
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5); /* semi-transparent overlay */
+    z-index: 9999; /* on top of everything */
+}
+
+:root {
+    --primary-color: #007bff;
+    --primary-hover-color: #0056b3;
+    --bg-light: #f8f9fa;
+    --bg-dark: #1a1a1a;
+    --text-light: #212529;
+    --text-dark: #ffffff;
+    --card-bg: #ffffff;
+    --card-text: #212529;
+    --input-bg-light: #ffffff;
+    --input-bg-dark: #3a3a3a;
+    --input-border-light: #ced4da;
+    --input-border-dark: #4a4a4a;
+    --muted-light: #6c757d;
+    --muted-dark: #b0b0b0;
+    --orange: #ffa500;
+    --blue: #007bff;
+    --grey: #6c757d;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-light);
+    color: var(--text-light);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    overflow-x: hidden;
+}
+
+body.dark-mode {
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+}
+
+.card {
+    background-color: var(--card-bg);
+    color: var(--card-text);
+}
+
+.form-control {
+    background-color: var(--input-bg-light);
+    border-color: var(--input-border-light);
+    color: var(--text-light);
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+body.dark-mode .form-control {
+    background-color: var(--input-bg-dark);
+    border-color: var(--input-border-dark);
+    color: var(--text-dark);
+}
+
+.text-muted {
+    color: var(--muted-light) !important;
+    transition: color 0.3s;
+}
+
+body.dark-mode .text-muted {
+    color: var(--muted-dark) !important;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover-color);
+    border-color: var(--primary-hover-color);
+}
+
+a {
+    color: var(--primary-color);
+    transition: color 0.3s;
+}
+
+a:hover {
+    color: var(--primary-hover-color);
+}
+
+body.dark-mode a {
+    color: var(--primary-hover-color);
+}
+
+body.dark-mode a:hover {
+    color: var(--primary-color);
+}
+
+.navbar {
+    background-color: var(--bg-light);
+    transition: background-color 0.3s ease;
+}
+
+body.dark-mode .navbar {
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+}
+
+body.dark-mode .navbar-light .navbar-nav .nav-link {
+    color: var(--text-dark);
+}
+
+.pagination {
+    background-color: transparent;
+}
+
+.page-link {
+    background-color: var(--bg-light);
+    color: var(--text-light);
+    border-color: var(--input-border-light);
+}
+
+body.dark-mode .page-link {
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+    border-color: var(--input-border-dark);
+}
+
+.page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+body.dark-mode .page-item.disabled .page-link {
+    background-color: var(--bg-dark);
+    color: var(--muted-dark);
+}
+
+/* Modals */
+.modal-content {
+    background-color: var(--bg-light);
+    color: var(--text-light);
+    opacity: 1; /* Default visible; remove or change if you want fade */
+    transition: opacity 0.3s ease;
+}
+
+.modal.show .modal-content {
+    opacity: 1;
+}
+
+body.dark-mode .modal-content {
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+}
+
+body.dark-mode .close {
+    color: var(--text-dark);
+}
+
+body.dark-mode .modal-content .form-control {
+    background-color: var(--input-bg-dark);
+    color: var(--text-dark);
+    border-color: var(--input-border-dark);
+}
+
+body.dark-mode .modal-content select.form-control option {
+    background-color: var(--bg-dark);
+    color: var(--text-dark);
+}
+
+/* Table styling */
+.table {
+    color: inherit;
+    font-size: 0.875rem;
+}
+
+.sidebar-open .table {
+    font-size: 0.8rem;
+}
+
+/* Status indicators */
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-cracked { background-color: #28a745; }
+.status-error   { background-color: #dc3545; }
+.status-pending { background-color: #ffc107; }
+.status-working { background-color: #6f42c1; }
+.status-nothing { background-color: #6c757d; }
+.status-exhausted   { background-color: #17a2b8; }
+
+/* Colored cards */
+.card-blue {
+    background-color: var(--blue);
+    color: var(--text-light);
+}
+
+.card-orange {
+    background-color: var(--orange);
+    color: var(--text-light);
+}
+
+.card-grey {
+    background-color: var(--grey);
+    color: var(--text-light);
+}
+
+/* Sidebar toggling */
+#wrapper.toggled #sidebar-wrapper {
+    margin-left: 0;
+}
+
+#sidebar-wrapper {
+    min-height: 100vh;
+    margin-left: -15rem;
+    transition: margin 0.25s ease-out;
+}
+
+#sidebar-wrapper .sidebar-heading {
+    padding: 0.875rem 1.25rem;
+    font-size: 1.2rem;
+}
+
+#sidebar-wrapper .list-group {
+    width: 15rem;
+}
+
+/* Page content */
+#page-content-wrapper {
+    min-width: 100vw;
+    /* Default visible so page doesn’t stay blank if JS fails */
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* If you want to fade in once loaded, you can apply .loaded => no real difference
+   except if you set default to 0. But let's keep it 1 so it's always visible. */
+#page-content-wrapper.loaded {
+    opacity: 1;
+}
+
+/* Media Query for wider screens */
+@media (min-width: 768px) {
+    #sidebar-wrapper {
+        margin-left: 0;
+    }
+
+    #page-content-wrapper {
+        min-width: 0;
+        width: 100%;
+    }
+
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: -15rem;
+    }
+}
+
+/* Sensitive info blur effect */
+.sensitive-info {
+    filter: blur(4px);
+    transition: filter 0.3s ease;
+}
+
+.sensitive-info:hover {
+    filter: blur(0);
+}
+
+/* Fix for modal + body scrolling issues */
+body.modal-open {
+    overflow: auto !important;
+    padding-right: 0 !important;
+}
+
+.modal {
+    padding-right: 0 !important;
+}
+
+.hashcat-logs-content {
+    max-height: 60vh; /* Limit modal body height */
+    overflow-y: auto; /* Enable vertical scrolling */
+    white-space: pre-wrap; /* Preserve whitespace and wrap long text */
+    word-wrap: break-word; /* Ensure long words break correctly */
+    font-family: monospace; /* Use a monospace font for logs */
+    font-size: 0.9rem;
+}

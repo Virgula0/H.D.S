@@ -1,6 +1,7 @@
 package raspberrypi
 
 import (
+	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	"github.com/Virgula0/progetto-dp/server/entities"
 	"net/http"
 
@@ -13,16 +14,8 @@ type Handler struct {
 	Usecase *usecase.Usecase
 }
 
-// Needed to avoid to display encryption key
-type CustomRaspberryPIResponse struct {
-	UserUUID        string
-	RaspberryPIUUID string
-	MachineID       string
-}
-
-type ReturnRaspberryPiDevicesResponse struct {
-	Length  int                          `json:"length"`
-	Devices []*CustomRaspberryPIResponse `json:"devices"`
+type ReturnRaspberryPiDevicesRequest struct {
+	Page uint `query:"page" validate:"required,min=0"`
 }
 
 func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +31,17 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rspDevices, counted, err := u.Usecase.GetRaspberryPI(userID.String(), 1) // TODO: handle offset from request
+	var request ReturnRaspberryPiDevicesRequest
+
+	if err = utils.ValidateQueryParameters(&request, r); err != nil {
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
+			StatusCode: http.StatusBadRequest,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	rspDevices, counted, err := u.Usecase.GetRaspberryPI(userID.String(), request.Page)
 
 	if counted == 0 {
 		c.JSON(http.StatusNotFound, entities.UniformResponse{
@@ -56,10 +59,10 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	temp := make([]*CustomRaspberryPIResponse, 0)
+	temp := make([]*entities.CustomRaspberryPIResponse, 0)
 
 	for _, dev := range rspDevices {
-		tt := CustomRaspberryPIResponse{
+		tt := entities.CustomRaspberryPIResponse{
 			UserUUID:        dev.UserUUID,
 			RaspberryPIUUID: dev.RaspberryPIUUID,
 			MachineID:       dev.MachineID,
@@ -68,7 +71,7 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 		temp = append(temp, &tt)
 	}
 
-	c.JSON(http.StatusOK, ReturnRaspberryPiDevicesResponse{
+	c.JSON(http.StatusOK, entities.ReturnRaspberryPiDevicesResponse{
 		Length:  counted,
 		Devices: temp,
 	})
