@@ -1,6 +1,5 @@
 name: Replace Markdown Links with Content
 
-
 on:
   push:
     branches:
@@ -24,7 +23,8 @@ jobs:
         run: |
           #!/bin/bash
           set -e
-          
+          set -x
+
           README_FILE="README.md"
 
           # Find all Markdown links in README.md
@@ -34,14 +34,16 @@ jobs:
                   # Extract the link text for replacement
                   LINK_TEXT=$(grep -oP "\[.*?\]\($LINK\)" "$README_FILE" | sed 's/\[\(.*\)\](.*)/\1/')
           
-                  # Get file content
-                  FILE_CONTENT=$(cat "$LINK")
+                  # Get file content and escape sed special characters
+                  FILE_CONTENT=$(cat "$LINK" | sed 's/[\/&]/\\&/g')
           
-                  # Escape special characters for sed
-                  ESCAPED_CONTENT=$(printf '%s\n' "$FILE_CONTENT" | sed 's/[&/\]/\\&/g')
+                  # Replace the [Link](path) with a temporary placeholder
+                  TEMP_FILE=$(mktemp)
+                  sed "s|\[$LINK_TEXT\]($LINK)|__PLACEHOLDER__|g" "$README_FILE" > "$TEMP_FILE"
           
-                  # Replace the [Link](path) with the actual content
-                  sed -i "s|\[$LINK_TEXT\]($LINK)|$ESCAPED_CONTENT|g" "$README_FILE"
+                  # Replace the placeholder with the actual file content, line-by-line safe
+                  awk -v replacement="$FILE_CONTENT" '{gsub(/__PLACEHOLDER__/, replacement)}1' "$TEMP_FILE" > "$README_FILE"
+                  rm "$TEMP_FILE"
               fi
           done
 
@@ -49,3 +51,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Replace Markdown links with file content in README.md"
+          file_pattern: README.md
