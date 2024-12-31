@@ -14,7 +14,8 @@ var (
 	TCPAddress = os.Getenv("TCP_ADDRESS")
 	TCPPort    = os.Getenv("TCP_PORT")
 
-	Test = os.Getenv("TEST") == "True"
+	Test      = os.Getenv("TEST") == "True"
+	Bettercap = os.Getenv("BETTERCAP") == "True"
 
 	HomeWIFISSID = os.Getenv("HOME_WIFI")
 )

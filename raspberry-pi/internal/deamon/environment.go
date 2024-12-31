@@ -13,7 +13,7 @@ type Environment interface {
 	Close()
 }
 
-type TestEnvironment struct {
+type Env struct {
 	HandshakeDirectory string
 	files              []*pcap.Handle
 }
@@ -27,9 +27,9 @@ func ChooseEnvironment() (Environment, error) {
 	userDir, _ := os.UserHomeDir()
 	pwd, _ := os.Getwd()
 
-	switch constants.Test {
+	switch constants.Bettercap {
 	case true:
-		return &TestEnvironment{
+		return &Env{
 			HandshakeDirectory: filepath.Join(pwd, "handshakes"),
 		}, nil
 	default:
@@ -71,7 +71,7 @@ func closeFiles(d []*pcap.Handle) {
 	}
 }
 
-func (d *TestEnvironment) LoadEnvironment() (map[string]*pcap.Handle, error) {
+func (d *Env) LoadEnvironment() (map[string]*pcap.Handle, error) {
 	return getPaths(d.HandshakeDirectory, constants.PCAPExtension)
 }
 
@@ -79,7 +79,7 @@ func (d *ProdEnvironment) LoadEnvironment() (map[string]*pcap.Handle, error) {
 	return getPaths(d.HandshakeDirectory, constants.PCAPExtension)
 }
 
-func (d *TestEnvironment) Close() {
+func (d *Env) Close() {
 	closeFiles(d.files)
 }
 

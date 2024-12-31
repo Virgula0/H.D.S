@@ -38,6 +38,7 @@ services:
       - TCP_PORT=4749
       - TEST=True
       - HOME_WIFI=Vodafone-A60818803 # Change with your SSID xD
+      - BETTERCAP=False
     entrypoint: go run main.go run --username=admin --password=test1234 # these credentials won't work if DEBUG of server is disabled
     networks:
       - dp-network
