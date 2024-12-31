@@ -1,0 +1,45 @@
+name: Replace Markdown Links with Content
+
+on:
+  push:
+    paths:
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  replace-links:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Replace Markdown Links with File Content
+        run: |
+          #!/bin/bash
+          set -e
+          
+          README_FILE="README.md"
+
+          # Find all Markdown links in README.md
+          grep -oP '\[.*?\]\(\K.*?(?=\))' "$README_FILE" | while read -r LINK; do
+              # Check if the link points to a local Markdown file
+              if [[ -f "$LINK" && "$LINK" == *.md ]]; then
+                  # Extract the link text for replacement
+                  LINK_TEXT=$(grep -oP "\[.*?\]\($LINK\)" "$README_FILE" | sed 's/\[\(.*\)\](.*)/\1/')
+          
+                  # Get file content
+                  FILE_CONTENT=$(cat "$LINK")
+          
+                  # Escape special characters for sed
+                  ESCAPED_CONTENT=$(printf '%s\n' "$FILE_CONTENT" | sed 's/[&/\]/\\&/g')
+          
+                  # Replace the [Link](path) with the actual content
+                  sed -i "s|\[$LINK_TEXT\]($LINK)|$ESCAPED_CONTENT|g" "$README_FILE"
+              fi
+          done
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Replace Markdown links with file content in README.md"
