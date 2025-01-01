@@ -1,14 +1,11 @@
 # Distributed Programming University Project
 
-<img src='docs/images/logo.png' style='zoom: 20%; border-radius: 50%;' align=left />
-
 <font size='10'><strong>H.D.S</strong></font><br>
 
 1<sup>st</sup> January 2024
 
 Student: <font color='orange'>Angelo Rosa</font>
 
-<br>
 
 # The project
 
@@ -99,7 +96,7 @@ As shown in the diagram, the **Backend (BE)** is isolated and can only be access
     - After authenticating via **REST API**, the daemon communicates with BE via raw **TCP**.
 
 - **Client ↔ BE (gRPC):**
-    - A **bi-directional gRPC stream** allows clients to dynamically send logs and receive updates during **Hashcat** operations.
+    - A **bidirectional gRPC stream** allows clients to dynamically send logs and receive updates during **Hashcat** operations.
 
 ### Directory Mapping:
 - **Client:** -> `/client`
@@ -107,6 +104,52 @@ As shown in the diagram, the **Backend (BE)** is isolated and can only be access
 - **Server:** -> `/server`
     - **Backend:** -> `/server/backend`
     - **Frontend:** -> `/server/frontend`
+
+---
+
+## Test scheme
+
+The tests have been implemented in the backend and emulates `gRPC` and `daemon` clients, for testing out methods of these 2 protocols.
+
+It was not that easy to achieve a good solid test scheme, but at the end it should look like something like this.
+
+When running a test a `gRPC` server or `tcp` server along with rest API is initialized.
+It depends on what tests you're running.
+Here will follow a scheme which will explain better the test flows:
+
+<img src='docs/images/test-diagram.png' style='zoom: 100%; border: 2px solid #ddd;' alt="missing"/>
+
+- `setup_grpc.go` -> set up a grpc mock server to communicate with. It is initialized during `SetupTest`. Server is killed on `TeardownTest`. A rest API server is initialized too.
+- `tcp_ip.go` -> set up a tco mock server to communicate with. It is initialized during `SetupTest`. Server is killed on `TeardownTest`.  A rest API server is initialized too.
+- `common_grpc.go` -> calls `SetupTest` and `TeardownTest`, define a structure with mock data useful in tests
+- `common_raspberrypi_test.go` -> calls `SetupTest` and `TeardownTest`, define a structure with mock data useful in tests
+- `grpc_test.go` -> contains tests for grpc infrastructure
+- `raspberrypi_test.go` -> contains tests for raspberrypi infrastructure
+
+> [!WARNING]  
+> You can rnu tests using `cd server && make test` but env variables must be set before proceeding
+
+> [!IMPORTANT]  
+> A database container must be up and running on port 3306 to succeed.
+
+```bash
+export BACKEND_HOST="0.0.0.0"
+export BACKEND_PORT="4747"
+export FRONTEND_HOST="0.0.0.0"
+export FRONTEND_PORT="4748"
+export DB_USER="agent"
+export DB_PASSWORD="SUPERSECUREUNCRACKABLEPASSWORD" # This should be changed (remember to change it in database/initialize.sql too)
+export DB_HOST="localhost"
+export DB_PORT="3306"
+export DB_NAME="dp_hashcat"
+export ALLOW_REGISTRATIONS="True" # Disable if needed
+export DEBUG="True"  # This will enable seeds for having some accounts for testing purposes. admin:test1234 will be created
+export RESET="True"
+export GRPC_URL="0.0.0.0:7777"
+export GRPC_TIMEOUT="10s"
+export TCP_ADDRESS="0.0.0.0"
+export TCP_PORT="4749"
+```
 
 ---
 
@@ -377,6 +420,10 @@ While security auditing and privacy were not primary objectives for this project
 # Client
 
 [Setup](client/README.md)
+
+# Server
+
+[Setup](server/README.md)
 
 # External Dependencies
 
