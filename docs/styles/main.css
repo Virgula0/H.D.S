@@ -1,0 +1,16 @@
+h1, h2 {
+    color: MidnightBlue;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid DimGray;
+}
+
+th, td {
+    text-align: left;
+    padding: 1em;
+}
