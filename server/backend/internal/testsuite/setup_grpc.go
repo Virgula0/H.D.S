@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi"
 	"github.com/gorilla/mux"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 

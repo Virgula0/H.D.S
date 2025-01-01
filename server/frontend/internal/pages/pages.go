@@ -2,8 +2,8 @@ package pages
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"html/template"
-	"log"
 
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/repository"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/usecase"

@@ -3,7 +3,7 @@ package infrastructure
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"

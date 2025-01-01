@@ -1,6 +1,6 @@
 # Distributed Programming University Project
 
-<img src='/docs/images/logo.png' style='zoom: 20%; border-radius: 50%;' align=left />
+<img src='docs/images/logo.png' style='zoom: 20%; border-radius: 50%;' align=left />
 
 <font size='10'><strong>H.D.S</strong></font><br>
 
@@ -76,16 +76,17 @@ This account can be used on the frontend to upload and submit WPA handshakes for
     - If FE and BE are deployed on separate servers, the `entities` directory must be moved into each respective folder. Minor refactoring will be required.
 - **gRPC Communication:**  
   Clients and the backend use **gRPC** for communication. Both must include compiled **protobuf** files:
-  ```
+
+```
   cd client && make proto
   cd server/backend && make proto
-  ```
+```
 
 ---
 
 ## Project Scheme
 
-<img src='/docs/images/project-structure.png' style='zoom: 100%; border: 2px solid #ddd;' alt="missing"/>
+<img src='docs/images/project-structure.png' style='zoom: 100%; border: 2px solid #ddd;' alt="missing"/>
 
 As shown in the diagram, the **Backend (BE)** is isolated and can only be accessed through the **Frontend (FE)**.
 
@@ -377,4 +378,15 @@ While security auditing and privacy were not primary objectives for this project
 
 [Setup](client/README.md)
 
-# Dependencies
+# External Dependencies
+
+Ignoring gRPC and other basic deps
+
+- **RayLib** `github.com/gen2brain/raylib-go/raylib` A basic graphic library
+- **Gocat** `github.com/mandiant/gocat/v6` Used for running hashcat in go via `hashcatlib` 
+- **Validator** `github.com/go-playground/validator/v10` Validator for go structures
+- **Mux** `github.com/gorilla/mux` HTTP router
+- **Testify** `github.com/stretchr/testify` A test library for simplifying test syntax
+- **Gopacket** `github.com/google/gopacket` Parse `.PCAP` files as layers
+- **Wifi** `github.com/mdlayher/wifi` used by daemon for understanding if we're connected to our local network
+- **Cobra** `github.com/spf13/cobra` used for parsing command line arguments easily in daemon

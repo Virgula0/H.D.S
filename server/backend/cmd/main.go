@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/raspberrypi"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"runtime"
 	"time"

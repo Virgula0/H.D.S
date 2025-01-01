@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
