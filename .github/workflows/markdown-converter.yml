@@ -54,30 +54,61 @@ jobs:
           README_FILE="README.md"
           TEMP_FILE=$(mktemp)
 
-          sed -i -E '/^> \[!NOTE\]/,/^$/ {
-            s/^> \[!NOTE\](.*)$/<div class="alert alert-note">\1/
-            :a; n; /^>/! { s/$/<\/div>/; b }; ba
-          }' "$README_FILE"
+          awk '
+          BEGIN { in_alert = 0; alert_type = "" }
+          /^> \[!NOTE\]/ { 
+              print "<div class=\"alert alert-note\">"
+              sub(/^> \[!NOTE\] */, "")
+              print
+              in_alert = 1; alert_type = "note"; next
+          }
+          /^> \[!TIP\]/ {
+              print "<div class=\"alert alert-tip\">"
+              sub(/^> \[!TIP\] */, "")
+              print
+              in_alert = 1; alert_type = "tip"; next
+          }
+          /^> \[!IMPORTANT\]/ {
+              print "<div class=\"alert alert-important\">"
+              sub(/^> \[!IMPORTANT\] */, "")
+              print
+              in_alert = 1; alert_type = "important"; next
+          }
+          /^> \[!WARNING\]/ {
+              print "<div class=\"alert alert-warning\">"
+              sub(/^> \[!WARNING\] */, "")
+              print
+              in_alert = 1; alert_type = "warning"; next
+          }
+          /^> \[!CAUTION\]/ {
+              print "<div class=\"alert alert-caution\">"
+              sub(/^> \[!CAUTION\] */, "")
+              print
+              in_alert = 1; alert_type = "caution"; next
+          }
+          /^$/ && in_alert {
+              print "</div>"
+              in_alert = 0; alert_type = ""; next
+          }
+          /^\`\`\`/ { 
+              if (in_alert) {
+                  print "</div>"
+                  in_alert = 0; alert_type = ""
+              }
+              print; next
+          }
+          {
+              if (in_alert) {
+                  print
+              } else {
+                  print
+              }
+          }
+          END {
+              if (in_alert) print "</div>"
+          }' "$README_FILE" > "$TEMP_FILE"
 
-          sed -i -E '/^> \[!TIP\]/,/^$/ {
-            s/^> \[!TIP\](.*)$/<div class="alert alert-tip">\1/
-            :a; n; /^>/! { s/$/<\/div>/; b }; ba
-          }' "$README_FILE"
-
-          sed -i -E '/^> \[!IMPORTANT\]/,/^$/ {
-            s/^> \[!IMPORTANT\](.*)$/<div class="alert alert-important">\1/
-            :a; n; /^>/! { s/$/<\/div>/; b }; ba
-          }' "$README_FILE"
-
-          sed -i -E '/^> \[!WARNING\]/,/^$/ {
-            s/^> \[!WARNING\](.*)$/<div class="alert alert-warning">\1/
-            :a; n; /^>/! { s/$/<\/div>/; b }; ba
-          }' "$README_FILE"
-
-          sed -i -E '/^> \[!CAUTION\]/,/^$/ {
-            s/^> \[!CAUTION\](.*)$/<div class="alert alert-caution">\1/
-            :a; n; /^>/! { s/$/<\/div>/; b }; ba
-          }' "$README_FILE"
+          mv "$TEMP_FILE" "$README_FILE"
 
       - name: Install WeasyPrint
         run: |
@@ -99,3 +130,4 @@ jobs:
         with:
           commit_message: "Replace Markdown links, process alerts, generate PDF, and restore README state"
           file_pattern: README.md docs/docs.pdf
+

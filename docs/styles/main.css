@@ -45,7 +45,6 @@ blockquote {
     background: #f9f9f9;
 }
 
-/* Alerts (GitHub Style) */
 .alert {
     padding: 12px 16px;
     margin: 16px 0;
@@ -82,9 +81,4 @@ blockquote {
     background-color: #f8d7da;
     border-left: 4px solid #dc3545;
     color: #721c24;
-}
-
-/* Alert Content Styling */
-.alert p {
-    margin: 0;
 }
