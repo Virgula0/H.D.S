@@ -1,4 +1,4 @@
-name: Replace Markdown Links with Content
+name: Replace Markdown Links and Generate PDF
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
       - synchronize
 
 jobs:
-  replace-links:
+  process-markdown:
     runs-on: ubuntu-latest
 
     steps:
@@ -47,8 +47,21 @@ jobs:
               fi
           done
 
+      - name: Install Pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-xetex
+
+      - name: Convert README.md to PDF
+        run: |
+          mkdir -p docs
+          pandoc README.md \
+            --pdf-engine=xelatex \
+            --css=docs/styles/main.css \
+            -o docs/docs.pdf
+
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: "Replace Markdown links with file content in README.md"
-          file_pattern: README.md
+          commit_message: "Replace Markdown links with file content and generate styled PDF"
+          file_pattern: README.md docs/docs.pdf

@@ -1,5 +1,3 @@
-# Deamon
-
 The idea of the raspberry-pi part is simple, it is designed for sending captures performed by `bettercap` to the server.
 Ideally, you can run the bettercap+deamon on the Raspberry Pi, and it will send the handshakes to the server when your
 local-home SSID of your WIFI has been recognized nearby.
