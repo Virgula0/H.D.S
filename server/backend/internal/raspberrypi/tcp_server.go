@@ -19,8 +19,6 @@ type TCPCreateRaspberryPIRequest struct {
 	EncryptionKey string `validate:"omitempty,len=64"`
 }
 
-// TODO: returned errors should be refactored in errors
-
 // RunTCPServer Start TCP server
 func (wr *TCPServer) RunTCPServer() error {
 	log.Printf("[TCP/IP Server] TCP/IP server running on %s", wr.w.Addr())
@@ -36,6 +34,7 @@ func (wr *TCPServer) RunTCPServer() error {
 	}
 }
 
+// handleClientConnection accept request from client
 func (wr *TCPServer) handleClientConnection(client net.Conn) {
 	defer client.Close()
 
@@ -60,6 +59,7 @@ func (wr *TCPServer) handleClientConnection(client net.Conn) {
 	}
 }
 
+// processClientRequest parses the client request
 func (wr *TCPServer) processClientRequest(client net.Conn) error {
 	reader := bufio.NewReader(client)
 

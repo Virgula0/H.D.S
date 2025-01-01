@@ -38,6 +38,7 @@ services:
       - TCP_PORT=4749
       - TEST=True
       - HOME_WIFI=Vodafone-A60818803 # Change with your SSID xD
+      - BETTERCAP=False
     entrypoint: go run main.go run --username=admin --password=test1234 # these credentials won't work if DEBUG of server is disabled
     networks:
       - dp-network
@@ -61,7 +62,7 @@ services:
       - DB_PORT=3306
       - DB_NAME=dp_hashcat
       - ALLOW_REGISTRATIONS=True # Disable if needed
-      - DEBUG=True  # This will enable seeds for having some accounts for testing purposes. admin:test1234 will bre created
+      - DEBUG=False  # This will enable seeds for having handshake, clients, and raspberryPI mocked
       - RESET=True
       - GRPC_URL=0.0.0.0:7777
       - GRPC_TIMEOUT=10s
@@ -70,7 +71,6 @@ services:
     ports:
       - 4748:4748 # TODO: code development only, MUST BE REMOVED
       # - 4748:4748 # TODO: code development only, MUST BE REMOVED
-
       #- 4749:4749
     entrypoint: make run
     healthcheck:

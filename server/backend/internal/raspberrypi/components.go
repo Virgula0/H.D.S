@@ -17,6 +17,7 @@ import (
 	"strings"
 )
 
+// readMessageSize the first message from the client is the length of the content will be sent so we can initialize a buffer
 func (wr *TCPServer) readMessageSize(reader *bufio.Reader) (int64, error) {
 	lengthOfMessage, err := reader.ReadString('\n')
 	if err != nil {
@@ -26,12 +27,14 @@ func (wr *TCPServer) readMessageSize(reader *bufio.Reader) (int64, error) {
 	return strconv.ParseInt(lengthOfMessage, 10, 64)
 }
 
+// readMessageContent read the real message from the client
 func (wr *TCPServer) readMessageContent(reader *bufio.Reader, size int64) ([]byte, error) {
 	buffer := make([]byte, size)
 	_, err := io.ReadFull(reader, buffer)
 	return buffer, err
 }
 
+// processMessage performs main tcp server actions
 func (wr *TCPServer) processMessage(buffer []byte, client net.Conn) error {
 	var createRequest TCPCreateRaspberryPIRequest
 
@@ -69,6 +72,7 @@ func (wr *TCPServer) processMessage(buffer []byte, client net.Conn) error {
 	return err
 }
 
+// processHandshakes read handshake data from request and saves it into the database
 func (wr *TCPServer) processHandshakes(request TCPCreateRaspberryPIRequest) ([]string, error) {
 	handshakeSavedIDs := make([]string, 0)
 	for _, handshake := range request.Handshakes {
@@ -87,6 +91,8 @@ func (wr *TCPServer) processHandshakes(request TCPCreateRaspberryPIRequest) ([]s
 	return handshakeSavedIDs, nil
 }
 
+// handleCreationError useful function for handling the error returned from CreateRaspberryPI. If the error is a duplicate error
+// we can ignore it, as we assume the device already exists
 func (wr *TCPServer) handleCreationError(err error, client net.Conn) error {
 	var mysqlErr *mysql.MySQLError
 	switch {
@@ -103,6 +109,7 @@ func (wr *TCPServer) handleCreationError(err error, client net.Conn) error {
 	return err
 }
 
+// writeError refactored function to send error whenever happens to the client
 func (wr *TCPServer) writeError(client net.Conn, message string) {
 	_, err := client.Write([]byte(message + "\n"))
 	if err != nil {
@@ -110,6 +117,7 @@ func (wr *TCPServer) writeError(client net.Conn, message string) {
 	}
 }
 
+// CreateRaspberryPI create a raspberrypi entity in the database if it does not exist
 func (wr *TCPServer) CreateRaspberryPI(request *TCPCreateRaspberryPIRequest) (result []byte, err error) {
 
 	data, err := wr.usecase.GetDataFromToken(request.Jwt)
@@ -125,6 +133,7 @@ func (wr *TCPServer) CreateRaspberryPI(request *TCPCreateRaspberryPIRequest) (re
 	return []byte(raspID), err
 }
 
+// CreateHandshake create a new handshake if it does not exist
 func (wr *TCPServer) CreateHandshake(jwt string, handshake *entities.Handshake) (result string, err error) {
 
 	data, err := wr.usecase.GetDataFromToken(jwt)

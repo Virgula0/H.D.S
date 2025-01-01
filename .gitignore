@@ -32,6 +32,7 @@ client/hashcat.dictstat*
 client/hashcat.pid
 client/hashcat.induct
 client/hashcat/
+client/hcxtools
 client/gocat
 client/*.hcstat2
 client/*.hctune

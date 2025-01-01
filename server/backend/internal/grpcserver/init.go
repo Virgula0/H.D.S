@@ -67,6 +67,7 @@ func (s *Server) Run(ctx context.Context, opt *Option) error {
 	return nil
 }
 
+// logInterceptor grpc debug purposes
 func logInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, uHandler grpc.UnaryHandler) (any, error) {
 	start := time.Now()
 	h, err := uHandler(ctx, req)

@@ -1,0 +1,132 @@
+name: Replace Markdown Links and Generate PDF
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - synchronize
+
+jobs:
+  process-markdown:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: pandoc texlive-xetex python3 python3-pip
+          version: 1.0
+
+      - name: Create a Working Copy of README.md
+        run: |
+          cp README.md README_processed.md
+
+      - name: Replace Markdown Links with File Content
+        run: |
+          #!/bin/bash
+          set -e
+          set -x
+
+          README_FILE="README_processed.md"
+          TEMP_FILE=$(mktemp)
+
+          grep -oP '\[.*?\]\(\K.*?(?=\))' "$README_FILE" | while read -r LINK; do
+              if [[ -f "$LINK" && "$LINK" == *.md ]]; then
+                  LINK_TEXT=$(grep -oP "\[.*?\]\($LINK\)" "$README_FILE" | sed 's/\[\(.*\)\](.*)/\1/')
+                  FILE_CONTENT=$(sed ':a;N;$!ba;s/[\/&]/\\&/g;s/\n/\\n/g' "$LINK")
+                  sed "s|\[$LINK_TEXT\]($LINK)|__PLACEHOLDER__|g" "$README_FILE" > "$TEMP_FILE"
+                  sed -i "s|__PLACEHOLDER__|$FILE_CONTENT|g" "$TEMP_FILE"
+                  mv "$TEMP_FILE" "$README_FILE"
+              fi
+          done
+
+      - name: Replace Alerts with HTML Divs
+        run: |
+          #!/bin/bash
+          set -e
+          set -x
+
+          README_FILE="README_processed.md"
+          TEMP_FILE=$(mktemp)
+
+          awk '
+          BEGIN { in_alert = 0; alert_type = "" }
+          /^> \[!NOTE\]/ {
+              print "<div class=\"alert alert-note\">"
+              sub(/^> \[!NOTE\] */, "")
+              print "<p>" $0 "</p>"
+              in_alert = 1; alert_type = "note"; next
+          }
+          /^> \[!TIP\]/ {
+              print "<div class=\"alert alert-tip\">"
+              sub(/^> \[!TIP\] */, "")
+              print "<p>" $0 "</p>"
+              in_alert = 1; alert_type = "tip"; next
+          }
+          /^> \[!IMPORTANT\]/ {
+              print "<div class=\"alert alert-important\">"
+              sub(/^> \[!IMPORTANT\] */, "")
+              print "<p>" $0 "</p>"
+              in_alert = 1; alert_type = "important"; next
+          }
+          /^> \[!WARNING\]/ {
+              print "<div class=\"alert alert-warning\">"
+              sub(/^> \[!WARNING\] */, "")
+              print "<p>" $0 "</p>"
+              in_alert = 1; alert_type = "warning"; next
+          }
+          /^> \[!CAUTION\]/ {
+              print "<div class=\"alert alert-caution\">"
+              sub(/^> \[!CAUTION\] */, "")
+              print "<p>" $0 "</p>"
+              in_alert = 1; alert_type = "caution"; next
+          }
+          /^> / && in_alert {
+              sub(/^> /, "")
+              print "<p>" $0 "</p>"
+              next
+          }
+          /^$/ && in_alert {
+              print "</div>"
+              in_alert = 0; alert_type = ""; next
+          }
+          /^\`\`\`/ { 
+              if (in_alert) {
+                  print "</div>"
+                  in_alert = 0; alert_type = ""
+              }
+              print; next
+          }
+          {
+              print
+          }
+          END {
+              if (in_alert) print "</div>"
+          }' "$README_FILE" > "$TEMP_FILE"
+
+          mv "$TEMP_FILE" "$README_FILE"
+
+      - name: Install WeasyPrint
+        run: pip3 install weasyprint
+
+      - name: Ensure Image Permissions
+        run: chmod -R 644 docs/images/*
+
+      - name: Convert README Processed to PDF with WeasyPrint
+        run: |
+          pandoc README_processed.md -o README_temp.html --from markdown --to html --standalone --metadata=charset=UTF-8 --resource-path=".:docs/images"
+          weasyprint --base-url "$(pwd)" README_temp.html docs/docs.pdf -s docs/styles/main.css
+          rm README_temp.html
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Process Markdown copy, replace links, alerts, and generate PDF"
+          file_pattern: docs/docs.pdf

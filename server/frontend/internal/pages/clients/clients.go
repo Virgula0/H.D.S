@@ -72,6 +72,7 @@ type DeleteClientRequest struct {
 	UUID string `form:"uuid" validate:"required"`
 }
 
+// DeleteClient Accept post request for deleting a cliemt
 func (u Page) DeleteClient(w http.ResponseWriter, r *http.Request) {
 	var request DeleteClientRequest
 	token := r.Context().Value(constants.AuthToken)

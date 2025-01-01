@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"github.com/Virgula0/progetto-dp/server/entities"
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/repository"

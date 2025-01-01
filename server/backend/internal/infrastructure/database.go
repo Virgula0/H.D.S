@@ -3,7 +3,7 @@ package infrastructure
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
@@ -53,8 +53,8 @@ func (db *Database) CloseDatabase() error {
 	return db.DB.Close()
 }
 
+// CleanDB utility function (called from teardown tests, for cleaning tables)
 func (db *Database) CleanDB(tableNames []string) error {
-	// wipe tables first, if requested
 	cleanTables := make([]string, 0)
 
 	for _, name := range tableNames {

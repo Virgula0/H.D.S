@@ -22,6 +22,7 @@ type Request struct {
 	PasswordConfirm string `json:"confirmation" binding:"required" validate:"max=250"`
 }
 
+// RegisterHandler handles logic for users registration
 func (u Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 	var request Request

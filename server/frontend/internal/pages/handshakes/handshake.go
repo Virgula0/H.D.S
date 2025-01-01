@@ -104,6 +104,7 @@ type UpdateTaskRequest struct {
 	OtherOptions       string `form:"otherOptions"`
 }
 
+// UpdateTask Accept post request for updating a task
 func (u Page) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	var request UpdateTaskRequest
 	token := r.Context().Value(constants.AuthToken)

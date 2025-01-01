@@ -20,7 +20,7 @@ type ClientTemplate struct {
 	Page int `query:"page"`
 }
 
-// ListClients renders clients installed by users
+// ListRaspberryPI list raspberry pi instealled by the user
 func (u Page) ListRaspberryPI(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 

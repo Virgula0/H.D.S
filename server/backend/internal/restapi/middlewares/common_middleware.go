@@ -14,6 +14,7 @@ type TokenAuth struct {
 	Usecase *usecase.Usecase
 }
 
+// TokenValidation a refactored function used by auth_middleware
 func (u *TokenAuth) TokenValidation(r *http.Request, w http.ResponseWriter) string {
 	// Extract the Authorization header
 	authHeader := r.Header.Get("Authorization")
@@ -48,7 +49,7 @@ func (u *TokenAuth) TokenValidation(r *http.Request, w http.ResponseWriter) stri
 	return token
 }
 
-// Helper function to respond with an error message
+// ResponseWithError Helper function to respond with an error message
 func ResponseWithError(w http.ResponseWriter, statusCode int, message string) {
 	c := response.Initializer{ResponseWriter: w}
 	c.JSON(statusCode, entities.UniformResponse{

@@ -19,6 +19,7 @@ type GetHandshakesRequest struct {
 	Page uint `query:"page" validate:"required,min=1"`
 }
 
+// GetHandshakes handles logic for getting user's handshakes
 func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 
@@ -66,6 +67,7 @@ func (u Handler) GetHandshakes(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// UpdateClientTask handles logic for updating handshake status
 func (u Handler) UpdateClientTask(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 
@@ -105,6 +107,7 @@ func (u Handler) UpdateClientTask(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// DeleteHandshake handles logic for deleting an handshake
 func (u Handler) DeleteHandshake(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 

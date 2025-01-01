@@ -10,10 +10,20 @@ import (
 
 var Logs = new(strings.Builder)
 
+/*
+HashcatChat
+
+Initialize bidirectional stream channel for async client/server communication
+*/
 func (c *Client) HashcatChat() (grpc.BidiStreamingClient[pb.ClientTaskMessageFromClient, pb.ClientTaskMessageFromServer], error) {
 	return c.PBInstance.HashcatTaskChat(c.ClientContext)
 }
 
+/*
+GetClientInfo
+
+calls the gRPC method for retrieving info. If the client exists server side it will be no registered.
+*/
 func (c *Client) GetClientInfo(name, machineID string) (*pb.GetClientInfoResponse, error) {
 	return c.PBInstance.GetClientInfo(c.ClientContext, &pb.GetClientInfoRequest{
 		Jwt:       *c.Credentials.JWT,
@@ -22,6 +32,11 @@ func (c *Client) GetClientInfo(name, machineID string) (*pb.GetClientInfoRespons
 	})
 }
 
+/*
+Authenticate
+
+Check if client can is authorized by the user
+*/
 func (c *Client) Authenticate(username, password string) (*pb.UniformResponse, error) {
 	return c.PBInstance.Login(c.ClientContext, &pb.AuthRequest{
 		Username: username,

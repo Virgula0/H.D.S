@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/raspberrypi"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"runtime"
-	"strconv"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/grpcserver"
@@ -18,6 +17,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// runService initialize service infrastructure connecting to the database and saving the instance
 func runService(m *mux.Router, database *infrastructure.Database) (*handlers.ServiceHandler, error) {
 	ms, err := handlers.NewServiceHandler(database)
 	if err != nil {
@@ -29,6 +29,7 @@ func runService(m *mux.Router, database *infrastructure.Database) (*handlers.Ser
 	return &ms, nil
 }
 
+// createServer initialize httpserver for restapi
 func createServer(handler http.Handler, host, port string) *http.Server {
 	return &http.Server{
 		Addr:              host + ":" + port,
@@ -52,14 +53,12 @@ func startGRPC(service *handlers.ServiceHandler) error {
 	err := grpc.Run(context.Background(), &grpcserver.Option{
 		GrpcURL:         constants.GrpcURL,
 		GrpcConnTimeout: timeout,
-		Debug: func() bool {
-			parsed, _ := strconv.ParseBool(constants.DebugEnabled)
-			return parsed
-		}(),
+		Debug:           constants.DebugEnabled,
 	})
 	return err
 }
 
+// tcpServerInstance initialize tcp server
 func tcpServerInstance(service *handlers.ServiceHandler, host, port string) (*raspberrypi.TCPServer, error) {
 
 	tcpInstance, err := raspberrypi.NewTCPServer(service, host, port)

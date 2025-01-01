@@ -17,6 +17,7 @@ type ReturnClientDevicesRequest struct {
 	Page uint `query:"page" validate:"required,min=1"`
 }
 
+// ReturnClientsInstalled handles logic for returning installed clients
 func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 
@@ -64,6 +65,7 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+// DeleteClient handles logic for deleting a existing client
 func (u Handler) DeleteClient(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 

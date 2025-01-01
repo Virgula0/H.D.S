@@ -10,6 +10,12 @@ type Environment struct {
 	HashcatFileStorage string
 }
 
+/*
+InitEnvironment
+
+- The function creates temporary directories where to save downloaded PCAP and converted ones
+- Returns an Environment
+*/
 func InitEnvironment() (*Environment, error) {
 
 	for _, dirs := range constants.ListOfDirToCreate {

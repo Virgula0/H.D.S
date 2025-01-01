@@ -1,4 +1,4 @@
-package deamon
+package daemon
 
 import (
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/constants"
@@ -13,7 +13,7 @@ type Environment interface {
 	Close()
 }
 
-type TestEnvironment struct {
+type Env struct {
 	HandshakeDirectory string
 	files              []*pcap.Handle
 }
@@ -23,13 +23,19 @@ type ProdEnvironment struct {
 	files              []*pcap.Handle
 }
 
+/*
+ChooseEnvironment
+
+Handy function for returning a different environment based on the presence of Bettercap environment variables
+Because if it's a test, we will send test.pcap within hs directory, otherwise we get real handshakes from ~/handshakes
+*/
 func ChooseEnvironment() (Environment, error) {
 	userDir, _ := os.UserHomeDir()
 	pwd, _ := os.Getwd()
 
-	switch constants.Test {
+	switch constants.Bettercap {
 	case true:
-		return &TestEnvironment{
+		return &Env{
 			HandshakeDirectory: filepath.Join(pwd, "handshakes"),
 		}, nil
 	default:
@@ -46,6 +52,11 @@ func ChooseEnvironment() (Environment, error) {
 	}
 }
 
+/*
+getPaths
+
+reads pcap using gopacket/pcap
+*/
 func getPaths(root, extension string) (map[string]*pcap.Handle, error) {
 	files, err := utils.ReadFileNamesByExtension(root, extension)
 
@@ -71,7 +82,7 @@ func closeFiles(d []*pcap.Handle) {
 	}
 }
 
-func (d *TestEnvironment) LoadEnvironment() (map[string]*pcap.Handle, error) {
+func (d *Env) LoadEnvironment() (map[string]*pcap.Handle, error) {
 	return getPaths(d.HandshakeDirectory, constants.PCAPExtension)
 }
 
@@ -79,7 +90,7 @@ func (d *ProdEnvironment) LoadEnvironment() (map[string]*pcap.Handle, error) {
 	return getPaths(d.HandshakeDirectory, constants.PCAPExtension)
 }
 
-func (d *TestEnvironment) Close() {
+func (d *Env) Close() {
 	closeFiles(d.files)
 }
 
