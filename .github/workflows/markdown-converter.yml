@@ -43,6 +43,8 @@ jobs:
               fi
           done
 
+          cp "$README_FILE" README_links_only.md
+
       - name: Replace Alerts with HTML Divs
         run: |
           #!/bin/bash
@@ -50,11 +52,32 @@ jobs:
           set -x
 
           README_FILE="README.md"
-          sed -i -E 's/^> \[!NOTE\](.*)$/<div class="alert alert-note">\1<\/div>/g' "$README_FILE"
-          sed -i -E 's/^> \[!TIP\](.*)$/<div class="alert alert-tip">\1<\/div>/g' "$README_FILE"
-          sed -i -E 's/^> \[!IMPORTANT\](.*)$/<div class="alert alert-important">\1<\/div>/g' "$README_FILE"
-          sed -i -E 's/^> \[!WARNING\](.*)$/<div class="alert alert-warning">\1<\/div>/g' "$README_FILE"
-          sed -i -E 's/^> \[!CAUTION\](.*)$/<div class="alert alert-caution">\1<\/div>/g' "$README_FILE"
+          TEMP_FILE=$(mktemp)
+
+          sed -i -E '/^> \[!NOTE\]/,/^$/ {
+            s/^> \[!NOTE\](.*)$/<div class="alert alert-note">\1/
+            :a; n; /^>/! { s/$/<\/div>/; b }; ba
+          }' "$README_FILE"
+
+          sed -i -E '/^> \[!TIP\]/,/^$/ {
+            s/^> \[!TIP\](.*)$/<div class="alert alert-tip">\1/
+            :a; n; /^>/! { s/$/<\/div>/; b }; ba
+          }' "$README_FILE"
+
+          sed -i -E '/^> \[!IMPORTANT\]/,/^$/ {
+            s/^> \[!IMPORTANT\](.*)$/<div class="alert alert-important">\1/
+            :a; n; /^>/! { s/$/<\/div>/; b }; ba
+          }' "$README_FILE"
+
+          sed -i -E '/^> \[!WARNING\]/,/^$/ {
+            s/^> \[!WARNING\](.*)$/<div class="alert alert-warning">\1/
+            :a; n; /^>/! { s/$/<\/div>/; b }; ba
+          }' "$README_FILE"
+
+          sed -i -E '/^> \[!CAUTION\]/,/^$/ {
+            s/^> \[!CAUTION\](.*)$/<div class="alert alert-caution">\1/
+            :a; n; /^>/! { s/$/<\/div>/; b }; ba
+          }' "$README_FILE"
 
       - name: Install WeasyPrint
         run: |
@@ -67,8 +90,12 @@ jobs:
           weasyprint README_temp.html docs/docs.pdf -s docs/styles/main.css
           rm README_temp.html
 
+      - name: Restore README.md to Link Replacement State
+        run: |
+          mv README_links_only.md README.md
+
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: "Replace Markdown links and alerts with file content and generate styled PDF"
+          commit_message: "Replace Markdown links, process alerts, generate PDF, and restore README state"
           file_pattern: README.md docs/docs.pdf
