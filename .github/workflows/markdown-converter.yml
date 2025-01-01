@@ -50,41 +50,46 @@ jobs:
           #!/bin/bash
           set -e
           set -x
-
+      
           README_FILE="README.md"
           TEMP_FILE=$(mktemp)
-
+      
           awk '
           BEGIN { in_alert = 0; alert_type = "" }
-          /^> \[!NOTE\]/ { 
+          /^> \[!NOTE\]/ {
               print "<div class=\"alert alert-note\">"
               sub(/^> \[!NOTE\] */, "")
-              print
+              print "<p>" $0 "</p>"
               in_alert = 1; alert_type = "note"; next
           }
           /^> \[!TIP\]/ {
               print "<div class=\"alert alert-tip\">"
               sub(/^> \[!TIP\] */, "")
-              print
+              print "<p>" $0 "</p>"
               in_alert = 1; alert_type = "tip"; next
           }
           /^> \[!IMPORTANT\]/ {
               print "<div class=\"alert alert-important\">"
               sub(/^> \[!IMPORTANT\] */, "")
-              print
+              print "<p>" $0 "</p>"
               in_alert = 1; alert_type = "important"; next
           }
           /^> \[!WARNING\]/ {
               print "<div class=\"alert alert-warning\">"
               sub(/^> \[!WARNING\] */, "")
-              print
+              print "<p>" $0 "</p>"
               in_alert = 1; alert_type = "warning"; next
           }
           /^> \[!CAUTION\]/ {
               print "<div class=\"alert alert-caution\">"
               sub(/^> \[!CAUTION\] */, "")
-              print
+              print "<p>" $0 "</p>"
               in_alert = 1; alert_type = "caution"; next
+          }
+          /^> / && in_alert {
+              sub(/^> /, "")
+              print "<p>" $0 "</p>"
+              next
           }
           /^$/ && in_alert {
               print "</div>"
@@ -98,16 +103,12 @@ jobs:
               print; next
           }
           {
-              if (in_alert) {
-                  print
-              } else {
-                  print
-              }
+              print
           }
           END {
               if (in_alert) print "</div>"
           }' "$README_FILE" > "$TEMP_FILE"
-
+      
           mv "$TEMP_FILE" "$README_FILE"
 
       - name: Install WeasyPrint

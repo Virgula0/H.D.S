@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/cmd"
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/constants"
-	"github.com/Virgula0/progetto-dp/raspberrypi/internal/deamon"
+	"github.com/Virgula0/progetto-dp/raspberrypi/internal/daemon"
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/entities"
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/utils"
 	internalWIFI "github.com/Virgula0/progetto-dp/raspberrypi/internal/wifi"
@@ -13,7 +13,7 @@ import (
 )
 
 // initializeInstance sets up the Raspberry Pi instance.
-func initializeInstance() (_ *deamon.RaspberryPiInfo, machineID string) {
+func initializeInstance() (_ *daemon.RaspberryPiInfo, machineID string) {
 	machineID, err := utils.MachineID()
 	if err != nil {
 		log.Fatalf("[RSP-PI] Failed to get machine ID: %s", err.Error())
@@ -24,7 +24,7 @@ func initializeInstance() (_ *deamon.RaspberryPiInfo, machineID string) {
 		log.Fatalf("[RSP-PI] Failed to get credentials: %s", err.Error())
 	}
 
-	return &deamon.RaspberryPiInfo{
+	return &daemon.RaspberryPiInfo{
 		JWT:         new(string),
 		FirstLogin:  make(chan bool),
 		Credentials: credentials,
@@ -32,7 +32,7 @@ func initializeInstance() (_ *deamon.RaspberryPiInfo, machineID string) {
 }
 
 // processHandshakes processes Wi-Fi handshakes and prepares them for transmission.
-func processHandshakes(env deamon.Environment) []*entities.Handshake {
+func processHandshakes(env daemon.Environment) []*entities.Handshake {
 	handles, err := env.LoadEnvironment()
 	if err != nil {
 		log.Fatalf("[RSP-PI] Failed to load environment: %s", err.Error())
@@ -77,14 +77,14 @@ func main() {
 
 	<-instance.FirstLogin
 
-	env, err := deamon.ChooseEnvironment()
+	env, err := daemon.ChooseEnvironment()
 	if err != nil {
 		log.Fatalf("[RSP-PI] Failed to choose environment: %s", err.Error())
 	}
 
 	for {
 		handshakes := processHandshakes(env)
-		err := deamon.HandleServerCommunication(instance, machineID, handshakes)
+		err := daemon.HandleServerCommunication(instance, machineID, handshakes)
 		if err != nil {
 			log.Fatal(err.Error())
 		}

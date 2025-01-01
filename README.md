@@ -88,7 +88,7 @@ Project structure
 │   │   │   └── command_parser.go
 │   │   ├── constants
 │   │   │   └── constants.go
-│   │   ├── deamon
+│   │   ├── daemon
 │   │   │   ├── communication.go
 │   │   │   ├── environment.go
 │   │   │   └── init.go
@@ -255,7 +255,7 @@ xhost +local:docker && \
 docker compose up --build
 ```
 
-# Deamon
+# Daemon
 
 [Setup](raspberry-pi/README.md)
 

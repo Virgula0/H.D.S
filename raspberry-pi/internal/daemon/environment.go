@@ -1,4 +1,4 @@
-package deamon
+package daemon
 
 import (
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/constants"
