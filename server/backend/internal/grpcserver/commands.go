@@ -27,7 +27,7 @@ func (s *ServerContext) Test(_ context.Context, _ *pb.HelloRequest) (*pb.HelloRe
 	}, nil
 }
 
-// Login implements the behaviour for Login gRPC method
+// Login implements the behavior for Login gRPC method
 func (s *ServerContext) Login(_ context.Context, request *pb.AuthRequest) (*pb.UniformResponse, error) {
 	user, role, err := s.Usecase.GetUserByUsername(request.GetUsername())
 	if err != nil {

@@ -22,7 +22,7 @@ func (c *Client) HashcatChat() (grpc.BidiStreamingClient[pb.ClientTaskMessageFro
 /*
 GetClientInfo
 
-GetClientInfo call the gRPC method for retrieving info. If the client exists server side it will be no registered.
+calls the gRPC method for retrieving info. If the client exists server side it will be no registered.
 */
 func (c *Client) GetClientInfo(name, machineID string) (*pb.GetClientInfoResponse, error) {
 	return c.PBInstance.GetClientInfo(c.ClientContext, &pb.GetClientInfoRequest{

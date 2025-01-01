@@ -69,7 +69,7 @@ func InitClient() (*Client, error) {
 /*
 Authenticator
 
-Authenticator runs in background, and each hour using provided credentials, updates the JWT token required for performing operations
+runs in background, and each hour using provided credentials, updates the JWT token required for performing operations
 server side
 */
 func (c *Client) Authenticator() {
