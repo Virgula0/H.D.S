@@ -5,4 +5,3 @@ import "errors"
 var ErrLogout = errors.New("unable to logout")
 var ErrNotAuthenticated = errors.New("login first")
 var ErrInvalidCredentials = errors.New("invalid credentials")
-var ErrPageNotFound = errors.New("page not found")

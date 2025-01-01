@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+/*
+Authenticator
+
+Uses provided credentials for authenticating the user via REST/API each hour
+*/
 func (r *RaspberryPiInfo) Authenticator() {
 	ticker := time.NewTicker(1 * time.Hour) // every hour
 

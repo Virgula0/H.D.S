@@ -18,6 +18,7 @@ type ReturnRaspberryPiDevicesRequest struct {
 	Page uint `query:"page" validate:"required,min=0"`
 }
 
+// GetRaspberryPIDevices handles logic for getting user's raspberrypi devices
 func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 
@@ -77,6 +78,7 @@ func (u Handler) GetRaspberryPIDevices(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// DeleteRaspberryPI handles logic for deleting a raspberrypi device
 func (u Handler) DeleteRaspberryPI(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 

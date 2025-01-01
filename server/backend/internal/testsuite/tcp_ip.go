@@ -60,7 +60,7 @@ func (s *TCPServerSuite) startServer(service *restapi.ServiceHandler) {
 	}()
 
 	// Init client
-	time.Sleep(3 * time.Second) // give the time to start the server TODO: improve this
+	time.Sleep(3 * time.Second) // give the time to start the server
 }
 
 func (s *TCPServerSuite) Client() net.Conn {

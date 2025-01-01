@@ -25,6 +25,11 @@ type Client struct {
 	Credentials *LoginInfo
 }
 
+/*
+InitClient
+
+Initialize gRPC client
+*/
 func InitClient() (*Client, error) {
 	ticker := time.NewTicker(time.Second * 5)
 	var conn *grpc.ClientConn
@@ -61,6 +66,12 @@ func InitClient() (*Client, error) {
 	}, nil
 }
 
+/*
+Authenticator
+
+Authenticator runs in background, and each hour using provided credentials, updates the JWT token required for performing operations
+server side
+*/
 func (c *Client) Authenticator() {
 	ticker := time.NewTicker(1 * time.Hour) // every hour
 	for {

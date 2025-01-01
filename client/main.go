@@ -50,6 +50,7 @@ func main() {
 		log.Panic(err.Error())
 	}
 
+	// Read hostname, it is useful for giving to the client a human-readable name
 	hostnameBytes, err := utils.ReadFileBytes(constants.HostnameFile)
 	if err != nil {
 		log.Errorf("Unable to read hostname file: %s", err.Error())

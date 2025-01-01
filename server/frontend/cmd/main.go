@@ -21,6 +21,7 @@ import (
 var ServerHost = os.Getenv("FRONTEND_HOST")
 var ServerPort = os.Getenv("FRONTEND_PORT")
 
+// runService initialize a repo and template engine
 func runService(router *CustomRouter, templates *template.Template) error {
 
 	ms, err := pages.NewServiceHandler(templates)
@@ -36,6 +37,7 @@ func runService(router *CustomRouter, templates *template.Template) error {
 
 }
 
+// templateMapFunctions used in go templating as functions
 var templateMapFunctions = template.FuncMap{
 	"add":   usecase.AddForTemplate,
 	"sub":   usecase.SubForTemplate,
@@ -45,6 +47,7 @@ var templateMapFunctions = template.FuncMap{
 	"eqStr": usecase.EqualStringForTemplate,
 }
 
+// createServer initialize httpserver
 func createServer(handler http.Handler, host, port string) *http.Server {
 	s := &http.Server{
 		Addr:              host + ":" + port,

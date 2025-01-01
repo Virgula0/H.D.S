@@ -15,6 +15,7 @@ type Initializer struct {
 	http.ResponseWriter
 }
 
+// JSON useful refactored function to send JSON content using response writer
 func (w *Initializer) JSON(statusCode int, toMarshal any) {
 	w.Header().Set("Content-Type", constants.JSONContentType)
 	w.WriteHeader(statusCode)

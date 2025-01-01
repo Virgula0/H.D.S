@@ -52,7 +52,7 @@ var HashCost = 12
 // ROLES Constants
 type Role string
 
-const RoleString = "role"
+const RoleString = "role" // still not implemented
 
 // Declare constants of type Role for each role
 const (

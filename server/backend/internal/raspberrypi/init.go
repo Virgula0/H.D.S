@@ -8,13 +8,6 @@ import (
 	"time"
 )
 
-/*
-type TCPHandler interface {
-	CreateRaspberryPI()
-	CreateHandshake()
-}
-*/
-
 type TCPServer struct {
 	w       net.Listener
 	timeout time.Duration

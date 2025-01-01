@@ -14,6 +14,7 @@ type Handler struct {
 	Usecase *usecase.Usecase
 }
 
+// LogoutUser handle logic for invalidating JWT token
 func (u Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 

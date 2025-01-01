@@ -27,6 +27,7 @@ func (s *ServerContext) Test(_ context.Context, _ *pb.HelloRequest) (*pb.HelloRe
 	}, nil
 }
 
+// Login implements the behaviour for Login gRPC method
 func (s *ServerContext) Login(_ context.Context, request *pb.AuthRequest) (*pb.UniformResponse, error) {
 	user, role, err := s.Usecase.GetUserByUsername(request.GetUsername())
 	if err != nil {
@@ -72,7 +73,7 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 
 	userID := data[constants.UserIDKey].(string)
 
-	client, err := s.Usecase.GetClientInfo(userID, machineUUID) // TODO: think if change this by using only CreateClient logic function since machineID it's unique
+	client, err := s.Usecase.GetClientInfo(userID, machineUUID)
 
 	if err != nil {
 		// We can create a new client since it does not exist
@@ -137,6 +138,7 @@ func (s *ServerContext) HashcatTaskChat(stream pb.HDSTemplateService_HashcatTask
 	return <-errChannel
 }
 
+// sendTasksToClients sends all pending tasks to clients, the client will recognize the assignment by its clientID
 func (s *ServerContext) sendTasksToClients(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
 	ticker := time.NewTicker(1 * time.Second) // Do not flood client. Update tasks every second
 	defer ticker.Stop()
@@ -228,6 +230,7 @@ func (s *ServerContext) updateTaskStatuses(tasks []*pb.ClientTask) error {
 	return nil
 }
 
+// listenToTasksFromClient updates dynamically the coming information from the client. Useful for fast hashcat logs transmission
 func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_HashcatTaskChatServer) error {
 	for {
 		// Receive message from client

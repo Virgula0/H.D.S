@@ -27,6 +27,10 @@ const DeleteRaspberryPI = constants.DeleteRaspberry
 const DeleteClient = constants.DeleteClient
 const DeleteHandshake = constants.DeleteHandshake
 
+// InitRoutes
+//
+// Initializes routes for the FE
+//
 //nolint:funlen // this function does not have logic, init routes can have a huge length
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	loginInstance := login.Page{Usecase: h.Usecase}
@@ -38,7 +42,7 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	welcomeInstance := welcome.Page{Usecase: h.Usecase}
 	authenticated := middlewares.TokenAuth{Usecase: h.Usecase}
 
-	router.Use(middlewares.LogginMiddlware)
+	router.Use(middlewares.LoggingMiddleware)
 
 	// LOGIN
 	loginRouter := router.PathPrefix(RouteIndex).Subrouter()

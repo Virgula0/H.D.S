@@ -14,6 +14,10 @@ import (
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/constants"
 )
 
+/*
+repository.go contains simple methods for performing requests to the backend
+*/
+
 type Repository struct {
 	client *http.Client
 }

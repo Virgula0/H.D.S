@@ -300,7 +300,7 @@ func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes [
 	return handshakes, count, err
 }
 
-// GetHandshakesByStatus TCP/IP - Check if an hanshake is already registered
+// GetHandshakesByBSSIDAndSSID TCP/IP - Check if a handshake is already registered
 func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string) (handshakes []*entities.Handshake, length int, e error) {
 
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND bssid = ? AND ssid = ?", entities.HandshakeTableName)

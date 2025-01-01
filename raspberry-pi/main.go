@@ -19,6 +19,7 @@ func initializeInstance() (_ *daemon.RaspberryPiInfo, machineID string) {
 		log.Fatalf("[RSP-PI] Failed to get machine ID: %s", err.Error())
 	}
 
+	// Parse credentials from command line arguments using cobra
 	credentials, err := cmd.AuthCommand()
 	if err != nil {
 		log.Fatalf("[RSP-PI] Failed to get credentials: %s", err.Error())

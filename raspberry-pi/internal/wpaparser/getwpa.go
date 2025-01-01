@@ -6,6 +6,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+/*
+GetWPA
+
+Reads a pcap file and tries to extract BSSID and SSID of the AP.
+Then it performs 4-way handshake check
+*/
 func GetWPA(handles map[string]*pcap.Handle) []*HandshakeInfo {
 	var validFiles = make([]*HandshakeInfo, 0)
 

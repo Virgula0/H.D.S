@@ -36,7 +36,7 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	handshakesHandler := handshake.Handler{Usecase: h.Usecase}
 
 	// Global middleware for loggin requests
-	router.Use(middlewares.LogginMiddlware)
+	router.Use(middlewares.LoggingMiddleware)
 
 	// LOGIN -- NOT AUTHENTICATED --
 	loginRouter := router.PathPrefix(RouteIndex).Subrouter()

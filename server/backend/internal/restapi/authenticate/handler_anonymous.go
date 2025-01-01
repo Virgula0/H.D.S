@@ -20,6 +20,7 @@ type AuthRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
+// LoginHandler RestAPI login logic
 func (u Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	c := rr.Initializer{ResponseWriter: w}
 
