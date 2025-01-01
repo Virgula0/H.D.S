@@ -1,13 +1,14 @@
 # Distributed Programming University Project
 
-<div style="display: flex; align-items: center; margin-bottom: 20px;">
-    <img src='/docs/images/logo.png' style='zoom: 20%; border-radius: 50%; margin-right: 4%; border: 2px solid #ddd;' />
-    <div>
-        <font size='10'><strong>H.D.S</strong></font><br>
-        <span style="font-size: 14px;">1<sup>st</sup> January 2024</span><br>
-        <span>Student: <span style="color: orange;">Angelo Rosa</span></span>
-    </div>
-</div>
+<img src='/docs/images/logo.png' style='zoom: 20%; border-radius: 50%; margin-right: 3%' align=left />
+
+<font size='10'><strong>H.D.S</strong></font><br>
+
+1<sup>st</sup> January 2024
+
+Student: <font color='orange'>Angelo Rosa</font>
+
+<br><br>
 
 # The project
 

@@ -1,5 +1,3 @@
-# Client-Server Communication
-
 Clients communicate with the server using **`gRPC`**. This enables clients to identify whether they are the intended receiver for a specific cracking task.
 
 The communication channel also supports a **bidirectional stream**, allowing the server and client to exchange messages in real time during `hashcat` execution.
