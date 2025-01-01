@@ -35,10 +35,6 @@ func ChooseEnvironment() (Environment, error) {
 
 	switch constants.Bettercap {
 	case true:
-		return &Env{
-			HandshakeDirectory: filepath.Join(pwd, "handshakes"),
-		}, nil
-	default:
 		dd := filepath.Join(userDir, "handshakes")
 		if exists, _ := utils.DirExists(dd); !exists {
 			err := os.MkdirAll(dd, os.ModePerm)
@@ -48,6 +44,10 @@ func ChooseEnvironment() (Environment, error) {
 		}
 		return &ProdEnvironment{
 			HandshakeDirectory: filepath.Join(userDir, "hs"),
+		}, nil
+	default:
+		return &Env{
+			HandshakeDirectory: filepath.Join(pwd, "handshakes"),
 		}, nil
 	}
 }
