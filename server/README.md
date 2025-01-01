@@ -1,5 +1,3 @@
-# **Server Overview**
-
 The **Server** is divided into two main components:
 
 - **Backend**
@@ -78,6 +76,7 @@ export TCP_PORT="4749"
 
 ```
 cd server
+make proto
 go mod tidy
 go build main.go
 ./main

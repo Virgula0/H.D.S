@@ -119,85 +119,85 @@ Follow these steps to compile and run the client, run it from project root dir
 ```bash
 git submodule init
 git submodule update
-git submodule up --recurse
-cd client
-make proto
-cd ..
-export GRPC_URL=localhost:7777
-export GRPC_TIMEOUT=10s
+git pull --recurse-submodule
 ```
 
 Then
 
-```bash
-#!/bin/bash
-
-set -e
-set -x
+```
+BASE=${PWD}
 
 # Environment Variables
-export HASHCAT_SRC_PATH="${PWD}/hashcat"
+export HASHCAT_SRC_PATH="${BASE}/client/hashcat"
 export CGO_CFLAGS="-I$HASHCAT_SRC_PATH/OpenCL -I$HASHCAT_SRC_PATH/deps/LZMA-SDK/C -I$HASHCAT_SRC_PATH/deps/zlib -I$HASHCAT_SRC_PATH/deps/zlib/contrib -I$HASHCAT_SRC_PATH/deps/OpenCL-Headers $CGO_CFLAGS"
-export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 
 # Proto:
 cd client
 make proto
 
-cd ..
+cd ${BASE}/externals/hashcat
+git checkout v6.1.1
+
+cd ${BASE}
 
 # Directories
-mkdir -p "${PWD}/hashcat" "${PWD}/gocat" "${PWD}/hcxtools"
+mkdir -p "${BASE}/client/hashcat" "${BASE}/client/gocat" "${BASE}/client/hcxtools"
 
-if [ -d "/externals/hashcat" ]; then
-    cp -r /externals/hashcat/* "${PWD}/hashcat/"
-    cd "${PWD}/hashcat"
-    make install SHARED=1 ENABLE_BRAIN=0
-    sudo cp deps/LZMA-SDK/C/LzmaDec.h /usr/local/include/hashcat/
-    sudo cp deps/LZMA-SDK/C/7zTypes.h /usr/local/include/hashcat/
-    sudo cp deps/LZMA-SDK/C/Lzma2Dec.h /usr/local/include/hashcat/
-    sudo cp -r OpenCL/inc_types.h /usr/local/include/hashcat/
-    sudo cp -r deps/zlib/contrib /usr/local/include/hashcat
+cp -r externals/hashcat/* "${BASE}/client/hashcat/"
+cd "${BASE}/client/hashcat"
+sudo make install SHARED=1 ENABLE_BRAIN=0
+sudo cp deps/LZMA-SDK/C/LzmaDec.h /usr/local/include/hashcat/
+sudo cp deps/LZMA-SDK/C/7zTypes.h /usr/local/include/hashcat/
+sudo cp deps/LZMA-SDK/C/Lzma2Dec.h /usr/local/include/hashcat/
+sudo cp -r OpenCL/inc_types.h /usr/local/include/hashcat/
+sudo cp -r deps/zlib/contrib /usr/local/include/hashcat
 
-    sudo ln -sf /usr/local/lib/libhashcat.so.6.1.1 /usr/local/lib/libhashcat.so
-    sudo ln -sf /usr/local/lib/libhashcat.so.6.1.1 /usr/lib/libhashcat.so.6.1.1
-fi
+sudo ln -sf /usr/local/lib/libhashcat.so.6.1.1 /usr/local/lib/libhashcat.so
+sudo ln -sf /usr/local/lib/libhashcat.so.6.1.1 /usr/lib/libhashcat.so.6.1.1
 
-cd ..
 
-if [ -d "/externals/gocat" ]; then
-    cp -r /externals/gocat/* "${PWD}/gocat/"
-    cd "${PWD}/gocat"
-    go test -c
-    sudo cp gocat.test /usr/local/share/hashcat
-    sudo cp -r testdata /usr/local/share/hashcat
-    /usr/local/share/hashcat/gocat.test
-fi
+cd ${BASE}
 
-cd ..
+cp -r externals/gocat/* "${BASE}/client/gocat/"
+cd "${BASE}/client/gocat"
+go test -c
+sudo cp gocat.test /usr/local/share/hashcat
+sudo cp -r testdata /usr/local/share/hashcat
+/usr/local/share/hashcat/gocat.test
 
-sudo chown -R ${USER}:${USER} "${PWD}/client"
+
+cd ${BASE}
+
+sudo chown -R ${USER}:${USER} "${BASE}/client"
 sudo chown -R ${USER}:${USER} /usr/local/share/hashcat
 
-ln -sf /usr/local/share/hashcat/hashcat.hcstat2 "${PWD}/client/hashcat.hcstat2"
-ln -sf /usr/local/share/hashcat/hashcat.hctune "${PWD}/client/hashcat.hctune"
-ln -sf /usr/local/share/hashcat/OpenCL "${PWD}/client/OpenCL"
-ln -sf /usr/local/share/hashcat/kernels "${PWD}/client/kernels"
-ln -sf /usr/local/share/hashcat/modules "${PWD}/client/modules"
+ln -sf /usr/local/share/hashcat/hashcat.hcstat2 "${BASE}/client/hashcat.hcstat2"
+ln -sf /usr/local/share/hashcat/hashcat.hctune "${BASE}/client/hashcat.hctune"
+ln -sf /usr/local/share/hashcat/OpenCL "${BASE}/client/OpenCL"
+ln -sf /usr/local/share/hashcat/kernels "${BASE}/client/kernels"
+ln -sf /usr/local/share/hashcat/modules "${BASE}/client/modules"
 
-if [ -d "/externals/hcxtools" ]; then
-    cp -r /externals/hcxtools/* "${PWD}/hcxtools/"
-    sed -i 's/int main(int argc, char \*argv\[\])/int convert_pcap(int argc, char *argv\[\])/' "${PWD}/hcxtools/hcxpcapngtool.c"
-    cc -fPIC -shared -o "${PWD}/client/libhcxpcapngtool.so" "${PWD}/hcxtools/hcxpcapngtool.c" -lz -lssl -lcrypto -DVERSION_TAG=\"6.3.5\" -DVERSION_YEAR=\"2024\"
-fi
+cp -r externals/hcxtools/* "${BASE}/client/hcxtools/"
+sed -i 's/int main(int argc, char \*argv\[\])/int convert_pcap(int argc, char *argv\[\])/' "${BASE}/client/hcxtools/hcxpcapngtool.c"
+cc -fPIC -shared -o "${BASE}/client/libhcxpcapngtool.so" "${BASE}/client/hcxtools/hcxpcapngtool.c" -lz -lssl -lcrypto -DVERSION_TAG=\"6.3.5\" -DVERSION_YEAR=\"2024\"
 
-if [ ! -f "${PWD}/client/main" ]; then
-    cd "${PWD}/client"
-    go mod verify
-    go mod tidy
-    go build main.go
-fi
+
+cd "${BASE}/client"
+go mod verify
+go mod tidy
+go build main.go
 ```
+
+Run:
+
+```
+export GRPC_URL=localhost:7777
+export GRPC_TIMEOUT=10s
+export DISPLAY=${DISPLAY} # Pass display variable from terminal
+export LD_LIBRARY_PATH=client/:$LD_LIBRARY_PATH
+./main
+```
+
 
 Produces files tree
 

@@ -24,13 +24,17 @@ jobs:
           packages: pandoc texlive-xetex python3 python3-pip
           version: 1.0
 
+      - name: Create a Working Copy of README.md
+        run: |
+          cp README.md README_processed.md
+
       - name: Replace Markdown Links with File Content
         run: |
           #!/bin/bash
           set -e
           set -x
 
-          README_FILE="README.md"
+          README_FILE="README_processed.md"
           TEMP_FILE=$(mktemp)
 
           grep -oP '\[.*?\]\(\K.*?(?=\))' "$README_FILE" | while read -r LINK; do
@@ -43,15 +47,13 @@ jobs:
               fi
           done
 
-          cp "$README_FILE" README_links_only.md
-
       - name: Replace Alerts with HTML Divs
         run: |
           #!/bin/bash
           set -e
           set -x
 
-          README_FILE="README.md"
+          README_FILE="README_processed.md"
           TEMP_FILE=$(mktemp)
 
           awk '
@@ -117,17 +119,14 @@ jobs:
       - name: Ensure Image Permissions
         run: chmod -R 644 docs/images/*
 
-      - name: Convert README.md to PDF with WeasyPrint
+      - name: Convert README Processed to PDF with WeasyPrint
         run: |
-          pandoc README.md -o README_temp.html --from markdown --to html --standalone --metadata=charset=UTF-8 --resource-path=".:docs/images"
+          pandoc README_processed.md -o README_temp.html --from markdown --to html --standalone --metadata=charset=UTF-8 --resource-path=".:docs/images"
           weasyprint --base-url "$(pwd)" README_temp.html docs/docs.pdf -s docs/styles/main.css
           rm README_temp.html
-
-      - name: Restore README.md to Link Replacement State
-        run: mv README_links_only.md README.md
 
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: "Replace Markdown links, process alerts, generate PDF, and restore README state"
-          file_pattern: README.md docs/docs.pdf
+          commit_message: "Process Markdown copy, replace links, alerts, and generate PDF"
+          file_pattern: docs/docs.pdf
