@@ -31,18 +31,15 @@ jobs:
           set -x
 
           README_FILE="README.md"
+          TEMP_FILE=$(mktemp)
 
-          # Replace all Markdown links with their content
           grep -oP '\[.*?\]\(\K.*?(?=\))' "$README_FILE" | while read -r LINK; do
               if [[ -f "$LINK" && "$LINK" == *.md ]]; then
-                  # Extract the link text for replacement
                   LINK_TEXT=$(grep -oP "\[.*?\]\($LINK\)" "$README_FILE" | sed 's/\[\(.*\)\](.*)/\1/')
-          
-                  # Get file content and escape sed special characters
-                  FILE_CONTENT=$(sed 's/[\/&]/\\&/g' "$LINK")
-
-                  # Replace the [Link](path) with actual file content
-                  sed -i "s|\[$LINK_TEXT\]($LINK)|$FILE_CONTENT|g" "$README_FILE"
+                  FILE_CONTENT=$(sed ':a;N;$!ba;s/[\/&]/\\&/g;s/\n/\\n/g' "$LINK")
+                  sed "s|\[$LINK_TEXT\]($LINK)|__PLACEHOLDER__|g" "$README_FILE" > "$TEMP_FILE"
+                  sed -i "s|__PLACEHOLDER__|$FILE_CONTENT|g" "$TEMP_FILE"
+                  mv "$TEMP_FILE" "$README_FILE"
               fi
           done
 
@@ -53,23 +50,17 @@ jobs:
           set -x
 
           README_FILE="README.md"
-
-          # Convert [!NOTE] to alert-note div
           sed -i -E 's/^> \[!NOTE\](.*)$/<div class="alert alert-note">\1<\/div>/g' "$README_FILE"
-          # Convert [!TIP] to alert-tip div
           sed -i -E 's/^> \[!TIP\](.*)$/<div class="alert alert-tip">\1<\/div>/g' "$README_FILE"
-          # Convert [!IMPORTANT] to alert-important div
           sed -i -E 's/^> \[!IMPORTANT\](.*)$/<div class="alert alert-important">\1<\/div>/g' "$README_FILE"
-          # Convert [!WARNING] to alert-warning div
           sed -i -E 's/^> \[!WARNING\](.*)$/<div class="alert alert-warning">\1<\/div>/g' "$README_FILE"
-          # Convert [!CAUTION] to alert-caution div
           sed -i -E 's/^> \[!CAUTION\](.*)$/<div class="alert alert-caution">\1<\/div>/g' "$README_FILE"
 
       - name: Install WeasyPrint
         run: |
           pip3 install weasyprint
 
-      - name: Generate PDF with WeasyPrint
+      - name: Convert README.md to PDF with WeasyPrint
         run: |
           mkdir -p docs
           pandoc README.md -o README_temp.html --from markdown --to html
