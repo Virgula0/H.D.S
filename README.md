@@ -1,6 +1,6 @@
 # Distributed Programming University Project
 
-<img src='/docs/images/logo.png' style='zoom: 20%; border-radius: 50%; margin-right: 3%' align=left />
+<img src='/docs/images/logo.png' style='zoom: 20%; border-radius: 50%;' align=left />
 
 <font size='10'><strong>H.D.S</strong></font><br>
 
@@ -8,13 +8,137 @@
 
 Student: <font color='orange'>Angelo Rosa</font>
 
-<br><br>
+<br>
 
 # The project
 
-<img src='/docs/images/project-structure.png' style='zoom: 100%;  border: 2px solid #ddd;'  alt="missing"/>
+## Brief
 
-Project structure
+> **H.D.S (Hashcat-Distributed-Service)** is a university project written entirely in **Go**, designed to distribute WPA handshake cracking tasks across multiple **Hashcat** clients. It serves as a practical proof of concept for distributed password-cracking workloads.
+
+---
+
+## Run the Application (in Test Mode) with Docker
+
+Since `client` within docker runs a GUI application using **Raylib**, it requires access to the host's desktop environment. A utility called `xhost` is needed (`xorg-xhost` on Arch Linux).
+
+Run the following commands:
+
+```
+export DISPLAY=:0.0 && \
+xhost +local:docker && \
+docker compose up --build
+```
+
+Access the **Frontend (FE)** by visiting:  
+➡️ `http://localhost:4748`
+
+### Docker Containers
+The setup will spawn four containers:
+- **dp-database**
+- **dp-server**
+- **emulate-raspberrypi**
+- **dp-client**
+
+The provided `docker-compose.yml` file already includes all necessary environment variables for a functional **test environment**. No changes are required to run the project for demonstration purposes.
+
+**Default credentials:** `admin:test1234`  
+This account can be used on the frontend to upload and submit WPA handshakes for cracking.
+
+> While the software is primarily designed for **Linux**, GPU capabilities can potentially be shared with a containerized `client` via **WSL** on Windows. Future improvements may include native support for additional operating systems.
+
+---
+
+## Project Features
+
+1. **Handshake Capturing and Uploading:**  
+   Users can capture WPA handshakes using tools like **bettercap** (or similar) and use a **daemon** to upload them to the server. Although referred to as `RaspberryPI` in the project, the daemon can run on any platform supporting **Golang**.
+
+2. **Frontend Management:**  
+   Users can access the **Frontend (FE)** to:
+    - View captured handshakes.
+    - Submit them to clients for cracking.
+    - Manage connected clients and daemon devices.
+    - Remove unnecessary handshakes.
+
+3. **Independent Clients:**  
+   Each **client** operates independently and communicates directly with the server. Users can select which client will handle specific cracking tasks.
+
+4. **Modularity:**  
+   The software is designed with modularity in mind to simplify future changes and improvements.
+
+---
+
+## Architectural Notes
+
+- While a fully **Clean Architecture** approach wasn't strictly followed, both the **Frontend (FE)** and **Backend (BE)** adopt a similar structure.
+- **Entities (database models)** reside in the `server` folder and are shared between **FE** and **BE**.
+    - If FE and BE are deployed on separate servers, the `entities` directory must be moved into each respective folder. Minor refactoring will be required.
+- **gRPC Communication:**  
+  Clients and the backend use **gRPC** for communication. Both must include compiled **protobuf** files:
+  ```
+  cd client && make proto
+  cd server/backend && make proto
+  ```
+
+---
+
+## Project Scheme
+
+<img src='/docs/images/project-structure.png' style='zoom: 100%; border: 2px solid #ddd;' alt="missing"/>
+
+As shown in the diagram, the **Backend (BE)** is isolated and can only be accessed through the **Frontend (FE)**.
+
+### Communication Flow:
+- **FE ↔ BE (HTTP/REST API):**
+    - **FE:** Sends HTTP requests to BE.
+    - **BE:** Handles database interactions and returns data.
+
+- **Daemon ↔ BE (TCP):**
+    - After authenticating via **REST API**, the daemon communicates with BE via raw **TCP**.
+
+- **Client ↔ BE (gRPC):**
+    - A **bi-directional gRPC stream** allows clients to dynamically send logs and receive updates during **Hashcat** operations.
+
+### Directory Mapping:
+- **Client:** -> `/client`
+- **Daemon:** -> `/raspberry-pi`
+- **Server:** -> `/server`
+    - **Backend:** -> `/server/backend`
+    - **Frontend:** -> `/server/frontend`
+
+---
+
+## Security and Future Improvements
+
+While security auditing and privacy were not primary objectives for this project, some measures and considerations have been noted:
+
+1. **Encryption:**
+    - Currently, **pcap files** sent by the daemon are **not encrypted**.
+    - A symmetric encryption key has been generated, but encryption is yet to be implemented.
+
+2. **Daemon Authentication:**
+    - Daemon authenticates via **REST API** before establishing a **TCP** connection.
+    - Credentials are sent via command-line arguments, which could be stolen easily if a malicious actor have access remotely to the machine.
+
+3. **Client GUI:**
+    - A GUI exists in the codebase but remains unfinished due to time constraints.
+    - This feature is not critical to the core functionality and may be revisited later.
+
+4. **gRPC Security:**
+    - gRPC communication currently lacks **SSL/TLS certificates** for encryption.
+
+### Security Measures Implemented:
+- Basic protection against vulnerabilities like **SQL Injection** and **IDORs** has been considered.
+
+> If you have suggestions or improvements, feel free to **open a pull request**.
+
+---
+
+## Project files
+
+<details>
+  <summary>List of files</summary>
 
 ```
 ├── client
@@ -242,18 +366,8 @@ Project structure
 79 directories, 143 files
 ```
 
-## Run the application (in test mode) with docker
 
-Since `client` within docker runs a GUI using `raylib`, we need to forward the desktop environment to docker.
-So, a utility called `xhost` is needed (`xorg-xhost` package on arch).
-
-Then run 
-
-```bash
-export DISPLAY=:0.0 && \
-xhost +local:docker && \
-docker compose up --build
-```
+</details>
 
 # Daemon
 
@@ -262,3 +376,5 @@ docker compose up --build
 # Client
 
 [Setup](client/README.md)
+
+# Dependencies

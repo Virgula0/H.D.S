@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"runtime"
-	"strconv"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/grpcserver"
@@ -52,10 +51,7 @@ func startGRPC(service *handlers.ServiceHandler) error {
 	err := grpc.Run(context.Background(), &grpcserver.Option{
 		GrpcURL:         constants.GrpcURL,
 		GrpcConnTimeout: timeout,
-		Debug: func() bool {
-			parsed, _ := strconv.ParseBool(constants.DebugEnabled)
-			return parsed
-		}(),
+		Debug:           constants.DebugEnabled,
 	})
 	return err
 }

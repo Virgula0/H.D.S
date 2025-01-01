@@ -49,7 +49,7 @@ func loadUsers(repo *repository.Repository) error {
 			return e
 		}
 
-		if constants.DebugEnabled != "" {
+		if constants.DebugEnabled {
 
 			randomHash := fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))) // #nosec G401 disable weak hash alert, it is not used for crypto stuff
 

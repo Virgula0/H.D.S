@@ -2,6 +2,7 @@ package constants
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
@@ -34,7 +35,7 @@ var (
 	DBName     = os.Getenv("DB_NAME")
 
 	AllowRegistrations = os.Getenv("ALLOW_REGISTRATIONS")
-	DebugEnabled       = os.Getenv("DEBUG")
+	DebugEnabled       = strings.ToLower(os.Getenv("DEBUG")) == "true"
 	WipeTables         = os.Getenv("RESET")
 
 	// GRPC

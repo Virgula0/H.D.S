@@ -50,10 +50,10 @@ jobs:
           #!/bin/bash
           set -e
           set -x
-      
+
           README_FILE="README.md"
           TEMP_FILE=$(mktemp)
-      
+
           awk '
           BEGIN { in_alert = 0; alert_type = "" }
           /^> \[!NOTE\]/ {
@@ -108,28 +108,26 @@ jobs:
           END {
               if (in_alert) print "</div>"
           }' "$README_FILE" > "$TEMP_FILE"
-      
+
           mv "$TEMP_FILE" "$README_FILE"
 
       - name: Install WeasyPrint
-        run: |
-          pip3 install weasyprint
+        run: pip3 install weasyprint
+
+      - name: Ensure Image Permissions
+        run: chmod -R 644 docs/images/*
 
       - name: Convert README.md to PDF with WeasyPrint
         run: |
-          mkdir -p docs
-          pandoc README.md -o README_temp.html --from markdown --to html --standalone --metadata=charset=UTF-8
-          cat README_temp.html
-          weasyprint README_temp.html docs/docs.pdf -s docs/styles/main.css
+          pandoc README.md -o README_temp.html --from markdown --to html --standalone --metadata=charset=UTF-8 --resource-path=".:docs/images"
+          weasyprint --base-url "$(pwd)" README_temp.html docs/docs.pdf -s docs/styles/main.css
           rm README_temp.html
 
       - name: Restore README.md to Link Replacement State
-        run: |
-          mv README_links_only.md README.md
+        run: mv README_links_only.md README.md
 
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Replace Markdown links, process alerts, generate PDF, and restore README state"
           file_pattern: README.md docs/docs.pdf
-
