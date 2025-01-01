@@ -7,6 +7,23 @@ body {
     margin: 2em;
 }
 
+h1, h2 {
+    color: MidnightBlue;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid DimGray;
+}
+
+th, td {
+    text-align: left;
+    padding: 1em;
+}
+
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     margin-top: 1.5em;

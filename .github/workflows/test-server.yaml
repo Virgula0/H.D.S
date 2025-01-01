@@ -51,10 +51,15 @@ jobs:
         with:
           go-version: 1.23.4
 
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: protobuf-compiler
+          version: 1.0
+
       # Step 4: Install protoc and Go plugins for protobuf
+      # sudo apt-get install -y protobuf-compiler
       - name: Install protoc and dependencies
         run: |
-          sudo apt-get install -y protobuf-compiler
           go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
