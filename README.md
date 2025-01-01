@@ -126,11 +126,11 @@ Here will follow a scheme which will explain better the test flows:
 - `grpc_test.go` -> contains tests for grpc infrastructure
 - `raspberrypi_test.go` -> contains tests for raspberrypi infrastructure
 
-> [!WARNING]  
-> You can rnu tests using `cd server && make test` but env variables must be set before proceeding
-
 > [!IMPORTANT]  
 > A database container must be up and running on port 3306 to succeed.
+
+> [!WARNING]  
+> You can run tests using `cd server && make test` but env variables must be set before proceeding
 
 ```bash
 export BACKEND_HOST="0.0.0.0"
