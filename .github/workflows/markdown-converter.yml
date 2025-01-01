@@ -47,21 +47,20 @@ jobs:
               fi
           done
 
-      - name: Install Pandoc
+      - name: Install WeasyPrint
         run: |
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-xetex
+          sudo apt-get install -y python3-pip
+          pip3 install weasyprint
 
-      - name: Convert README.md to PDF
+      - name: Convert README.md to PDF with WeasyPrint
         run: |
           mkdir -p docs
-          pandoc README.md \
-            --pdf-engine=xelatex \
-            --css=docs/styles/main.css \
-            -o docs/docs.pdf
+          pandoc README.md -o README.html --from markdown --to html
+          weasyprint README.html docs/docs.pdf -s docs/styles/main.css
 
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: "Replace Markdown links with file content and generate styled PDF"
+          commit_message: "Replace Markdown links with file content and generate styled PDF with WeasyPrint"
           file_pattern: README.md docs/docs.pdf
