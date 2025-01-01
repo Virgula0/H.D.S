@@ -117,7 +117,7 @@ jobs:
       - name: Convert README.md to PDF with WeasyPrint
         run: |
           mkdir -p docs
-          pandoc README.md -o README_temp.html --from markdown --to html --standalone --metadata-file=UTF-8
+          pandoc README.md -o README_temp.html --from markdown --to html --standalone --metadata=charset=UTF-8
           cat README_temp.html
           weasyprint README_temp.html docs/docs.pdf -s docs/styles/main.css
           rm README_temp.html
