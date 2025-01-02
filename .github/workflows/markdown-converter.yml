@@ -117,11 +117,11 @@ jobs:
         run: pip3 install weasyprint
 
       - name: Ensure Image Permissions
-        run: chmod -R 644 docs/images/*
+        run: sudo chmod -R 644 docs/images/*
 
       - name: Convert README Processed to PDF with WeasyPrint
         run: |
-          pandoc README_processed.md -o README_temp.html --from markdown --to html --standalone --metadata=charset=UTF-8 --resource-path=".:docs/images"
+          pandoc README_processed.md -o README_temp.html --from markdown --to html --standalone --metadata=charset=UTF-8 --resource-path=".:docs/images:docs/images/Screenshots"
           weasyprint --base-url "$(pwd)" README_temp.html docs/docs.pdf -s docs/styles/main.css
           rm README_temp.html
 
