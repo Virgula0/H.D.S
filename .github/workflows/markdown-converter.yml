@@ -117,7 +117,7 @@ jobs:
         run: pip3 install weasyprint
 
       - name: Ensure Image Permissions
-        run: chmod -R 644 docs/images/*
+        run: sudo chmod -R 644 docs/images/*
 
       - name: Convert README Processed to PDF with WeasyPrint
         run: |
