@@ -25,7 +25,7 @@ func ListenForHashcatTasks(stream grpc.BidiStreamingClient[hds.ClientTaskMessage
 	}
 
 	// Reset logs for each new batch of tasks
-	grpcclient.Logs.Reset()
+	grpcclient.ResetLogs()
 
 	// Identify the handshake to be processed
 	handshake, foundTask := identifyTask(msg.GetTasks(), clientUUID)

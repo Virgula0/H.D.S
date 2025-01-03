@@ -6,9 +6,31 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"strings"
+	"sync"
 )
 
-var Logs = new(strings.Builder)
+var logsMu sync.Mutex
+var mutex sync.RWMutex
+var logsSB = &strings.Builder{}
+
+func AppendLog(s string) {
+	logsMu.Lock()
+	logsSB.WriteString(s)
+	logsMu.Unlock()
+}
+
+func ReadLogs() string {
+	mutex.RLock()
+	defer mutex.RUnlock()
+	return logsSB.String()
+}
+
+// ResetLogs safely clears the content of the builder.
+func ResetLogs() {
+	logsMu.Lock()
+	logsSB.Reset()
+	logsMu.Unlock()
+}
 
 /*
 HashcatChat
@@ -53,7 +75,7 @@ func (c *Client) LogErrorAndSend(
 	log.Errorf("[CLIENT] %s", errMsg)
 	finalize := &pb.ClientTaskMessageFromClient{
 		Jwt:            *c.Credentials.JWT,
-		HashcatLogs:    Logs.String(),
+		HashcatLogs:    ReadLogs(),
 		Status:         status,
 		HandshakeUuid:  handshake.UUID,
 		ClientUuid:     *handshake.ClientUUID,

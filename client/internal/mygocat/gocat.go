@@ -33,7 +33,7 @@ func gocatCallback(
 		handlePayload(payload, resultsmap)
 
 		// Update logs/stats and send them to the server
-		msg.HashcatLogs = grpcclient.Logs.String()
+		msg.HashcatLogs = grpcclient.ReadLogs()
 		if err := stream.Send(msg); err != nil {
 			log.Errorf("Failed to send message to server: %v", err)
 		}
@@ -73,7 +73,7 @@ func handlePayload(payload any, resultsmap map[string]*string) {
 func handleLogPayload(pl *gocat.LogPayload) {
 	if DebugTest {
 		logMessage := fmt.Sprintf("LOG [%s] %s\n", pl.Level, pl.Message)
-		grpcclient.Logs.WriteString(logMessage)
+		grpcclient.AppendLog(logMessage)
 		log.Info(logMessage)
 	}
 }
@@ -81,7 +81,7 @@ func handleLogPayload(pl *gocat.LogPayload) {
 func handleActionPayload(pl *gocat.ActionPayload) {
 	if DebugTest {
 		logMessage := fmt.Sprintf("ACTION [%d] %s\n", pl.HashcatEvent, pl.Message)
-		grpcclient.Logs.WriteString(logMessage)
+		grpcclient.AppendLog(logMessage)
 		log.Info(logMessage)
 	}
 }
@@ -89,7 +89,7 @@ func handleActionPayload(pl *gocat.ActionPayload) {
 func handleCrackedPayload(pl *gocat.CrackedPayload, resultsmap map[string]*string) {
 	if DebugTest {
 		logMessage := fmt.Sprintf("CRACKED %s -> %s\n", pl.Hash, pl.Value)
-		grpcclient.Logs.WriteString(logMessage)
+		grpcclient.AppendLog(logMessage)
 		log.Info(logMessage)
 	}
 	if resultsmap != nil {
@@ -100,7 +100,7 @@ func handleCrackedPayload(pl *gocat.CrackedPayload, resultsmap map[string]*strin
 func handleFinalStatusPayload(pl *gocat.FinalStatusPayload) {
 	if DebugTest {
 		logMessage := fmt.Sprintf("FINAL STATUS -> %v\n", pl.Status)
-		grpcclient.Logs.WriteString(logMessage)
+		grpcclient.AppendLog(logMessage)
 		log.Info(logMessage)
 	}
 }
@@ -108,7 +108,7 @@ func handleFinalStatusPayload(pl *gocat.FinalStatusPayload) {
 func handleTaskInformationPayload(pl *gocat.TaskInformationPayload) {
 	if DebugTest {
 		logMessage := fmt.Sprintf("TASK INFO -> %v\n", pl)
-		grpcclient.Logs.WriteString(logMessage)
+		grpcclient.AppendLog(logMessage)
 		log.Info(logMessage)
 	}
 }
@@ -116,7 +116,7 @@ func handleTaskInformationPayload(pl *gocat.TaskInformationPayload) {
 func handleTaskStatus(pl *gocat.Status) {
 	if DebugTest {
 		logMessage := fmt.Sprintf("CURRENT STATUS -> %v\n", pl)
-		grpcclient.Logs.WriteString(logMessage)
+		grpcclient.AppendLog(logMessage)
 		log.Info(logMessage)
 	}
 }
@@ -124,7 +124,7 @@ func handleTaskStatus(pl *gocat.Status) {
 func handleDeviceStatus(pl *gocat.DeviceStatus) {
 	if DebugTest {
 		logMessage := fmt.Sprintf("DEVICE STATUS -> %v\n", pl)
-		grpcclient.Logs.WriteString(logMessage)
+		grpcclient.AppendLog(logMessage)
 		log.Info(logMessage)
 	}
 }
@@ -132,7 +132,7 @@ func handleDeviceStatus(pl *gocat.DeviceStatus) {
 func handleErrCrackedPayload(pl *gocat.ErrCrackedPayload) {
 	if DebugTest {
 		logMessage := fmt.Sprintf("DEVICE STATUS -> %v\n", pl)
-		grpcclient.Logs.WriteString(logMessage)
+		grpcclient.AppendLog(logMessage)
 		log.Info(logMessage)
 	}
 }
@@ -149,6 +149,7 @@ func RunGoCat(
 	defer hashcat.Free()
 
 	if err != nil {
+		grpcclient.AppendLog(err.Error() + "\n")
 		return &pb.ClientTaskMessageFromClient{
 			Jwt:            *client.Credentials.JWT,
 			HashcatLogs:    err.Error(),
@@ -166,13 +167,14 @@ func RunGoCat(
 		constants.HashcatFile:   randomHashcatFileName,
 		constants.PCAPFile:      pcapGenerated,
 		constants.HashcatStatus: constants.WorkingStatus,
-	}, logContext)
+	}, logContext, gui.StateUpdateCh)
 
 	replaced := strings.ReplaceAll(*handshake.HashcatOptions, constants.FileToCrackPlaceHolder, randomHashcatFileName)
 	err = hashcat.RunJob(strings.Split(replaced, " ")...)
 	var result, status string
 
 	if err != nil {
+		grpcclient.AppendLog(err.Error() + "\n")
 		return &pb.ClientTaskMessageFromClient{
 			Jwt:            *client.Credentials.JWT,
 			HashcatLogs:    fmt.Sprintf("[%s] with command '%s'", err.Error(), replaced),
@@ -201,7 +203,7 @@ func RunGoCat(
 
 	return &pb.ClientTaskMessageFromClient{
 		Jwt:              *client.Credentials.JWT,
-		HashcatLogs:      grpcclient.Logs.String(),
+		HashcatLogs:      grpcclient.ReadLogs(),
 		CrackedHandshake: result,
 		Status:           status,
 		HandshakeUuid:    handshake.UUID,

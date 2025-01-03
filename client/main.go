@@ -9,9 +9,12 @@ import (
 	"github.com/Virgula0/progetto-dp/client/internal/utils"
 	log "github.com/sirupsen/logrus"
 	"os"
+	"runtime"
 )
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	// Initialize application environment
 	if _, err := environment.InitEnvironment(); err != nil {
 		log.Fatal(err)
@@ -25,21 +28,28 @@ func main() {
 	}
 
 	// Initialize GUI login window; if exit is true, terminate the application
-	if exit := gui.InitLoginWindow(client); exit {
-		os.Exit(1)
+	/*
+		if exit := gui.InitLoginWindow(client); exit {
+			os.Exit(1)
+		}
+	*/
+
+	authenticate, err := client.Authenticate("admin", "test1234")
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	*client.Credentials.JWT = authenticate.GetDetails()
 
 	defer client.ClientCloser()
 
 	//nolint:gocritic
-	/*
-		// TODO: fix graphics in another PR
-		go func() {
-			if exit := gui.RunGUI(gui.StateUpdateCh); exit {
-				os.Exit(1)
-			}
-		}()
-	*/
+	// TODO: fix graphics in another PR
+	go func() {
+		if closed := gui.RunGUI(gui.StateUpdateCh); closed {
+			os.Exit(0)
+		}
+	}()
 
 	// Run the authenticator in the background (renew JWT tokens, etc.)
 	go client.Authenticator()
