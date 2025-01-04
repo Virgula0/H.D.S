@@ -1,6 +1,5 @@
 package gui
 
-/*
 import (
 	"github.com/Virgula0/progetto-dp/client/internal/grpcclient"
 	"strings"
@@ -147,4 +146,3 @@ func HandleTextInput(text string) string {
 	}
 	return text
 }
-*/

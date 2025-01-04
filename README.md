@@ -22,6 +22,8 @@ Student: <font color='orange'>Angelo Rosa</font>
   <img src="docs/images/Screenshots/1.png" width="400">
   <img src="docs/images/Screenshots/2.png" width="400">
   <img src="docs/images/Screenshots/3.png" width="400">
+  <img src="docs/images/Screenshots/4.png" width="400">
+
 </p>
 
 ## Brief

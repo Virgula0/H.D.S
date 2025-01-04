@@ -28,28 +28,18 @@ func main() {
 	}
 
 	// Initialize GUI login window; if exit is true, terminate the application
-	/*
-		if exit := gui.InitLoginWindow(client); exit {
-			os.Exit(1)
-		}
-	*/
-
-	authenticate, err := client.Authenticate("admin", "test1234")
-	if err != nil {
-		log.Fatal(err)
+	if exit := gui.InitLoginWindow(client); exit {
+		os.Exit(1)
 	}
 
-	*client.Credentials.JWT = authenticate.GetDetails()
-
-	defer client.ClientCloser()
-
-	//nolint:gocritic
-	// TODO: fix graphics in another PR
+	// Main process window
 	go func() {
 		if closed := gui.RunGUI(gui.StateUpdateCh); closed {
 			os.Exit(0)
 		}
 	}()
+
+	defer client.ClientCloser()
 
 	// Run the authenticator in the background (renew JWT tokens, etc.)
 	go client.Authenticator()

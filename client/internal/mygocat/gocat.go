@@ -144,12 +144,25 @@ func RunGoCat(
 	client *grpcclient.Client,
 ) (*pb.ClientTaskMessageFromClient, error) {
 
+	logContext, killLogGoRoutine := context.WithCancel(context.Background())
+	defer killLogGoRoutine()
+
+	// Launch go-routine for updating logs dinamically
+	go gui.GuiLogger(logContext, gui.StateUpdateCh)
+
+	// Start cracking GUI info update
+	gui.StateUpdateCh <- &gui.StateUpdate{
+		StatusLabel:   handshake.UUID,
+		PCAPFile:      pcapGenerated,
+		HashcatFile:   randomHashcatFileName,
+		HashcatStatus: constants.WorkingStatus,
+	}
+
 	crackedHashes := map[string]*string{}
 	hashcat, err := gocat.New(gocatOptions, gocatCallback(crackedHashes, stream, msgToServer))
 	defer hashcat.Free()
 
 	if err != nil {
-		grpcclient.AppendLog(err.Error() + "\n")
 		return &pb.ClientTaskMessageFromClient{
 			Jwt:            *client.Credentials.JWT,
 			HashcatLogs:    err.Error(),
@@ -160,21 +173,11 @@ func RunGoCat(
 		}, err
 	}
 
-	logContext, killLogGoRoutine := context.WithCancel(context.Background())
-	defer killLogGoRoutine()
-
-	go gui.GuiLogger(map[string]string{
-		constants.HashcatFile:   randomHashcatFileName,
-		constants.PCAPFile:      pcapGenerated,
-		constants.HashcatStatus: constants.WorkingStatus,
-	}, logContext, gui.StateUpdateCh)
-
 	replaced := strings.ReplaceAll(*handshake.HashcatOptions, constants.FileToCrackPlaceHolder, randomHashcatFileName)
 	err = hashcat.RunJob(strings.Split(replaced, " ")...)
 	var result, status string
 
 	if err != nil {
-		grpcclient.AppendLog(err.Error() + "\n")
 		return &pb.ClientTaskMessageFromClient{
 			Jwt:            *client.Credentials.JWT,
 			HashcatLogs:    fmt.Sprintf("[%s] with command '%s'", err.Error(), replaced),

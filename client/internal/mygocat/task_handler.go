@@ -6,6 +6,7 @@ import (
 	"github.com/Virgula0/progetto-dp/client/internal/constants"
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
 	"github.com/Virgula0/progetto-dp/client/internal/grpcclient"
+	"github.com/Virgula0/progetto-dp/client/internal/gui"
 	"github.com/Virgula0/progetto-dp/client/internal/hcxtools"
 	"github.com/Virgula0/progetto-dp/client/internal/utils"
 	"github.com/Virgula0/progetto-dp/client/protobuf/hds"
@@ -18,6 +19,11 @@ import (
 // ListenForHashcatTasks listens on the HashcatChat stream for tasks and processes them.
 func ListenForHashcatTasks(stream grpc.BidiStreamingClient[hds.ClientTaskMessageFromClient, hds.ClientTaskMessageFromServer], client *grpcclient.Client, clientUUID string) error {
 	log.Println("[CLIENT] Listening for tasks...")
+
+	gui.StateUpdateCh <- &gui.StateUpdate{
+		GRPCConnected: "Connected",
+		StatusLabel:   "Listening for new tasks...",
+	}
 
 	msg, err := stream.Recv()
 	if err != nil {
@@ -71,6 +77,17 @@ func identifyTask(tasks []*hds.ClientTask, clientUUID string) (*entities.Handsha
 func retrySendFinalStatus(stream grpc.BidiStreamingClient[hds.ClientTaskMessageFromClient, hds.ClientTaskMessageFromServer], finalMsg *hds.ClientTaskMessageFromClient) error {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
+
+	gui.StateUpdateCh <- &gui.StateUpdate{
+		HashcatStatus: finalMsg.GetStatus(),
+		LogContent: func() string {
+			// Check if print logs to GUI again or not
+			if finalMsg.GetStatus() == constants.ErrorStatus {
+				return finalMsg.GetHashcatLogs()
+			}
+			return ""
+		}(),
+	}
 
 	for {
 		if err := stream.Send(finalMsg); err != nil {
