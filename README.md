@@ -93,7 +93,7 @@ This account can be used on the frontend to upload and submit WPA handshakes for
 
 ```
   cd client && make proto
-  cd server/backend && make proto
+  cd server && make proto
 ```
 
 ---
