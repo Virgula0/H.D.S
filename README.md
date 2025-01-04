@@ -181,11 +181,7 @@ While security auditing and privacy were not primary objectives for this project
     - Daemon authenticates via **REST API** before establishing a **TCP** connection.
     - Credentials are sent via command-line arguments, which could be stolen easily if a malicious actor have access remotely to the machine.
 
-3. **Client GUI:**
-    - A GUI exists in the codebase but remains unfinished due to time constraints.
-    - This feature is not critical to the core functionality and may be revisited later.
-
-4. **gRPC Security:**
+3. **gRPC Security:**
     - gRPC communication currently lacks **SSL/TLS certificates** for encryption.
 
 ### Security Measures Implemented:
