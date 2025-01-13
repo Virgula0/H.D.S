@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history to ensure merge base can be found
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -124,12 +126,10 @@ jobs:
       - name: Check if README.md Has Changed
         id: check_readme
         run: |
-          git fetch origin ${{ github.base_ref }}  # Fetch the base branch for comparison
-          if git diff --quiet origin/${{ github.base_ref }}...HEAD -- README.md; then
-            echo "changed=false" >> $GITHUB_ENV
-          else
-            echo "changed=true" >> $GITHUB_ENV
-          fi
+              if git diff --quiet HEAD^ HEAD -- README.md; then
+                echo "changed=false" >> $GITHUB_ENV
+              else
+                echo "changed=true" >> $GITHUB_ENV
 
       - name: Convert README Processed to PDF with WeasyPrint
         if: env.changed == 'true'
