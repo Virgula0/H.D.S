@@ -26,6 +26,7 @@ const HandshakeSubmission = constants.SubmitTask
 const DeleteRaspberryPI = constants.DeleteRaspberry
 const DeleteClient = constants.DeleteClient
 const DeleteHandshake = constants.DeleteHandshake
+const CreateHandshake = constants.CreateHandshake
 
 // InitRoutes
 //
@@ -90,6 +91,11 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
 	handshakeRouter.
 		HandleFunc(DeleteHandshake, handshakeInstance.DeleteHandshake).
+		Methods("POST")
+	handshakeRouter.Use(authenticated.TokenValidation)
+
+	handshakeRouter.
+		HandleFunc(CreateHandshake, handshakeInstance.CreateHandshake).
 		Methods("POST")
 	handshakeRouter.Use(authenticated.TokenValidation)
 

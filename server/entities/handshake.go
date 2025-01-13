@@ -42,3 +42,11 @@ type DeleteHandshakesRequest struct {
 type DeleteHandshakesResponse struct {
 	Status bool `json:"status" validate:"required"`
 }
+
+type CreateHandshakeRequest struct {
+	HandshakePCAP []byte `json:"handshake_pcap" validate:"required,min=1"`
+}
+
+type CreateHandshakeResponse struct {
+	HandshakeID string `json:"handshake_id"`
+}

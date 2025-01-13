@@ -72,6 +72,10 @@ func (c *Client) LogErrorAndSend(
 	handshake *entities.Handshake,
 	status, errMsg string,
 ) {
+	if ReadLogs() == "" {
+		AppendLog(errMsg) // if here, error occurred outside gocat logger
+	}
+
 	log.Errorf("[CLIENT] %s", errMsg)
 	finalize := &pb.ClientTaskMessageFromClient{
 		Jwt:            *c.Credentials.JWT,

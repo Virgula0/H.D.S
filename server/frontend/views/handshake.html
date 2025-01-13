@@ -25,6 +25,9 @@
     <div class="bg-dark border-right" id="sidebar-wrapper">
         <div class="sidebar-heading text-white">H.D.S Dashboard</div>
         <div class="list-group list-group-flush">
+            <a href="#" class="nav-link" data-toggle="modal" data-target="#addHashModal">
+                <i class="fas fa-plus-circle mr-2"></i>Add hash entry
+            </a>
             <a href="/clients" class="list-group-item list-group-item-action bg-dark text-white">
                 <i class="fas fa-users mr-2"></i>Clients
             </a>
@@ -100,6 +103,10 @@
             {{if .Error}}
             <div class="alert alert-danger mb-4">
                 {{.Error}}
+            </div>
+            {{else if .Success}}
+            <div class="alert alert-success mb-4">
+                {{.Success}}
             </div>
             {{end}}
 
@@ -334,6 +341,30 @@
     </form>
 </div>
 
+<div class="modal fade" id="addHashModal" tabindex="-1" role="dialog" aria-labelledby="addHashModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addHashModalLabel">Add Hash Entry</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="/create-handshake" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="hashFile">Upload Hash File</label>
+                        <input type="file" class="form-control-file" id="hashFile" name="file" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <div id="loadingOverlay" class="loading-overlay">
     <!-- Use Bootstrap's spinner -->

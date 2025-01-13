@@ -150,3 +150,7 @@ func (uc Usecase) DeleteRaspberryPIRequest(token string, request *entities.Delet
 func (uc Usecase) DeleteHandshakeRequest(token string, request *entities.DeleteHandshakesRequest) (*entities.DeleteHandshakesResponse, error) {
 	return uc.repo.DeleteHandshake(token, request)
 }
+
+func (uc Usecase) CreateHandshake(token string, request *entities.CreateHandshakeRequest) (*entities.CreateHandshakeResponse, error) {
+	return uc.repo.CreateHandshake(token, request)
+}

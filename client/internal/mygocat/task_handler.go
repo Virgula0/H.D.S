@@ -42,7 +42,19 @@ func ListenForHashcatTasks(stream grpc.BidiStreamingClient[hds.ClientTaskMessage
 	}
 
 	log.Println("[CLIENT] Task identified...")
-	return processHandshakeTask(stream, client, clientUUID, handshake)
+	err = processHandshakeTask(stream, client, clientUUID, handshake)
+	if err != nil {
+		// update graphics with error
+		gui.StateUpdateCh <- &gui.StateUpdate{
+			HashcatStatus: constants.ErrorStatus,
+			LogContent:    grpcclient.ReadLogs(),
+		}
+
+		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
+
+		return nil
+	}
+	return nil
 }
 
 // identifyTask looks for a task matching the current client and returns a handshake struct if found.
@@ -66,6 +78,8 @@ func identifyTask(tasks []*hds.ClientTask, clientUUID string) (*entities.Handsha
 			*handshake.HashcatOptions = task.GetHashcatOptions()
 			handshake.UUID = task.GetHandshakeUuid()
 			handshake.UserUUID = task.GetUserId()
+			handshake.SSID = task.GetSSID()
+			handshake.BSSID = task.GetBSSID()
 			return handshake, true
 		}
 	}
@@ -108,41 +122,62 @@ func processHandshakeTask(
 	handshake *entities.Handshake,
 ) error {
 
-	log.Println("[CLIENT] Decoding PCAP...")
-	pcapData, err := utils.StringBase64DataToBinary(*handshake.HandshakePCAP)
+	log.Println("[CLIENT] Decoding coming bytes...")
+	data, err := utils.StringBase64DataToBinary(*handshake.HandshakePCAP)
 	if err != nil {
 		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
-		return nil
+		return err
 	}
 
-	log.Println("[CLIENT] Saving pcap...")
-	pcapFilePath, err := utils.CreateMD5RandomFile(constants.TempPCAPStorage, constants.PCAPExtension, pcapData)
-	if err != nil {
-		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
-		return nil
-	}
-
+	log.Println("[CLIENT] Saving bytes...")
 	// Generate a random filename for the Hashcat-ready file
 	hashcatFilePath := filepath.Join(
 		constants.TempHashcatFileDir,
 		fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(20))))+constants.HashcatExtension, // #nosec G401
 	)
 
-	// Convert PCAP to Hashcat format
-	if err = hcxtools.ConvertPCAPToHashcatFormat(pcapFilePath, hashcatFilePath); err != nil {
-		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
-		return nil
-	}
+	switch {
+	case handshake.BSSID != "" && handshake.SSID != "":
+		// If here, it means that input does not come from FE so we can threaten it has a handshake
+		log.Println("[CLIENT] Converting pcap...")
 
-	// Ensure the conversion succeeded and file exists
-	fileExists, err := utils.DirOrFileExists(hashcatFilePath)
-	if err != nil {
-		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
-		return nil
-	}
+		pcapFilePath, errFile := utils.CreateMD5RandomFile(constants.TempPCAPStorage, constants.PCAPExtension, data)
+		if errFile != nil {
+			client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, errFile.Error())
+			return err
+		}
 
-	if !fileExists {
-		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, "conversion was not successful, hcxtools output file not found")
+		// Convert PCAP to Hashcat format, it actually created the hashcatFilePath
+		if err = hcxtools.ConvertPCAPToHashcatFormat(pcapFilePath, hashcatFilePath); err != nil {
+			client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
+			return err
+		}
+
+		// Ensure the conversion succeeded and file exists
+		fileExists, errFile := utils.DirOrFileExists(hashcatFilePath)
+		if errFile != nil {
+			client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, errFile.Error())
+			return err
+		}
+
+		if !fileExists {
+			err = fmt.Errorf("conversion was not successful, hcxtools output file not found")
+			client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
+			return err
+		}
+
+		// Start cracking GUI info update
+		gui.StateUpdateCh <- &gui.StateUpdate{
+			PCAPFile: pcapFilePath,
+		}
+
+	default:
+		// Else we do not need conversion, dump the file normally
+		err = utils.CreateFileWithBytes(hashcatFilePath, data)
+		if err != nil {
+			client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
+			return err
+		}
 	}
 
 	log.Println("[CLIENT] Running hashcat...")
@@ -159,12 +194,13 @@ func processHandshakeTask(
 		stream,
 		msgToServer,
 		hashcatFilePath,
-		pcapFilePath,
 		handshake,
 		client,
 	)
+
 	if err != nil {
 		log.Errorf("[CLIENT] Error in RunGoCat: %s", err.Error())
+		return err
 	}
 
 	// Retry sending final status if needed

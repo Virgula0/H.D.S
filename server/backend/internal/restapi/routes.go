@@ -23,7 +23,7 @@ const GetHandshakes = "/handshakes"
 const UpdateClientTask = "/assign"
 const DeleteClient = "/delete/client"
 const DeleteRaspberryPI = "/delete/raspberrypi"
-const DeleteHandshake = "/delete/handshake"
+const ManageHandshake = "/manage/handshake"
 
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
@@ -83,6 +83,9 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	handshakesRouter.HandleFunc(UpdateClientTask, handshakesHandler.UpdateClientTask).Methods("POST")
 	handshakesRouter.Use(authMiddleware.EnsureTokenIsValid)
 
-	handshakesRouter.HandleFunc(DeleteHandshake, handshakesHandler.DeleteHandshake).Methods("DELETE")
+	handshakesRouter.HandleFunc(ManageHandshake, handshakesHandler.DeleteHandshake).Methods("DELETE")
+	handshakesRouter.Use(authMiddleware.EnsureTokenIsValid)
+
+	handshakesRouter.HandleFunc(ManageHandshake, handshakesHandler.CreateHandshake).Methods("PUT")
 	handshakesRouter.Use(authMiddleware.EnsureTokenIsValid)
 }

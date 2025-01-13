@@ -400,7 +400,7 @@ func (repo *Repository) GetClientInfo(userUUID, machineID string) (*entities.Cli
 	return &client, nil
 }
 
-// CreateHandshake TCP/IP - CreateHandshake creates a new record in the handshake table
+// CreateHandshake TCP/IP-REST-API - CreateHandshake creates a new record in the handshake table
 func (repo *Repository) CreateHandshake(userUUID, ssid, bssid, status, handshakePcap string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, ssid, bssid, status, handshake_pcap) VALUES(?,?,?,?,?,?)",
 		entities.HandshakeTableName)

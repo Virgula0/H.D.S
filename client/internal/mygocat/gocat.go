@@ -139,7 +139,7 @@ func handleErrCrackedPayload(pl *gocat.ErrCrackedPayload) {
 func RunGoCat(
 	stream grpc.BidiStreamingClient[pb.ClientTaskMessageFromClient, pb.ClientTaskMessageFromServer],
 	msgToServer *pb.ClientTaskMessageFromClient,
-	randomHashcatFileName, pcapGenerated string,
+	randomHashcatFileName string,
 	handshake *entities.Handshake,
 	client *grpcclient.Client,
 ) (*pb.ClientTaskMessageFromClient, error) {
@@ -153,7 +153,6 @@ func RunGoCat(
 	// Start cracking GUI info update
 	gui.StateUpdateCh <- &gui.StateUpdate{
 		StatusLabel:   handshake.UUID,
-		PCAPFile:      pcapGenerated,
 		HashcatFile:   randomHashcatFileName,
 		HashcatStatus: constants.WorkingStatus,
 	}
