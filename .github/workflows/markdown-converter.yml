@@ -124,17 +124,22 @@ jobs:
       - name: Check if README.md Has Changed
         id: check_readme
         run: |
-          git diff --quiet HEAD^ HEAD -- README.md || echo "changed"
+          git fetch origin ${{ github.base_ref }}  # Fetch the base branch for comparison
+          if git diff --quiet origin/${{ github.base_ref }}...HEAD -- README.md; then
+            echo "changed=false" >> $GITHUB_ENV
+          else
+            echo "changed=true" >> $GITHUB_ENV
+          fi
 
       - name: Convert README Processed to PDF with WeasyPrint
-        if: steps.check_readme.outputs.changed != ''
+        if: env.changed == 'true'
         run: |
           pandoc README_processed.md -o README_temp.html --from markdown --to html --standalone --metadata=charset=UTF-8 --resource-path=".:docs/images:docs/images/Screenshots"
           weasyprint --base-url "$(pwd)" README_temp.html docs/docs.pdf -s docs/styles/main.css
           rm README_temp.html
 
       - name: Commit and Push Changes
-        if: steps.check_readme.outputs.changed != ''
+        if: env.changed == 'true'
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Process Markdown copy, replace links, alerts, and generate PDF"
