@@ -126,10 +126,11 @@ jobs:
       - name: Check if README.md Has Changed
         id: check_readme
         run: |
-              if git diff --quiet HEAD^ HEAD -- README.md; then
-                echo "changed=false" >> $GITHUB_ENV
-              else
-                echo "changed=true" >> $GITHUB_ENV
+          if git diff --quiet HEAD~1 HEAD -- README.md; then
+            echo "changed=false" >> $GITHUB_ENV
+          else
+            echo "changed=true" >> $GITHUB_ENV
+          fi
 
       - name: Convert README Processed to PDF with WeasyPrint
         if: env.changed == 'true'
@@ -144,3 +145,4 @@ jobs:
         with:
           commit_message: "Process Markdown copy, replace links, alerts, and generate PDF"
           file_pattern: docs/docs.pdf
+
