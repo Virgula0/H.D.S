@@ -46,8 +46,7 @@ services:
   server:
     container_name: dp-server
     build:
-      context: server
-      dockerfile: Dockerfile
+      dockerfile: server/Dockerfile
     depends_on:
       database:
         condition: service_healthy
@@ -69,9 +68,7 @@ services:
       - TCP_ADDRESS=0.0.0.0
       - TCP_PORT=4749
     ports:
-      - 4748:4748 # TODO: code development only, MUST BE REMOVED
-      # - 4748:4748 # TODO: code development only, MUST BE REMOVED
-      #- 4749:4749
+      - 4748:4748 
     entrypoint: make run
     healthcheck:
       test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' -X POST -d '{}' http://localhost:4747/v1/login || exit 1"]
