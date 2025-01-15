@@ -11,13 +11,13 @@ RUN apt update -y && \
     build-essential \
     wget \
     git \
-    dumb-init \
     ca-certificates \
     libz-dev \
     libssl-dev \
     dbus \
     # Graphic libraries for raylib
-    libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
+    libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev \
+    protobuf-compiler # install protoc
 
 RUN dbus-uuidgen > /etc/machine-id
 
@@ -51,6 +51,8 @@ RUN git clone https://github.com/mandiant/gocat . && \
 RUN /usr/local/share/hashcat/gocat.test
 
 COPY client /app/client
+COPY proto-definitions /app/proto-definitions
+COPY proto.sh /app/proto.sh
 
 WORKDIR /app/client
 
@@ -68,6 +70,10 @@ RUN useradd -ms /bin/bash client && \
 
 USER client
 
+# install proto
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0 && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+
 WORKDIR /app/hcxtools
 
 COPY externals/hcxtools .
@@ -81,7 +87,8 @@ WORKDIR /app/client
 
 ENV LD_LIBRARY_PATH=.${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}:/usr/local/lib
 
-RUN go mod verify && \
+RUN make proto && \
+    go mod verify && \
     go mod tidy && \
     go build main.go
 

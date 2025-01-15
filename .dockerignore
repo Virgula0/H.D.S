@@ -1,5 +1,7 @@
 client/Dockerfile
 server/Dockerfile
+client/protobuf
+server/protobuf
 raspberry-pi/Dockerfile
 
 client/hashcat.dictstat*
