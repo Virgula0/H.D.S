@@ -3,7 +3,6 @@ package handshake
 import (
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
@@ -149,8 +148,6 @@ func (u Handler) DeleteHandshake(w http.ResponseWriter, r *http.Request) {
 
 func (u Handler) CreateHandshake(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
-
-	log.Error("called")
 
 	userID, err := u.Usecase.GetUserIDFromToken(r)
 

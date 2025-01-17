@@ -47,7 +47,7 @@ func ListenForHashcatTasks(stream grpc.BidiStreamingClient[hds.ClientTaskMessage
 		// update graphics with error
 		gui.StateUpdateCh <- &gui.StateUpdate{
 			HashcatStatus: constants.ErrorStatus,
-			LogContent:    grpcclient.ReadLogs(),
+			LogContent:    err.Error(),
 		}
 
 		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
@@ -125,7 +125,6 @@ func processHandshakeTask(
 	log.Println("[CLIENT] Decoding coming bytes...")
 	data, err := utils.StringBase64DataToBinary(*handshake.HandshakePCAP)
 	if err != nil {
-		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
 		return err
 	}
 
@@ -142,27 +141,24 @@ func processHandshakeTask(
 		log.Println("[CLIENT] Converting pcap...")
 
 		pcapFilePath, errFile := utils.CreateMD5RandomFile(constants.TempPCAPStorage, constants.PCAPExtension, data)
+
 		if errFile != nil {
-			client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, errFile.Error())
 			return err
 		}
 
 		// Convert PCAP to Hashcat format, it actually created the hashcatFilePath
 		if err = hcxtools.ConvertPCAPToHashcatFormat(pcapFilePath, hashcatFilePath); err != nil {
-			client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
 			return err
 		}
 
 		// Ensure the conversion succeeded and file exists
 		fileExists, errFile := utils.DirOrFileExists(hashcatFilePath)
 		if errFile != nil {
-			client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, errFile.Error())
 			return err
 		}
 
 		if !fileExists {
 			err = fmt.Errorf("conversion was not successful, hcxtools output file not found")
-			client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
 			return err
 		}
 
@@ -175,7 +171,6 @@ func processHandshakeTask(
 		// Else we do not need conversion, dump the file normally
 		err = utils.CreateFileWithBytes(hashcatFilePath, data)
 		if err != nil {
-			client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
 			return err
 		}
 	}

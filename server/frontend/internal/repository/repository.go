@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"strconv"
@@ -310,8 +309,6 @@ func (repo *Repository) CreateHandshake(token string, request *entities.CreateHa
 	}
 
 	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodPut, constants.BackendHandshake, headers, jsonData)
-
-	log.Error(string(responseBytes))
 
 	if err != nil {
 		return nil, err
