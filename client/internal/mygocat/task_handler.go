@@ -51,8 +51,6 @@ func ListenForHashcatTasks(stream grpc.BidiStreamingClient[hds.ClientTaskMessage
 		}
 
 		client.LogErrorAndSend(stream, handshake, constants.ErrorStatus, err.Error())
-
-		return nil
 	}
 	return nil
 }
@@ -143,23 +141,22 @@ func processHandshakeTask(
 		pcapFilePath, errFile := utils.CreateMD5RandomFile(constants.TempPCAPStorage, constants.PCAPExtension, data)
 
 		if errFile != nil {
-			return err
+			return errFile
 		}
 
 		// Convert PCAP to Hashcat format, it actually created the hashcatFilePath
-		if err := hcxtools.ConvertPCAPToHashcatFormat(pcapFilePath, hashcatFilePath); err != nil {
-			return err
+		if errConversion := hcxtools.ConvertPCAPToHashcatFormat(pcapFilePath, hashcatFilePath); errConversion != nil {
+			return errConversion
 		}
 
 		// Ensure the conversion succeeded and file exists
 		fileExists, errFile := utils.DirOrFileExists(hashcatFilePath)
 		if errFile != nil {
-			return err
+			return errFile
 		}
 
 		if !fileExists {
-			err = fmt.Errorf("conversion was not successful, hcxtools output file not found")
-			return err
+			return fmt.Errorf("conversion was not successful, hcxtools output file not found")
 		}
 
 		// Start cracking GUI info update
@@ -169,9 +166,9 @@ func processHandshakeTask(
 
 	default:
 		// Else we do not need conversion, dump the file normally
-		err := utils.CreateFileWithBytes(hashcatFilePath, data)
-		if err != nil {
-			return err
+		errCreateFile := utils.CreateFileWithBytes(hashcatFilePath, data)
+		if errCreateFile != nil {
+			return errCreateFile
 		}
 	}
 
