@@ -22,7 +22,8 @@ type Client struct {
 	ClientContext context.Context
 	ClientCloser  context.CancelFunc
 
-	Credentials *LoginInfo
+	Credentials  *LoginInfo
+	EntityClient *entities.Client
 }
 
 /*

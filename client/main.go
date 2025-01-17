@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/Virgula0/progetto-dp/client/internal/constants"
+	"github.com/Virgula0/progetto-dp/client/internal/entities"
 	"github.com/Virgula0/progetto-dp/client/internal/environment"
 	"github.com/Virgula0/progetto-dp/client/internal/grpcclient"
 	"github.com/Virgula0/progetto-dp/client/internal/gui"
@@ -17,19 +18,19 @@ func main() {
 
 	// Initialize application environment
 	if _, err := environment.InitEnvironment(); err != nil {
-		log.Fatal(err)
+		log.Fatalf("[CLIENT] %v", err.Error())
 	}
 
 	// Initialize gRPC client
 	client, err := grpcclient.InitClient()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[CLIENT] %v", err.Error())
 	}
 
 	// Initialize GUI login window; if exit is true, terminate the application
 	if exit := gui.InitLoginWindow(client); exit {
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	// Main process window
@@ -39,40 +40,58 @@ func main() {
 		}
 	}()
 
-	defer client.ClientCloser()
-
 	// Run the authenticator in the background (renew JWT tokens, etc.)
 	go client.Authenticator()
 
 	// Gather machine and hostname info
 	machineID, err := utils.MachineID()
 	if err != nil {
-		log.Panic(err.Error())
+		log.Fatalf("[CLIENT] %v", err.Error())
 	}
 
 	// Read hostname, it is useful for giving to the client a human-readable name
 	hostnameBytes, err := utils.ReadFileBytes(constants.HostnameFile)
 	if err != nil {
-		log.Errorf("Unable to read hostname file: %s", err.Error())
+		log.Fatalf("[CLIENT] Unable to read hostname file: %s", err.Error())
 	}
 	hostname := string(hostnameBytes)
 
 	// Retrieve client info from server
 	info, err := client.GetClientInfo(hostname, machineID)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Fatalf("[CLIENT] %v", err.Error())
 	}
-	clientUUID := info.GetClientUuid()
+
+	// Fill up client info struct received from server
+	client.EntityClient = &entities.Client{
+		UserUUID:             info.GetUserUuid(),
+		ClientUUID:           info.GetClientUuid(),
+		Name:                 info.GetName(),
+		LatestIP:             info.GetLatestIp(),
+		CreationTime:         info.GetCreationTime(),
+		LatestConnectionTime: info.GetLastConnectionTime(),
+		MachineID:            info.GetMachineId(),
+	}
 
 	// Open the HashcatChat stream
 	stream, err := client.HashcatChat()
 	if err != nil {
-		log.Panic(err.Error())
+		log.Fatalf("[CLIENT] %v", err.Error())
 	}
+
+	// Initialize type struct
+	gocat := mygocat.TaskHandler{
+		Gocat: &mygocat.Gocat{
+			Stream: stream,
+			Client: client,
+		},
+	}
+
+	defer client.ClientCloser()
 
 	// Continuously listen for new tasks
 	for {
-		if err := mygocat.ListenForHashcatTasks(stream, client, clientUUID); err != nil {
+		if err := gocat.ListenForHashcatTasks(); err != nil {
 			log.Errorf("[CLIENT] Connection closed or error occurred: %s", err.Error())
 			return
 		}

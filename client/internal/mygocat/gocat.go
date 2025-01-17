@@ -13,6 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"strings"
+	"time"
 	"unsafe"
 )
 
@@ -22,10 +23,14 @@ var gocatOptions = gocat.Options{
 	SharedPath: "/usr/local/share/hashcat/OpenCL",
 }
 
+type Gocat struct {
+	Stream grpc.BidiStreamingClient[pb.ClientTaskMessageFromClient, pb.ClientTaskMessageFromServer]
+	Client *grpcclient.Client
+}
+
 // gocatCallback handles events from gocat and sends updates to the server stream.
-func gocatCallback(
+func (g *Gocat) gocatCallback(
 	resultsmap map[string]*string,
-	stream grpc.BidiStreamingClient[pb.ClientTaskMessageFromClient, pb.ClientTaskMessageFromServer],
 	msg *pb.ClientTaskMessageFromClient,
 ) gocat.EventCallback {
 
@@ -34,7 +39,7 @@ func gocatCallback(
 
 		// Update logs/stats and send them to the server
 		msg.HashcatLogs = grpcclient.ReadLogs()
-		if err := stream.Send(msg); err != nil {
+		if err := g.Stream.Send(msg); err != nil {
 			log.Errorf("Failed to send message to server: %v", err)
 		}
 	}
@@ -136,16 +141,21 @@ func handleErrCrackedPayload(pl *gocat.ErrCrackedPayload) {
 		log.Info(logMessage)
 	}
 }
-func RunGoCat(
-	stream grpc.BidiStreamingClient[pb.ClientTaskMessageFromClient, pb.ClientTaskMessageFromServer],
+
+func (g *Gocat) RunGoCat(
 	msgToServer *pb.ClientTaskMessageFromClient,
 	randomHashcatFileName string,
 	handshake *entities.Handshake,
-	client *grpcclient.Client,
 ) (*pb.ClientTaskMessageFromClient, error) {
 
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
 	logContext, killLogGoRoutine := context.WithCancel(context.Background())
-	defer killLogGoRoutine()
+	defer func() {
+		<-ticker.C // Give the time for final status to get appended to logs
+		killLogGoRoutine()
+	}()
 
 	// Launch go-routine for updating logs dinamically
 	go gui.GuiLogger(logContext, gui.StateUpdateCh)
@@ -158,12 +168,12 @@ func RunGoCat(
 	}
 
 	crackedHashes := map[string]*string{}
-	hashcat, err := gocat.New(gocatOptions, gocatCallback(crackedHashes, stream, msgToServer))
+	hashcat, err := gocat.New(gocatOptions, g.gocatCallback(crackedHashes, msgToServer))
 	defer hashcat.Free()
 
 	if err != nil {
 		return &pb.ClientTaskMessageFromClient{
-			Jwt:            *client.Credentials.JWT,
+			Jwt:            *g.Client.Credentials.JWT,
 			HashcatLogs:    err.Error(),
 			Status:         constants.ErrorStatus,
 			HandshakeUuid:  handshake.UUID,
@@ -178,7 +188,7 @@ func RunGoCat(
 
 	if err != nil {
 		return &pb.ClientTaskMessageFromClient{
-			Jwt:            *client.Credentials.JWT,
+			Jwt:            *g.Client.Credentials.JWT,
 			HashcatLogs:    fmt.Sprintf("[%s] with command '%s'", err.Error(), replaced),
 			Status:         constants.ErrorStatus,
 			HandshakeUuid:  handshake.UUID,
@@ -192,9 +202,11 @@ func RunGoCat(
 	for _, value := range crackedHashes {
 		if value != nil {
 			status = constants.CrackStatus
-			result += *value
+			result += "[" + *value + "],"
 		}
 	}
+
+	result = strings.TrimRight(result, ",")
 
 	if len(crackedHashes) == 0 {
 		status = constants.ExhaustedStatus
@@ -204,7 +216,7 @@ func RunGoCat(
 	msgToServer.CrackedHandshake = result
 
 	return &pb.ClientTaskMessageFromClient{
-		Jwt:              *client.Credentials.JWT,
+		Jwt:              *g.Client.Credentials.JWT,
 		HashcatLogs:      grpcclient.ReadLogs(),
 		CrackedHandshake: result,
 		Status:           status,

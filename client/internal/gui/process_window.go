@@ -124,7 +124,7 @@ func GuiLogger(ctx context.Context, stateUpdateCh chan<- *StateUpdate) {
 	}
 }
 
-var StateUpdateCh = make(chan *StateUpdate, 10)
+var StateUpdateCh = make(chan *StateUpdate, 1)
 
 // RunGUI starts the Raylib window and listens for updates via the channel.
 func RunGUI(stateUpdateCh <-chan *StateUpdate) bool {
@@ -138,6 +138,7 @@ func RunGUI(stateUpdateCh <-chan *StateUpdate) bool {
 
 	// Track scrolling & resizing of the log box
 	var (
+		logOffsetX   float32 = 0
 		logOffsetY   float32 = 0
 		logBoxHeight float32 = DefaultLogHeight
 
@@ -158,13 +159,13 @@ func RunGUI(stateUpdateCh <-chan *StateUpdate) bool {
 		handleResize(&logBoxHeight, &resizingLogBox, minLogBoxHeight, maxLogBoxHeight)
 
 		// Handle scrolling (mouse wheel)
-		handleScrolling(&logOffsetY, logBoxHeight, uiFont, guiState)
+		handleScrolling(&logOffsetY, &logOffsetX, logBoxHeight, uiFont, guiState)
 
 		// Draw everything
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
 
-		drawGUI(guiState, uiFont, logOffsetY, logBoxHeight)
+		drawGUI(guiState, uiFont, logOffsetX, logOffsetY, logBoxHeight)
 
 		rl.EndDrawing()
 	}
@@ -255,23 +256,41 @@ func handleResize(
 
 // handleScrolling changes logOffsetY based on mouse wheel movement.
 // Measure the total text height to know how far can scroll.
-func handleScrolling(logOffsetY *float32, logBoxHeight float32, font rl.Font, state *ProcessWindowInfo) {
+func handleScrolling(
+	logOffsetY *float32,
+	logOffsetX *float32,
+	logBoxHeight float32,
+	font rl.Font,
+	state *ProcessWindowInfo,
+) {
 	logBoxY := float32(WindowHeight) - logBoxHeight
 	logBoxRect := rl.NewRectangle(0, logBoxY, WindowWidth, logBoxHeight)
 
 	mousePos := rl.GetMousePosition()
 	if !rl.CheckCollisionPointRec(mousePos, logBoxRect) {
-		return // Only scroll if mouse is inside the log box
+		return // Only scroll if the mouse is inside the log box
 	}
 
-	// Scroll speed factor
 	const scrollSpeed float32 = 20
 	mouseWheelMove := rl.GetMouseWheelMove()
-	if mouseWheelMove == 0 {
-		return
-	}
 
-	// Measure total text height
+	if mouseWheelMove != 0 {
+		if rl.IsKeyDown(rl.KeyLeftShift) {
+			handleHorizontalScrolling(logOffsetX, scrollSpeed, mouseWheelMove, font, state)
+		} else {
+			handleVerticalScrolling(logOffsetY, scrollSpeed, mouseWheelMove, logBoxHeight, font, state)
+		}
+	}
+}
+
+func handleVerticalScrolling(
+	logOffsetY *float32,
+	scrollSpeed float32,
+	mouseWheelMove float32,
+	logBoxHeight float32,
+	font rl.Font,
+	state *ProcessWindowInfo,
+) {
 	state.logsMu.Lock()
 	lines := strings.Split(state.renderedLogs, "\n")
 	var totalTextHeight float32
@@ -281,19 +300,16 @@ func handleScrolling(logOffsetY *float32, logBoxHeight float32, font rl.Font, st
 	}
 	state.logsMu.Unlock()
 
-	// If total text is smaller than the box, no scrolling needed
 	if totalTextHeight < (logBoxHeight - 20) {
-		return
+		return // No vertical scrolling needed
 	}
 
-	// Adjust offset
 	*logOffsetY += mouseWheelMove * scrollSpeed
 
 	const margin = 15
-	minOffset := (logBoxHeight - margin) - totalTextHeight // negative
-	maxOffset := float32(0)
+	minOffset := float32(WindowHeight) - logBoxHeight - totalTextHeight + margin
+	var maxOffset float32 = 0.0
 
-	// Clamp
 	if *logOffsetY > maxOffset {
 		*logOffsetY = maxOffset
 	}
@@ -302,8 +318,44 @@ func handleScrolling(logOffsetY *float32, logBoxHeight float32, font rl.Font, st
 	}
 }
 
+func handleHorizontalScrolling(
+	logOffsetX *float32,
+	scrollSpeed float32,
+	mouseWheelMove float32,
+	font rl.Font,
+	state *ProcessWindowInfo,
+) {
+	state.logsMu.Lock()
+	var maxLineWidth float32
+	lines := strings.Split(state.renderedLogs, "\n")
+	for _, line := range lines {
+		size := rl.MeasureTextEx(font, line, LogFontSize, 1)
+		if size.X > maxLineWidth {
+			maxLineWidth = size.X
+		}
+	}
+	state.logsMu.Unlock()
+
+	if maxLineWidth < WindowWidth {
+		return // No horizontal scrolling needed
+	}
+
+	*logOffsetX -= mouseWheelMove * scrollSpeed // Invert for natural scrolling
+
+	const margin = 15
+	minOffsetX := float32(WindowWidth) - maxLineWidth - margin
+	var maxOffsetX float32 = 0.0
+
+	if *logOffsetX > maxOffsetX {
+		*logOffsetX = maxOffsetX
+	}
+	if *logOffsetX < minOffsetX {
+		*logOffsetX = minOffsetX
+	}
+}
+
 // drawGUI draws the entire GUI every frame.
-func drawGUI(state *ProcessWindowInfo, font rl.Font, logOffsetY, logHeight float32) {
+func drawGUI(state *ProcessWindowInfo, font rl.Font, logOffsetX, logOffsetY, logHeight float32) {
 	state.logsMu.Lock()
 	defer state.logsMu.Unlock()
 
@@ -348,7 +400,7 @@ func drawGUI(state *ProcessWindowInfo, font rl.Font, logOffsetY, logHeight float
 	rl.DrawTextEx(
 		font,
 		state.renderedLogs,
-		rl.NewVector2(logBox.X+10, logBoxY+10+logOffsetY),
+		rl.NewVector2(logBox.X+10+logOffsetX, logBoxY+10+logOffsetY),
 		LogFontSize,
 		1,
 		rl.White,
