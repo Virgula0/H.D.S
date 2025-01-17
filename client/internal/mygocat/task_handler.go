@@ -147,7 +147,7 @@ func processHandshakeTask(
 		}
 
 		// Convert PCAP to Hashcat format, it actually created the hashcatFilePath
-		if err = hcxtools.ConvertPCAPToHashcatFormat(pcapFilePath, hashcatFilePath); err != nil {
+		if err := hcxtools.ConvertPCAPToHashcatFormat(pcapFilePath, hashcatFilePath); err != nil {
 			return err
 		}
 
@@ -169,7 +169,7 @@ func processHandshakeTask(
 
 	default:
 		// Else we do not need conversion, dump the file normally
-		err = utils.CreateFileWithBytes(hashcatFilePath, data)
+		err := utils.CreateFileWithBytes(hashcatFilePath, data)
 		if err != nil {
 			return err
 		}
