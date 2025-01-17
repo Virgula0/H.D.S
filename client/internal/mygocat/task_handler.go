@@ -13,6 +13,7 @@ import (
 	"github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	log "github.com/sirupsen/logrus"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -20,7 +21,7 @@ type TaskHandler struct {
 	*Gocat
 }
 
-var firstLogTime = 0
+var firstLogTime = true
 
 // ListenForHashcatTasks listens on the HashcatChat stream for tasks and processes them.
 func (t *TaskHandler) ListenForHashcatTasks() error {
@@ -29,13 +30,16 @@ func (t *TaskHandler) ListenForHashcatTasks() error {
 	gui.StateUpdateCh <- &gui.StateUpdate{
 		GRPCConnected: "Connected",
 		StatusLabel:   "Listening for new tasks...",
-		LogContent: func() string {
-			if firstLogTime > 0 {
-				return "\n----------------------------------------------------------\n"
+		LogContent: func(logs string) string {
+			if !firstLogTime {
+				if strings.HasSuffix(logs, "\n") {
+					return strings.Repeat("-", 200) + "\n"
+				}
+				return "\n" + strings.Repeat("-", 200) + "\n"
 			}
-			firstLogTime++
+			firstLogTime = false
 			return ""
-		}(),
+		}(grpcclient.ReadLogs()),
 	}
 
 	msg, err := t.Stream.Recv()
