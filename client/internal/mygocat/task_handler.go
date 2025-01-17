@@ -64,7 +64,7 @@ func (t *TaskHandler) ListenForHashcatTasks() error {
 		// update graphics with error
 		gui.StateUpdateCh <- &gui.StateUpdate{
 			HashcatStatus: constants.ErrorStatus,
-			LogContent:    err.Error(),
+			LogContent:    err.Error() + "\n",
 		}
 
 		return t.Client.LogErrorAndSend(t.Stream, handshake, constants.ErrorStatus, err.Error())

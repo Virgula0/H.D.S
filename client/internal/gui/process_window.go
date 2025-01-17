@@ -2,6 +2,7 @@ package gui
 
 import (
 	"context"
+	"github.com/Virgula0/progetto-dp/client/resources"
 	"runtime"
 	"strings"
 	"sync"
@@ -21,8 +22,8 @@ const (
 	labelFontSize = 20
 	logFontSize   = 18
 
-	fontPath     = "internal/resources/fonts/Roboto-Black.ttf"
-	jetBrainPath = "internal/resources/fonts/JetBrainsMono-Regular.ttf"
+	fontPath     = "fonts/Roboto-Black.ttf"
+	jetBrainPath = "fonts/JetBrainsMono-Regular.ttf"
 
 	topLabelArea = 220
 
@@ -30,6 +31,13 @@ const (
 	buttonWidth  float32 = 120
 	buttonHeight float32 = 30
 	buttonMargin float32 = 10
+
+	scrollSpeed float32 = 30
+
+	startCodePoint = 0x0020 // Start from SPACE
+	endCodePoint   = 0xFFFF
+
+	margin = 15
 )
 
 // Track scrolling & resizing of the log box
@@ -152,9 +160,9 @@ func RunGUI(stateUpdateCh <-chan *StateUpdate) bool {
 	initializeWindow()
 	defer rl.CloseWindow()
 
-	uiFont := loadUIFont()
+	uiFont := loadUIFont(fontPath)
 	defer rl.UnloadFont(uiFont)
-	fontJetBrains := rl.LoadFont(jetBrainPath)
+	fontJetBrains := loadUIFont(jetBrainPath)
 	defer rl.UnloadFont(fontJetBrains)
 
 	guiState := newDefaultGUIState()
@@ -224,9 +232,32 @@ func initializeWindow() {
 	rl.SetTargetFPS(60)
 }
 
-func loadUIFont() rl.Font {
-	// If fontPath is invalid, Raylib will fall back to the default font.
-	return rl.LoadFont(fontPath)
+// loadUIFont loads a font with a wide UTF-8 character set.
+func loadUIFont(path string) rl.Font {
+	// Read the font data from the embedded file system
+	data, err := resources.FontFS.ReadFile(path)
+	if err != nil {
+		return rl.GetFontDefault() // Fallback to default font
+	}
+
+	// Define a wide range of UTF-8 code points
+	// End at the last BMP character
+	glyphCount := endCodePoint - startCodePoint + 1
+
+	// Create a slice for the codepoints
+	codepoints := make([]rune, glyphCount)
+	for i := range codepoints {
+		codepoints[i] = rune(startCodePoint + i)
+	}
+
+	// Load the font directly from memory with the codepoints
+	font := rl.LoadFontFromMemory(".ttf", data, 20, codepoints)
+	if font.Texture.ID == 0 {
+		rl.TraceLog(rl.LogError, "Failed to load font from memory")
+		return rl.GetFontDefault() // Fallback to default font
+	}
+
+	return font
 }
 
 // handleResize checks mouse input and adjusts logBoxHeight accordingly.
@@ -305,7 +336,6 @@ func handleScrolling(
 		return // Only scroll if the mouse is inside the log box
 	}
 
-	const scrollSpeed float32 = 20
 	mouseWheelMove := rl.GetMouseWheelMove()
 
 	if mouseWheelMove != 0 {
@@ -340,7 +370,6 @@ func handleVerticalScrolling(
 
 	*logOffsetY += mouseWheelMove * scrollSpeed
 
-	const margin = 15
 	minOffset := float32(windowHeight) - logBoxHeight - totalTextHeight + margin
 	var maxOffset float32 = 0.0
 
@@ -376,7 +405,6 @@ func handleHorizontalScrolling(
 
 	*logOffsetX -= mouseWheelMove * scrollSpeed // Invert for natural scrolling
 
-	const margin = 15
 	minOffsetX := float32(windowWidth) - maxLineWidth - margin
 	var maxOffsetX float32 = 0.0
 
