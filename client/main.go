@@ -30,12 +30,14 @@ func main() {
 
 	// Initialize GUI login window; if exit is true, terminate the application
 	if exit := gui.InitLoginWindow(client); exit {
+		log.Warn("User exited")
 		os.Exit(0)
 	}
 
 	// Main process window
 	go func() {
 		if closed := gui.RunGUI(gui.StateUpdateCh); closed {
+			log.Warn("User exited")
 			os.Exit(0)
 		}
 	}()
