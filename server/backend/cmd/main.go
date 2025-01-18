@@ -90,9 +90,8 @@ func RunBackend() {
 
 	// Go Routine for the REST-API server
 	go func() {
-		go database.DBPinger()
-
-		log.Printf("[REST-API] Server running on %s:%s", constants.ServerHost, constants.ServerPort)
+		go database.StartDBPinger()
+		log.Infof("[REST-API] Server running on %s:%s", constants.ServerHost, constants.ServerPort)
 		if restErr := srv.ListenAndServe(); restErr != nil && !errors.Is(restErr, http.ErrServerClosed) {
 			log.Fatalf("listen: %v", restErr)
 		}

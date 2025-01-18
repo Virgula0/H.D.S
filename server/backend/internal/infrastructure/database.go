@@ -37,14 +37,21 @@ func NewDatabaseConnection(dbUser, dbPassword, dbHost, dbPort, dbName string) (*
 	}, nil
 }
 
-func (db *Database) DBPinger() {
+func (db *Database) dbPinger() error {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	for {
 		if err := db.DB.Ping(); err != nil {
-			log.Fatalf("unable to connect to the database anymore %s", err.Error())
+			return err
 		}
 		<-ticker.C
+	}
+}
+
+func (db *Database) StartDBPinger() {
+	errDB := db.dbPinger()
+	if errDB != nil {
+		log.Fatalf("Unable to connect to the database anymore %s", errDB.Error())
 	}
 }
 
