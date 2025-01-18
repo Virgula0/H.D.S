@@ -123,10 +123,14 @@ jobs:
               sudo chmod -R 644 docs/images/*
               sudo chmod -R 644 docs/images/Screenshots/*
 
-      - name: Check if README.md Has Changed
+      - name: Check if README.mds are Changed
         id: check_readme
         run: |
-          if git diff --quiet HEAD~1 HEAD -- README.md; then
+          if [ git diff --quiet HEAD~1 HEAD -- README.md ] && \
+              [ git diff --quiet HEAD~1 HEAD -- server/README.md ] && \
+              [ git diff --quiet HEAD~1 HEAD -- client/README.md ] && \
+              [ git diff --quiet HEAD~1 HEAD -- raspberry-pi/README.md ] \
+          ; then
             echo "changed=false" >> $GITHUB_ENV
           else
             echo "changed=true" >> $GITHUB_ENV
