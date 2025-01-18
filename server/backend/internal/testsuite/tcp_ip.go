@@ -20,7 +20,7 @@ type TCPServerSuite struct {
 }
 
 func (s *TCPServerSuite) SetupSuite() {
-	dbConn, err := infrastructure.NewDatabaseConnection()
+	dbConn, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
 	s.Require().NoError(err)
 	s.Database = dbConn
 

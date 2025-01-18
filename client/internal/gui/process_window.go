@@ -2,13 +2,13 @@ package gui
 
 import (
 	"context"
-	"github.com/Virgula0/progetto-dp/client/resources"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/client/internal/grpcclient"
+	"github.com/Virgula0/progetto-dp/client/resources"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	log "github.com/sirupsen/logrus"
 )
@@ -80,14 +80,14 @@ type ProcessWindowInfo struct {
 	renderedLogs string // Already rendered logs
 	newLogs      string // New logs to append next frame
 
-	logsMu           sync.Mutex
+	graphicMu        sync.Mutex
 	lastReadPosition int // Tracks last read position in grpcclient logs
 }
 
 // applyStateUpdate applies the new state to the GUI.
 func applyStateUpdate(state *ProcessWindowInfo, update *StateUpdate) {
-	state.logsMu.Lock()
-	defer state.logsMu.Unlock()
+	state.graphicMu.Lock()
+	defer state.graphicMu.Unlock()
 
 	// Only apply if there's a difference
 	if update.GRPCConnected != "" {
@@ -129,6 +129,9 @@ func newDefaultGUIState() *ProcessWindowInfo {
 // GuiLogger reads logs incrementally and sends updates to the GUI.
 func GuiLogger(ctx context.Context, stateUpdateCh chan<- *StateUpdate) {
 	var lastReadPosition int
+	ticker := time.NewTicker(time.Millisecond * 500)
+	defer ticker.Stop()
+
 	for {
 		if ctx.Err() != nil {
 			log.Warn("Log routine terminated")
@@ -149,7 +152,7 @@ func GuiLogger(ctx context.Context, stateUpdateCh chan<- *StateUpdate) {
 			}
 		}
 
-		time.Sleep(500 * time.Millisecond)
+		<-ticker.C
 	}
 }
 
@@ -159,6 +162,7 @@ var StateUpdateCh = make(chan *StateUpdate, 1)
 func RunGUI(stateUpdateCh <-chan *StateUpdate) bool {
 	initializeWindow()
 	defer rl.CloseWindow()
+	defer runtime.UnlockOSThread()
 
 	uiFont := loadUIFont(fontPath)
 	defer rl.UnloadFont(uiFont)
@@ -196,11 +200,11 @@ func RunGUI(stateUpdateCh <-chan *StateUpdate) bool {
 		// Check if the button is clicked
 		mousePos := rl.GetMousePosition()
 		if rl.CheckCollisionPointRec(mousePos, buttonRect) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-			guiState.logsMu.Lock()
+			guiState.graphicMu.Lock()
 			rl.SetClipboardText(guiState.renderedLogs)
-			guiState.logsMu.Unlock()
-			log.Warn("Logs copied to clipboard")
 			showModal = true
+			guiState.graphicMu.Unlock()
+			log.Warn("Logs copied to clipboard")
 		}
 
 		if showModal {
@@ -355,14 +359,14 @@ func handleVerticalScrolling(
 	font rl.Font,
 	state *ProcessWindowInfo,
 ) {
-	state.logsMu.Lock()
+	state.graphicMu.Lock()
 	lines := strings.Split(state.renderedLogs, "\n")
 	var totalTextHeight float32
 	for _, line := range lines {
 		size := rl.MeasureTextEx(font, line, logFontSize, 1)
 		totalTextHeight += size.Y
 	}
-	state.logsMu.Unlock()
+	state.graphicMu.Unlock()
 
 	if totalTextHeight < (logBoxHeight - 20) {
 		return // No vertical scrolling needed
@@ -388,7 +392,7 @@ func handleHorizontalScrolling(
 	font rl.Font,
 	state *ProcessWindowInfo,
 ) {
-	state.logsMu.Lock()
+	state.graphicMu.Lock()
 	var maxLineWidth float32
 	lines := strings.Split(state.renderedLogs, "\n")
 	for _, line := range lines {
@@ -397,7 +401,7 @@ func handleHorizontalScrolling(
 			maxLineWidth = size.X
 		}
 	}
-	state.logsMu.Unlock()
+	state.graphicMu.Unlock()
 
 	if maxLineWidth < windowWidth {
 		return // No horizontal scrolling needed
@@ -418,8 +422,8 @@ func handleHorizontalScrolling(
 
 // drawGUI draws the entire GUI every frame.
 func drawGUI(state *ProcessWindowInfo, font rl.Font, logOffsetX, logOffsetY, logHeight float32) {
-	state.logsMu.Lock()
-	defer state.logsMu.Unlock()
+	state.graphicMu.Lock()
+	defer state.graphicMu.Unlock()
 
 	// Update renderedLogs with newLogs
 	if state.newLogs != "" {

@@ -45,7 +45,7 @@ func (c *Client) writeToServer(request entities.TCPCreateRaspberryPIRequest) (in
 		return 0, err
 	}
 
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond) //TODO: this MUST be improved, as we should receive an ACK by the server and not sleep then sending
 
 	// Send the actual data
 	wrote, err := c.Conn.Write(marshaled)

@@ -76,7 +76,7 @@ func RunBackend() {
 	// ---- SETUP REST API SERVER -> FOR FE AND RASPBERRY PI COMMUNICATIONS-----
 	gorillaMux := mux.NewRouter()
 
-	database, err := infrastructure.NewDatabaseConnection()
+	database, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
