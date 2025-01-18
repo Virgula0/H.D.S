@@ -31,6 +31,10 @@ func StringToBase64String(input string) string {
 	return base64.StdEncoding.EncodeToString([]byte(input))
 }
 
+func BytesToBase64String(input []byte) string {
+	return base64.StdEncoding.EncodeToString(input)
+}
+
 // IsValidUsername
 // At least 6 chars
 func IsValidUsername(username string) bool {

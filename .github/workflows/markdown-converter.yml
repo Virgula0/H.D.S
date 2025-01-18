@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history to ensure merge base can be found
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -117,16 +119,34 @@ jobs:
         run: pip3 install weasyprint
 
       - name: Ensure Image Permissions
-        run: sudo chmod -R 644 docs/images/*
+        run: |
+              sudo chmod -R 644 docs/images/*
+              sudo chmod -R 644 docs/images/Screenshots/*
+
+      - name: Check if README.mds are Changed
+        id: check_readme
+        run: |
+          if [ git diff --quiet HEAD~1 HEAD -- README.md ] || \
+              [ git diff --quiet HEAD~1 HEAD -- server/README.md ] || \
+              [ git diff --quiet HEAD~1 HEAD -- client/README.md ] || \
+              [ git diff --quiet HEAD~1 HEAD -- raspberry-pi/README.md ] \
+          ; then
+            echo "changed=true" >> $GITHUB_ENV
+          else
+            echo "changed=false" >> $GITHUB_ENV
+          fi
 
       - name: Convert README Processed to PDF with WeasyPrint
+        if: env.changed == 'true'
         run: |
           pandoc README_processed.md -o README_temp.html --from markdown --to html --standalone --metadata=charset=UTF-8 --resource-path=".:docs/images:docs/images/Screenshots"
           weasyprint --base-url "$(pwd)" README_temp.html docs/docs.pdf -s docs/styles/main.css
           rm README_temp.html
 
       - name: Commit and Push Changes
+        if: env.changed == 'true'
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "Process Markdown copy, replace links, alerts, and generate PDF"
           file_pattern: docs/docs.pdf
+

@@ -71,7 +71,12 @@ func (c *Client) LogErrorAndSend(
 	stream grpc.BidiStreamingClient[pb.ClientTaskMessageFromClient, pb.ClientTaskMessageFromServer],
 	handshake *entities.Handshake,
 	status, errMsg string,
-) {
+) error {
+
+	if ReadLogs() == "" {
+		AppendLog(errMsg) // if here, error occurred outside gocat logger
+	}
+
 	log.Errorf("[CLIENT] %s", errMsg)
 	finalize := &pb.ClientTaskMessageFromClient{
 		Jwt:            *c.Credentials.JWT,
@@ -81,5 +86,6 @@ func (c *Client) LogErrorAndSend(
 		ClientUuid:     *handshake.ClientUUID,
 		HashcatOptions: *handshake.HashcatOptions,
 	}
-	_ = stream.Send(finalize)
+
+	return stream.Send(finalize)
 }

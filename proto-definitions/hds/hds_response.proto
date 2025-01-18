@@ -32,4 +32,6 @@ message ClientTask {
   string hashcat_options = 4;
   bool start_cracking = 5;
   string hashcat_pcap=6;
+  string SSID = 7;
+  string BSSID = 8;
 }

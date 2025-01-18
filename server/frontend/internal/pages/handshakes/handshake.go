@@ -5,6 +5,8 @@ import (
 	"github.com/Virgula0/progetto-dp/server/entities"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/response"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/utils"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
@@ -27,6 +29,7 @@ func (u Page) TemplateHandshake(w http.ResponseWriter, r *http.Request) {
 	c := response.Initializer{ResponseWriter: w}
 
 	errorMessage := r.URL.Query().Get("error")
+	successMessage := r.URL.Query().Get("success")
 
 	var request HandshakeTemplate
 	token := r.Context().Value(constants.AuthToken)
@@ -91,6 +94,7 @@ func (u Page) TemplateHandshake(w http.ResponseWriter, r *http.Request) {
 		"CurrentPage":      page,
 		"TotalPages":       totalPages,
 		"Error":            errorMessage,
+		"Success":          successMessage,
 		"InstalledClients": strings.Join(availableClients, ";"),
 	})
 }
@@ -150,8 +154,7 @@ func (u Page) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.HandshakePage), http.StatusFound)
-
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1&success=%s", constants.HandshakePage, url.QueryEscape(fmt.Sprintf("%s updated", crackingRequest.Handshake.UUID))), http.StatusFound)
 }
 
 type DeleteHandshakeReqeust struct {
@@ -182,5 +185,53 @@ func (u Page) DeleteHandshake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.HandshakePage), http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1&success=%s", constants.HandshakePage, url.QueryEscape(fmt.Sprintf("%s has deleted", request.UUID))), http.StatusFound)
+}
+
+type CreateHandshakeRequest struct {
+	File multipart.File `form:"file" validate:"required"`
+}
+
+func (u Page) CreateHandshake(w http.ResponseWriter, r *http.Request) {
+	token := r.Context().Value(constants.AuthToken)
+
+	// Check if the token exists
+	if token == nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.Login, url.QueryEscape(customErrors.ErrNotAuthenticated.Error())), http.StatusFound)
+		return
+	}
+
+	// Parse multipart form data
+	if err := r.ParseMultipartForm(constants.MaxUploadSize); err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, url.QueryEscape("failed to parse multipart form data")), http.StatusFound)
+		return
+	}
+
+	// Retrieve the file
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, url.QueryEscape("file is required")), http.StatusFound)
+		return
+	}
+	defer file.Close()
+
+	// Read file bytes
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, url.QueryEscape("failed to read file")), http.StatusFound)
+		return
+	}
+
+	hnd := &entities.CreateHandshakeRequest{
+		HandshakePCAP: fileBytes,
+	}
+
+	id, err := u.Usecase.CreateHandshake(token.(string), hnd)
+
+	if err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1&success=%s", constants.HandshakePage, url.QueryEscape(fmt.Sprintf("hadnshake %s created", id.HandshakeID))), http.StatusFound)
 }

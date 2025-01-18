@@ -197,6 +197,8 @@ func (s *ServerContext) prepareTasks(handshakes []*entities.Handshake) []*pb.Cli
 			HandshakeUuid:  handshake.UUID,
 			HashcatOptions: *handshake.HashcatOptions,
 			HashcatPcap:    *handshake.HandshakePCAP,
+			BSSID:          handshake.BSSID,
+			SSID:           handshake.SSID,
 		})
 	}
 	return tasks

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"time"
-
-	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 )
 
 type Database struct {
@@ -14,15 +12,14 @@ type Database struct {
 }
 
 // NewDatabaseConnection initializes a connection to the MariaDB database.
-func NewDatabaseConnection() (*Database, error) {
+func NewDatabaseConnection(dbUser, dbPassword, dbHost, dbPort, dbName string) (*Database, error) {
 
-	// Replace the connection parameters with your actual database connection details
 	dbConnector, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
-		constants.DBUser,
-		constants.DBPassword,
-		constants.DBHost,
-		constants.DBPort,
-		constants.DBName,
+		dbUser,
+		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
 	))
 
 	if err != nil {
@@ -40,12 +37,21 @@ func NewDatabaseConnection() (*Database, error) {
 	}, nil
 }
 
-func (db *Database) DBPinger() {
+func (db *Database) dbPinger() error {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
 	for {
 		if err := db.DB.Ping(); err != nil {
-			log.Fatalf("unable to connect to the database anymore %s", err.Error())
+			return err
 		}
-		time.Sleep(time.Second * 10)
+		<-ticker.C
+	}
+}
+
+func (db *Database) StartDBPinger() {
+	errDB := db.dbPinger()
+	if errDB != nil {
+		log.Fatalf("Unable to connect to the database anymore %s", errDB.Error())
 	}
 }
 

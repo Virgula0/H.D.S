@@ -291,3 +291,73 @@ body.modal-open {
     font-family: monospace; /* Use a monospace font for logs */
     font-size: 0.9rem;
 }
+
+/* Add these styles at the end of the file */
+
+/* Styling for file input */
+.form-control-file {
+    color: var(--text-light);
+    transition: color 0.3s, background-color 0.3s, border-color 0.3s;
+    border: 1px solid var(--input-border-light);
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+    background-color: var(--input-bg-light);
+    width: 100%;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+body.dark-mode .form-control-file {
+    color: var(--text-dark);
+    background-color: var(--input-bg-dark);
+    border-color: var(--input-border-dark);
+}
+
+/* Custom file input button */
+.form-control-file::-webkit-file-upload-button {
+    -webkit-appearance: none;
+    background: var(--primary-color);
+    color: white;
+    border: 0;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.form-control-file::-webkit-file-upload-button:hover {
+    background: var(--primary-hover-color);
+}
+
+body.dark-mode .form-control-file::-webkit-file-upload-button {
+    background: var(--primary-hover-color);
+}
+
+body.dark-mode .form-control-file::-webkit-file-upload-button:hover {
+    background: var(--primary-color);
+}
+
+/* For Firefox */
+.form-control-file::-moz-file-upload-button {
+    background: var(--primary-color);
+    color: white;
+    border: 0;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.form-control-file::-moz-file-upload-button:hover {
+    background: var(--primary-hover-color);
+}
+
+body.dark-mode .form-control-file::-moz-file-upload-button {
+    background: var(--primary-hover-color);
+}
+
+body.dark-mode .form-control-file::-moz-file-upload-button:hover {
+    background: var(--primary-color);
+}

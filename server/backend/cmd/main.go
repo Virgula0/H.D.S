@@ -76,7 +76,7 @@ func RunBackend() {
 	// ---- SETUP REST API SERVER -> FOR FE AND RASPBERRY PI COMMUNICATIONS-----
 	gorillaMux := mux.NewRouter()
 
-	database, err := infrastructure.NewDatabaseConnection()
+	database, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
@@ -90,9 +90,8 @@ func RunBackend() {
 
 	// Go Routine for the REST-API server
 	go func() {
-		go database.DBPinger()
-
-		log.Printf("[REST-API] Server running on %s:%s", constants.ServerHost, constants.ServerPort)
+		go database.StartDBPinger()
+		log.Infof("[REST-API] Server running on %s:%s", constants.ServerHost, constants.ServerPort)
 		if restErr := srv.ListenAndServe(); restErr != nil && !errors.Is(restErr, http.ErrServerClosed) {
 			log.Fatalf("listen: %v", restErr)
 		}

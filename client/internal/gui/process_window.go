@@ -8,21 +8,50 @@ import (
 	"time"
 
 	"github.com/Virgula0/progetto-dp/client/internal/grpcclient"
+	"github.com/Virgula0/progetto-dp/client/resources"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	WindowWidth      = 850
-	WindowHeight     = 550
-	DefaultLogHeight = 300
+	windowWidth      = 850
+	windowHeight     = 550
+	defaultLogHeight = 300
 
-	LabelSpacing  = 250
-	LabelFontSize = 20
-	LogFontSize   = 18
+	labelSpacing  = 250
+	labelFontSize = 20
+	logFontSize   = 18
 
-	FontPath     = "internal/resources/fonts/Roboto-Black.ttf"
-	TopLabelArea = 220
+	fontPath     = "fonts/Roboto-Black.ttf"
+	jetBrainPath = "fonts/JetBrainsMono-Regular.ttf"
+
+	topLabelArea = 220
+
+	// Button dimensions
+	buttonWidth  float32 = 120
+	buttonHeight float32 = 30
+	buttonMargin float32 = 10
+
+	scrollSpeed float32 = 30
+
+	startCodePoint = 0x0020 // Start from SPACE
+	endCodePoint   = 0xFFFF
+
+	margin = 15
+)
+
+// Track scrolling & resizing of the log box
+var (
+	logOffsetX   float32 = 0
+	logOffsetY   float32 = 0
+	logBoxHeight float32 = defaultLogHeight
+
+	resizingLogBox bool
+
+	minLogBoxHeight float32 = 50
+	maxLogBoxHeight float32 = windowHeight - topLabelArea
+
+	showModal = false
 )
 
 // ------------------------------------------------------------------------------------
@@ -51,14 +80,14 @@ type ProcessWindowInfo struct {
 	renderedLogs string // Already rendered logs
 	newLogs      string // New logs to append next frame
 
-	logsMu           sync.Mutex
+	graphicMu        sync.Mutex
 	lastReadPosition int // Tracks last read position in grpcclient logs
 }
 
 // applyStateUpdate applies the new state to the GUI.
 func applyStateUpdate(state *ProcessWindowInfo, update *StateUpdate) {
-	state.logsMu.Lock()
-	defer state.logsMu.Unlock()
+	state.graphicMu.Lock()
+	defer state.graphicMu.Unlock()
 
 	// Only apply if there's a difference
 	if update.GRPCConnected != "" {
@@ -100,6 +129,9 @@ func newDefaultGUIState() *ProcessWindowInfo {
 // GuiLogger reads logs incrementally and sends updates to the GUI.
 func GuiLogger(ctx context.Context, stateUpdateCh chan<- *StateUpdate) {
 	var lastReadPosition int
+	ticker := time.NewTicker(time.Millisecond * 500)
+	defer ticker.Stop()
+
 	for {
 		if ctx.Err() != nil {
 			log.Warn("Log routine terminated")
@@ -120,34 +152,24 @@ func GuiLogger(ctx context.Context, stateUpdateCh chan<- *StateUpdate) {
 			}
 		}
 
-		time.Sleep(500 * time.Millisecond)
+		<-ticker.C
 	}
 }
 
-var StateUpdateCh = make(chan *StateUpdate, 10)
+var StateUpdateCh = make(chan *StateUpdate, 1)
 
 // RunGUI starts the Raylib window and listens for updates via the channel.
 func RunGUI(stateUpdateCh <-chan *StateUpdate) bool {
 	initializeWindow()
 	defer rl.CloseWindow()
+	defer runtime.UnlockOSThread()
 
-	uiFont := loadUIFont()
+	uiFont := loadUIFont(fontPath)
 	defer rl.UnloadFont(uiFont)
+	fontJetBrains := loadUIFont(jetBrainPath)
+	defer rl.UnloadFont(fontJetBrains)
 
 	guiState := newDefaultGUIState()
-
-	// Track scrolling & resizing of the log box
-	var (
-		logOffsetY   float32 = 0
-		logBoxHeight float32 = DefaultLogHeight
-
-		// Whether the user is dragging the log-box boundary
-		resizingLogBox bool
-
-		// That means logBoxHeight can be at most WindowHeight - TopLabelArea
-		minLogBoxHeight float32 = 50
-		maxLogBoxHeight float32 = WindowHeight - TopLabelArea
-	)
 
 	// Main application loop: re-draw everything every frame
 	for !rl.WindowShouldClose() {
@@ -158,13 +180,38 @@ func RunGUI(stateUpdateCh <-chan *StateUpdate) bool {
 		handleResize(&logBoxHeight, &resizingLogBox, minLogBoxHeight, maxLogBoxHeight)
 
 		// Handle scrolling (mouse wheel)
-		handleScrolling(&logOffsetY, logBoxHeight, uiFont, guiState)
+		handleScrolling(&logOffsetY, &logOffsetX, logBoxHeight, uiFont, guiState)
 
 		// Draw everything
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
 
-		drawGUI(guiState, uiFont, logOffsetY, logBoxHeight)
+		drawGUI(guiState, uiFont, logOffsetX, logOffsetY, logBoxHeight)
+
+		// Draw the "Copy Logs" button
+		buttonX := windowWidth - buttonWidth - buttonMargin
+		buttonY := float32(windowHeight) - logBoxHeight - buttonHeight - buttonMargin
+		buttonRect := rl.NewRectangle(buttonX, buttonY, buttonWidth, buttonHeight)
+
+		rl.DrawRectangleRec(buttonRect, rl.SkyBlue)
+		rl.DrawRectangleLinesEx(buttonRect, 2, rl.RayWhite)
+		rl.DrawText("Copy Logs", int32(buttonX+10), int32(buttonY+7), 20, rl.Black)
+
+		// Check if the button is clicked
+		mousePos := rl.GetMousePosition()
+		if rl.CheckCollisionPointRec(mousePos, buttonRect) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+			guiState.graphicMu.Lock()
+			rl.SetClipboardText(guiState.renderedLogs)
+			showModal = true
+			guiState.graphicMu.Unlock()
+			log.Warn("Logs copied to clipboard")
+		}
+
+		if showModal {
+			if DrawMessageWindow(fontJetBrains, OkIcon, "Logs copied", "OK") {
+				showModal = false
+			}
+		}
 
 		rl.EndDrawing()
 	}
@@ -185,13 +232,36 @@ func processStateUpdates(ch <-chan *StateUpdate, state *ProcessWindowInfo) {
 func initializeWindow() {
 	runtime.LockOSThread() // FIXES GRAPHICS CLIENT RENDERING PROBLEMS
 	rl.SetTraceLogLevel(rl.LogError)
-	rl.InitWindow(WindowWidth, WindowHeight, "Process Window - H.D.S")
+	rl.InitWindow(windowWidth, windowHeight, "Process Window - H.D.S")
 	rl.SetTargetFPS(60)
 }
 
-func loadUIFont() rl.Font {
-	// If FontPath is invalid, Raylib will fall back to the default font.
-	return rl.LoadFont(FontPath)
+// loadUIFont loads a font with a wide UTF-8 character set.
+func loadUIFont(path string) rl.Font {
+	// Read the font data from the embedded file system
+	data, err := resources.FontFS.ReadFile(path)
+	if err != nil {
+		return rl.GetFontDefault() // Fallback to default font
+	}
+
+	// Define a wide range of UTF-8 code points
+	// End at the last BMP character
+	glyphCount := endCodePoint - startCodePoint + 1
+
+	// Create a slice for the codepoints
+	codepoints := make([]rune, glyphCount)
+	for i := range codepoints {
+		codepoints[i] = rune(startCodePoint + i)
+	}
+
+	// Load the font directly from memory with the codepoints
+	font := rl.LoadFontFromMemory(".ttf", data, 20, codepoints)
+	if font.Texture.ID == 0 {
+		rl.TraceLog(rl.LogError, "Failed to load font from memory")
+		return rl.GetFontDefault() // Fallback to default font
+	}
+
+	return font
 }
 
 // handleResize checks mouse input and adjusts logBoxHeight accordingly.
@@ -202,7 +272,7 @@ func handleResize(
 	maxHeight float32,
 ) {
 	// The Y position of the top boundary of the log box
-	topOfLogBox := float32(WindowHeight) - *logBoxHeight
+	topOfLogBox := float32(windowHeight) - *logBoxHeight
 
 	// A small "handle" rectangle to detect mouse hovering for resizing
 	// Let's say 6px high, centered around 'topOfLogBox'
@@ -210,7 +280,7 @@ func handleResize(
 	resizeHandleRect := rl.NewRectangle(
 		0,
 		topOfLogBox-handleHeight/2,
-		WindowWidth,
+		windowWidth,
 		handleHeight,
 	)
 
@@ -234,10 +304,10 @@ func handleResize(
 		rl.SetMouseCursor(rl.MouseCursorResizeNS) // Force the NS-resize cursor
 		if rl.IsMouseButtonDown(rl.MouseLeftButton) {
 			newTop := mousePos.Y
-			if newTop < TopLabelArea {
-				newTop = TopLabelArea // Don’t overlap the top labels
+			if newTop < topLabelArea {
+				newTop = topLabelArea // Don’t overlap the top labels
 			}
-			newHeight := float32(WindowHeight) - newTop
+			newHeight := float32(windowHeight) - newTop
 
 			// Clamp the new height
 			if newHeight < minHeight {
@@ -255,45 +325,58 @@ func handleResize(
 
 // handleScrolling changes logOffsetY based on mouse wheel movement.
 // Measure the total text height to know how far can scroll.
-func handleScrolling(logOffsetY *float32, logBoxHeight float32, font rl.Font, state *ProcessWindowInfo) {
-	logBoxY := float32(WindowHeight) - logBoxHeight
-	logBoxRect := rl.NewRectangle(0, logBoxY, WindowWidth, logBoxHeight)
+func handleScrolling(
+	logOffsetY *float32,
+	logOffsetX *float32,
+	logBoxHeight float32,
+	font rl.Font,
+	state *ProcessWindowInfo,
+) {
+	logBoxY := float32(windowHeight) - logBoxHeight
+	logBoxRect := rl.NewRectangle(0, logBoxY, windowWidth, logBoxHeight)
 
 	mousePos := rl.GetMousePosition()
 	if !rl.CheckCollisionPointRec(mousePos, logBoxRect) {
-		return // Only scroll if mouse is inside the log box
+		return // Only scroll if the mouse is inside the log box
 	}
 
-	// Scroll speed factor
-	const scrollSpeed float32 = 20
 	mouseWheelMove := rl.GetMouseWheelMove()
-	if mouseWheelMove == 0 {
-		return
-	}
 
-	// Measure total text height
-	state.logsMu.Lock()
+	if mouseWheelMove != 0 {
+		if rl.IsKeyDown(rl.KeyLeftShift) {
+			handleHorizontalScrolling(logOffsetX, scrollSpeed, mouseWheelMove, font, state)
+		} else {
+			handleVerticalScrolling(logOffsetY, scrollSpeed, mouseWheelMove, logBoxHeight, font, state)
+		}
+	}
+}
+
+func handleVerticalScrolling(
+	logOffsetY *float32,
+	scrollSpeed float32,
+	mouseWheelMove float32,
+	logBoxHeight float32,
+	font rl.Font,
+	state *ProcessWindowInfo,
+) {
+	state.graphicMu.Lock()
 	lines := strings.Split(state.renderedLogs, "\n")
 	var totalTextHeight float32
 	for _, line := range lines {
-		size := rl.MeasureTextEx(font, line, LogFontSize, 1)
+		size := rl.MeasureTextEx(font, line, logFontSize, 1)
 		totalTextHeight += size.Y
 	}
-	state.logsMu.Unlock()
+	state.graphicMu.Unlock()
 
-	// If total text is smaller than the box, no scrolling needed
 	if totalTextHeight < (logBoxHeight - 20) {
-		return
+		return // No vertical scrolling needed
 	}
 
-	// Adjust offset
 	*logOffsetY += mouseWheelMove * scrollSpeed
 
-	const margin = 15
-	minOffset := (logBoxHeight - margin) - totalTextHeight // negative
-	maxOffset := float32(0)
+	minOffset := float32(windowHeight) - logBoxHeight - totalTextHeight + margin
+	var maxOffset float32 = 0.0
 
-	// Clamp
 	if *logOffsetY > maxOffset {
 		*logOffsetY = maxOffset
 	}
@@ -302,10 +385,45 @@ func handleScrolling(logOffsetY *float32, logBoxHeight float32, font rl.Font, st
 	}
 }
 
+func handleHorizontalScrolling(
+	logOffsetX *float32,
+	scrollSpeed float32,
+	mouseWheelMove float32,
+	font rl.Font,
+	state *ProcessWindowInfo,
+) {
+	state.graphicMu.Lock()
+	var maxLineWidth float32
+	lines := strings.Split(state.renderedLogs, "\n")
+	for _, line := range lines {
+		size := rl.MeasureTextEx(font, line, logFontSize, 1)
+		if size.X > maxLineWidth {
+			maxLineWidth = size.X
+		}
+	}
+	state.graphicMu.Unlock()
+
+	if maxLineWidth < windowWidth {
+		return // No horizontal scrolling needed
+	}
+
+	*logOffsetX -= mouseWheelMove * scrollSpeed // Invert for natural scrolling
+
+	minOffsetX := float32(windowWidth) - maxLineWidth - margin
+	var maxOffsetX float32 = 0.0
+
+	if *logOffsetX > maxOffsetX {
+		*logOffsetX = maxOffsetX
+	}
+	if *logOffsetX < minOffsetX {
+		*logOffsetX = minOffsetX
+	}
+}
+
 // drawGUI draws the entire GUI every frame.
-func drawGUI(state *ProcessWindowInfo, font rl.Font, logOffsetY, logHeight float32) {
-	state.logsMu.Lock()
-	defer state.logsMu.Unlock()
+func drawGUI(state *ProcessWindowInfo, font rl.Font, logOffsetX, logOffsetY, logHeight float32) {
+	state.graphicMu.Lock()
+	defer state.graphicMu.Unlock()
 
 	// Update renderedLogs with newLogs
 	if state.newLogs != "" {
@@ -315,26 +433,26 @@ func drawGUI(state *ProcessWindowInfo, font rl.Font, logOffsetY, logHeight float
 
 	// 1) Basic labels at the top
 	labelStartX := float32(20)
-	valueStartX := labelStartX + LabelSpacing
+	valueStartX := labelStartX + labelSpacing
 
-	rl.DrawTextEx(font, "Status", rl.NewVector2(labelStartX, 20), LabelFontSize, 1, rl.DarkGray)
-	rl.DrawTextEx(font, state.grpcConnected, rl.NewVector2(valueStartX, 20), LabelFontSize, 1, rl.Black)
+	rl.DrawTextEx(font, "Status", rl.NewVector2(labelStartX, 20), labelFontSize, 1, rl.DarkGray)
+	rl.DrawTextEx(font, state.grpcConnected, rl.NewVector2(valueStartX, 20), labelFontSize, 1, rl.Black)
 
-	rl.DrawTextEx(font, "Task Status", rl.NewVector2(labelStartX, 60), LabelFontSize, 1, rl.DarkGray)
-	rl.DrawTextEx(font, state.statusLabel, rl.NewVector2(valueStartX, 60), LabelFontSize, 1, rl.Black)
+	rl.DrawTextEx(font, "Task Status", rl.NewVector2(labelStartX, 60), labelFontSize, 1, rl.DarkGray)
+	rl.DrawTextEx(font, state.statusLabel, rl.NewVector2(valueStartX, 60), labelFontSize, 1, rl.Black)
 
-	rl.DrawTextEx(font, "PCAP File", rl.NewVector2(labelStartX, 100), LabelFontSize, 1, rl.DarkGray)
-	rl.DrawTextEx(font, state.pcapFile, rl.NewVector2(valueStartX, 100), LabelFontSize, 1, rl.Black)
+	rl.DrawTextEx(font, "PCAP File", rl.NewVector2(labelStartX, 100), labelFontSize, 1, rl.DarkGray)
+	rl.DrawTextEx(font, state.pcapFile, rl.NewVector2(valueStartX, 100), labelFontSize, 1, rl.Black)
 
-	rl.DrawTextEx(font, "Hashcat File", rl.NewVector2(labelStartX, 140), LabelFontSize, 1, rl.DarkGray)
-	rl.DrawTextEx(font, state.hashcatFile, rl.NewVector2(valueStartX, 140), LabelFontSize, 1, rl.Black)
+	rl.DrawTextEx(font, "Hashcat File", rl.NewVector2(labelStartX, 140), labelFontSize, 1, rl.DarkGray)
+	rl.DrawTextEx(font, state.hashcatFile, rl.NewVector2(valueStartX, 140), labelFontSize, 1, rl.Black)
 
-	rl.DrawTextEx(font, "Hashcat Status", rl.NewVector2(labelStartX, 180), LabelFontSize, 1, rl.DarkGray)
-	rl.DrawTextEx(font, state.hashcatStatus, rl.NewVector2(valueStartX, 180), LabelFontSize, 1, rl.Black)
+	rl.DrawTextEx(font, "Hashcat Status", rl.NewVector2(labelStartX, 180), labelFontSize, 1, rl.DarkGray)
+	rl.DrawTextEx(font, state.hashcatStatus, rl.NewVector2(valueStartX, 180), labelFontSize, 1, rl.Black)
 
 	// 2) Draw the log box rectangle
-	logBoxY := float32(WindowHeight) - logHeight
-	logBox := rl.NewRectangle(0, logBoxY, WindowWidth, logHeight)
+	logBoxY := float32(windowHeight) - logHeight
+	logBox := rl.NewRectangle(0, logBoxY, windowWidth, logHeight)
 	rl.DrawRectangleRec(logBox, rl.Black)
 
 	rl.BeginScissorMode(
@@ -348,8 +466,8 @@ func drawGUI(state *ProcessWindowInfo, font rl.Font, logOffsetY, logHeight float
 	rl.DrawTextEx(
 		font,
 		state.renderedLogs,
-		rl.NewVector2(logBox.X+10, logBoxY+10+logOffsetY),
-		LogFontSize,
+		rl.NewVector2(logBox.X+10+logOffsetX, logBoxY+10+logOffsetY),
+		logFontSize,
 		1,
 		rl.White,
 	)

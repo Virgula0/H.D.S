@@ -281,7 +281,34 @@ func (repo *Repository) DeleteHandshake(token string, request *entities.DeleteHa
 		return nil, err
 	}
 
-	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodDelete, constants.BackendDeleteHandshake, headers, jsonData)
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodDelete, constants.BackendHandshake, headers, jsonData)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(responseBytes, &dd); err != nil {
+		return nil, err
+	}
+
+	return dd, nil
+}
+
+func (repo *Repository) CreateHandshake(token string, request *entities.CreateHandshakeRequest) (*entities.CreateHandshakeResponse, error) {
+
+	var dd *entities.CreateHandshakeResponse
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", token),
+	}
+
+	// Marshal the data into JSON
+	jsonData, err := json.Marshal(request)
+
+	if err != nil {
+		return nil, err
+	}
+
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodPut, constants.BackendHandshake, headers, jsonData)
 
 	if err != nil {
 		return nil, err

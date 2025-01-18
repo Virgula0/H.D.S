@@ -145,3 +145,40 @@ func (u Handler) DeleteHandshake(w http.ResponseWriter, r *http.Request) {
 		Status: deleted,
 	})
 }
+
+func (u Handler) CreateHandshake(w http.ResponseWriter, r *http.Request) {
+	c := response.Initializer{ResponseWriter: w}
+
+	userID, err := u.Usecase.GetUserIDFromToken(r)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
+			StatusCode: http.StatusInternalServerError,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	var request entities.CreateHandshakeRequest
+
+	if err = utils.ValidateJSON(&request, r); err != nil {
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
+			StatusCode: http.StatusBadRequest,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	handshake, err := u.Usecase.CreateHandshake(userID.String(), "", "", constants.NothingStatus, utils.BytesToBase64String(request.HandshakePCAP))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
+			StatusCode: http.StatusInternalServerError,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, entities.CreateHandshakeResponse{
+		HandshakeID: handshake,
+	})
+}

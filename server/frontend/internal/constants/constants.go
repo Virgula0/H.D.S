@@ -19,6 +19,8 @@ const JSONContentType = "application/json"
 const HTMLContentType = "text/html;charset=UTF-8"
 const FileToCrackString = "FILE_TO_CRACK"
 
+const MaxUploadSize = 10 << 28 // 2,68435456 GB
+
 // Views
 
 const (
@@ -43,6 +45,7 @@ const (
 	DeleteClient    = "/delete-client"
 	DeleteRaspberry = "/delete-raspberrypi"
 	DeleteHandshake = "/delete-handshake"
+	CreateHandshake = "/create-handshake"
 )
 
 // Endpoints BE
@@ -56,6 +59,6 @@ const (
 	BackendGetRaspberryPi    = "devices"
 	BackendUpdateClientTask  = "assign"
 	BackendDeleteClient      = "delete/client"
-	BackendDeleteHandshake   = "delete/handshake"
+	BackendHandshake         = "manage/handshake"
 	BackendDeleteRaspberryPI = "delete/raspberrypi"
 )
