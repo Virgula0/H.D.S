@@ -54,11 +54,12 @@ jobs:
           cd client
           make proto 
 
-      # install hascat as well
-      - name: Build client
+      # install hascat as well for gocat
+      - name: Install hashcat
         run: |
-          cd client
-          make build 
+          cd externals/gocat
+          make install
+          make set-user-permissions USER=${USER}  
 
       - name: Run golangci-lint:client
         run: |

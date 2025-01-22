@@ -58,7 +58,10 @@ jobs:
     - name: Run client build
       run: |
         git submodule update --init --remote --recursive
-        cd client
+        cd externals/gocat
+        make install
+        make set-user-permissions USER=${USER}
+        cd ../../client
         make build
 
     # Zip the client build
