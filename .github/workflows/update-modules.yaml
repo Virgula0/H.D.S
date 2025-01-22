@@ -31,7 +31,6 @@ jobs:
       - name: Git Submodule Update
         run: |
           git submodule update --init --remote --recursive
-          git pull --recurse-submodules
 
       - uses: docker://chinthakagodawita/autoupdate-action:v1
         env:
