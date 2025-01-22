@@ -30,6 +30,12 @@ jobs:
       - name: Git Submodule Update
         run: |
           git submodule update --init --remote --recursive
+          git submodule foreach '
+            if [ "$(git symbolic-ref --short HEAD 2>/dev/null)" = "" ]; then
+              # Detached HEAD state: attempt to switch to "master"
+              git checkout master || git checkout main || echo "Failed to switch to master or main. Please verify the repository setup."
+            fi
+          '
           git pull --recurse-submodules
 
       - uses: docker://chinthakagodawita/autoupdate-action:v1
