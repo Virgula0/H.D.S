@@ -28,25 +28,50 @@ Student: <font color='orange'>Angelo Rosa</font>
 
 ## Brief
 
-> **H.D.S (Hashcat-Distributed-Service)** is a university project written entirely in **Go**, designed to distribute WPA handshake cracking tasks across multiple **Hashcat** clients. It serves as a practical proof of concept for distributed password-cracking workloads.
+> **H.D.S (Hashcat-Distributed-Service)** is a university project entirely written in **Go** that can find practical applications for collecting and then distributing hashes and handshakes cracking tasks on multiple hashcat clients through a control panel centre. Include a Deamon for collecting and verifying WPA handshakes from IOT devices. 
+
+You can find releases compiled at: [https://github.com/Virgula0/H.D.S/releases](https://github.com/Virgula0/H.D.S/releases)
+But remember to read the following 
+
+- [Deamon](https://github.com/Virgula0/H.D.S?tab=readme-ov-file#daemon)
+- [Server](https://github.com/Virgula0/H.D.S?tab=readme-ov-file#server)
+- [Client](https://github.com/Virgula0/H.D.S?tab=readme-ov-file#client)
+
+To understand how to set up env variables.
 
 ---
 
-## Run the Application (in Test Mode) with Docker
+## Run the Application (Test Mode) with Docker
 
-Since `client` within docker runs a GUI application using **Raylib**, it requires access to the host's desktop environment. A utility called `xhost` is needed (`xorg-xhost` on Arch Linux).
+A docker environment can be run to see everything up and running without dealing with compilations or envrinoment setups first.
+Since `client` within docker runs a GUI application using **Raylib**, it requires access to the host's desktop environment. A utility called `xhost` is needed for this.
 
-Run the following commands:
+> [!WARNING]  
+> This works with `X11` only at the moment
 
+1. Installation
+
+```bash
+sudo apt update -y && \
+sudo apt install x11-xserver-utils -y
 ```
-git submodule update --init --remote --recursive
-git pull --recurse-submodules
-export DISPLAY=:0.0 && \
+
+```bash
+sudo pacman && \
+sudo pacman -S xorg-xhost
+```
+
+```bash
+git submodule init && \
+git submodule update && \
+git pull --recurse-submodules && \
+# change display values as you need
+export DISPLAY=:0.0 && \ 
 xhost +local:docker && \
 docker compose up --build
 ```
 
-Access the **Frontend (FE)** by visiting:  
+2. Access the **Frontend (FE)** by visiting:  
 ➡️ `http://localhost:4748`
 
 ### Docker Containers
@@ -150,24 +175,7 @@ It was not that easy to achieve a good solid test scheme, but in the end, it sho
 > [!WARNING]  
 > You can run tests using `cd server && make test` but env variables must be set before proceeding
 
-```bash
-export BACKEND_HOST="0.0.0.0"
-export BACKEND_PORT="4747"
-export FRONTEND_HOST="0.0.0.0"
-export FRONTEND_PORT="4748"
-export DB_USER="agent"
-export DB_PASSWORD="SUPERSECUREUNCRACKABLEPASSWORD" # This should be changed (remember to change it in database/initialize.sql too)
-export DB_HOST="localhost"
-export DB_PORT="3306"
-export DB_NAME="dp_hashcat"
-export ALLOW_REGISTRATIONS="True" # Disable if needed
-export DEBUG="True"  # This will enable seeds for having some accounts for testing purposes. admin:test1234 will be created
-export RESET="True"
-export GRPC_URL="0.0.0.0:7777"
-export GRPC_TIMEOUT="10s"
-export TCP_ADDRESS="0.0.0.0"
-export TCP_PORT="4749"
-```
+Take a look at [Server](https://github.com/Virgula0/H.D.S?tab=readme-ov-file#server) to check environment variables needed for running the server.
 
 ---
 
@@ -199,6 +207,7 @@ While security auditing and privacy were not primary objectives for this project
   <summary>List of files</summary>
 
 ```
+.
 ├── client
 │   ├── Dockerfile
 │   ├── go.mod
@@ -206,8 +215,11 @@ While security auditing and privacy were not primary objectives for this project
 │   ├── internal
 │   │   ├── constants
 │   │   │   └── constants.go
+│   │   ├── customerrors
+│   │   │   └── errors.go
 │   │   ├── entities
 │   │   │   ├── auth_request.go
+│   │   │   ├── client.go
 │   │   │   └── handshake.go
 │   │   ├── environment
 │   │   │   └── init.go
@@ -216,36 +228,45 @@ While security auditing and privacy were not primary objectives for this project
 │   │   │   └── init.go
 │   │   ├── gui
 │   │   │   ├── login_window.go
+│   │   │   ├── message_window.go
 │   │   │   └── process_window.go
 │   │   ├── hcxtools
 │   │   │   └── hcxpcapngtool.go
 │   │   ├── mygocat
 │   │   │   ├── gocat.go
 │   │   │   └── task_handler.go
-│   │   ├── resources
-│   │   │   └── fonts
-│   │   │       ├── Roboto-BlackItalic.ttf
-│   │   │       ├── Roboto-Black.ttf
-│   │   │       ├── Roboto-BoldItalic.ttf
-│   │   │       ├── Roboto-Bold.ttf
-│   │   │       ├── Roboto-Italic.ttf
-│   │   │       ├── Roboto-LightItalic.ttf
-│   │   │       ├── Roboto-Light.ttf
-│   │   │       ├── Roboto-MediumItalic.ttf
-│   │   │       ├── Roboto-Medium.ttf
-│   │   │       ├── Roboto-Regular.ttf
-│   │   │       ├── Roboto-ThinItalic.ttf
-│   │   │       └── Roboto-Thin.ttf
 │   │   └── utils
 │   │       └── utils.go
 │   ├── main.go
 │   ├── Makefile
+│   ├── README.md
+│   ├── resources
+│   │   ├── fonts
+│   │   │   ├── JetBrainsMono-Regular.ttf
+│   │   │   └── Roboto-Black.ttf
+│   │   └── resources.go
 │   └── wordlists
+│       └── rockyou.txt
 ├── database
 │   ├── Dockerfile
 │   ├── initialize.sql
 │   └── my.cnf
 ├── docker-compose.yaml
+├── docs
+│   ├── diagram.drawio
+│   ├── docs.pdf
+│   ├── images
+│   │   ├── logo.png
+│   │   ├── project-structure.png
+│   │   ├── Screenshots
+│   │   │   ├── 1.png
+│   │   │   ├── 2.png
+│   │   │   ├── 3.png
+│   │   │   └── 4.png
+│   │   └── test-diagram.png
+│   ├── styles
+│   │   └── main.css
+│   └── test-diagram.drawio
 ├── externals
 │   ├── gocat
 │   ├── hashcat
@@ -285,7 +306,8 @@ While security auditing and privacy were not primary objectives for this project
 │   │       ├── getwpa.go
 │   │       └── parser.go
 │   ├── main.go
-│   └── Makefile
+│   ├── Makefile
+│   └── README.md
 ├── README.md
 └── server
     ├── backend
@@ -419,11 +441,11 @@ While security auditing and privacy were not primary objectives for this project
     ├── go.mod
     ├── go.sum
     ├── main.go
-    └── Makefile
+    ├── Makefile
+    └── README.md
 
-79 directories, 143 files
+84 directories, 152 files
 ```
-
 
 </details>
 
@@ -451,3 +473,4 @@ Ignoring gRPC and other basic deps
 - **Gopacket** `github.com/google/gopacket` Parse `.PCAP` files as layers
 - **Wifi** `github.com/mdlayher/wifi` used by daemon for understanding if we're connected to our local network
 - **Cobra** `github.com/spf13/cobra` used for parsing command line arguments easily in daemon
+- Other dependencies could be implicitly downloaded and used because of these deps

@@ -95,6 +95,7 @@ While this solution works for our current requirements, future improvements coul
 ```bash
 apt update -y && \
     apt install -y --no-install-recommends \
+    protobuf-compiler
     libminizip-dev \
     ocl-icd-libopencl1 \
     opencl-headers \
@@ -118,99 +119,46 @@ Follow these steps to compile and run the client, run it from project root dir
 
 ```bash
 git submodule init
-git submodule update
+git submodule update --init --remote --recursive
 git pull --recurse-submodule
 ```
 
-Then
+1. You need to install `hashcat` 6.1.1. This step is necesary only for the first time.
 
+```bash
+cd externals/gocat
+sudo make install
+sudo make set-user-permissions USER=${USER}
+cd ../../
 ```
-BASE=${PWD}
 
-# Environment Variables
-export HASHCAT_SRC_PATH="${BASE}/client/hashcat"
-export CGO_CFLAGS="-I$HASHCAT_SRC_PATH/OpenCL -I$HASHCAT_SRC_PATH/deps/LZMA-SDK/C -I$HASHCAT_SRC_PATH/deps/zlib -I$HASHCAT_SRC_PATH/deps/zlib/contrib -I$HASHCAT_SRC_PATH/deps/OpenCL-Headers $CGO_CFLAGS"
+2. Then build with
 
-# Proto:
+```bash
 cd client
-make proto
-
-cd ${BASE}/externals/hashcat
-git checkout v6.1.1
-
-cd ${BASE}
-
-# Directories
-mkdir -p "${BASE}/client/hashcat" "${BASE}/client/gocat" "${BASE}/client/hcxtools"
-
-cp -r externals/hashcat/* "${BASE}/client/hashcat/"
-cd "${BASE}/client/hashcat"
-sudo make install SHARED=1 ENABLE_BRAIN=0
-sudo cp deps/LZMA-SDK/C/LzmaDec.h /usr/local/include/hashcat/
-sudo cp deps/LZMA-SDK/C/7zTypes.h /usr/local/include/hashcat/
-sudo cp deps/LZMA-SDK/C/Lzma2Dec.h /usr/local/include/hashcat/
-sudo cp -r OpenCL/inc_types.h /usr/local/include/hashcat/
-sudo cp -r deps/zlib/contrib /usr/local/include/hashcat
-
-sudo ln -sf /usr/local/lib/libhashcat.so.6.1.1 /usr/local/lib/libhashcat.so
-sudo ln -sf /usr/local/lib/libhashcat.so.6.1.1 /usr/lib/libhashcat.so.6.1.1
-
-
-cd ${BASE}
-
-cp -r externals/gocat/* "${BASE}/client/gocat/"
-cd "${BASE}/client/gocat"
-go test -c
-sudo cp gocat.test /usr/local/share/hashcat
-sudo cp -r testdata /usr/local/share/hashcat
-/usr/local/share/hashcat/gocat.test
-
-
-cd ${BASE}
-
-sudo chown -R ${USER}:${USER} "${BASE}/client"
-sudo chown -R ${USER}:${USER} /usr/local/share/hashcat
-
-ln -sf /usr/local/share/hashcat/hashcat.hcstat2 "${BASE}/client/hashcat.hcstat2"
-ln -sf /usr/local/share/hashcat/hashcat.hctune "${BASE}/client/hashcat.hctune"
-ln -sf /usr/local/share/hashcat/OpenCL "${BASE}/client/OpenCL"
-ln -sf /usr/local/share/hashcat/kernels "${BASE}/client/kernels"
-ln -sf /usr/local/share/hashcat/modules "${BASE}/client/modules"
-
-cp -r externals/hcxtools/* "${BASE}/client/hcxtools/"
-sed -i 's/int main(int argc, char \*argv\[\])/int convert_pcap(int argc, char *argv\[\])/' "${BASE}/client/hcxtools/hcxpcapngtool.c"
-cc -fPIC -shared -o "${BASE}/client/libhcxpcapngtool.so" "${BASE}/client/hcxtools/hcxpcapngtool.c" -lz -lssl -lcrypto -DVERSION_TAG=\"6.3.5\" -DVERSION_YEAR=\"2024\"
-
-
-cd "${BASE}/client"
-go mod verify
-go mod tidy
-go build main.go
+make build
 ```
 
-Run:
+Produces the following files tree
 
 ```
-export GRPC_URL=localhost:7777
-export GRPC_TIMEOUT=10s
-export DISPLAY=${DISPLAY} # Pass display variable from terminal
-export LD_LIBRARY_PATH=client/:$LD_LIBRARY_PATH
-./main
-```
-
-
-Produces files tree
-
-```
-├── hashcat
-├── gocat        <-- From /externals/gocat
-├── hcxtools     <-- From /externals/hcxtools
 ├── client
-│   ├── main
-│   ├── hashcat.hcstat2 (symlink)
-│   ├── hashcat.hctune (symlink)
-│   ├── OpenCL (symlink)
-│   ├── kernels (symlink)
-│   ├── modules (symlink)
-│   ├── libhcxpcapngtool.so
+├── hashcat.hctune -> /usr/local/share/hashcat/hashcat.hctune
+├── libhcxpcapngtool.so
+├── modules -> /usr/local/share/hashcat/modules
+└── OpenCL -> /usr/local/share/hashcat/OpenCL
+```
+
+3. Run with 
+
+```bash
+make run-compiled
+```
+
+but remember to set these env variables first
+
+```bash
+export GRPC_URL=localhost:7777 # change with gRPC address
+export GRPC_TIMEOUT=10s #leave this timeout by default
+export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH 
 ```

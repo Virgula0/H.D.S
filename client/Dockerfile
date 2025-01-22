@@ -22,10 +22,6 @@ RUN dbus-uuidgen > /etc/machine-id
 
 WORKDIR /app 
 
-# Set some ENV
-#ENV HASHCAT_SRC_PATH=/app/hashcat
-#ENV CGO_CFLAGS="-I$HASHCAT_SRC_PATH/OpenCL -I$HASHCAT_SRC_PATH/deps/LZMA-SDK/C -I$HASHCAT_SRC_PATH/deps/zlib -I$HASHCAT_SRC_PATH/deps/zlib/contrib -I$HASHCAT_SRC_PATH/deps/OpenCL-Headers $CGO_CFLAGS"
-
 # you need to have dont a git recursive pull first
 COPY externals/gocat /app/externals/gocat
 COPY externals/hcxtools /app/externals/hcxtools
@@ -64,6 +60,3 @@ ENV LD_LIBRARY_PATH=/app/client/build:/usr/local/lib
 
 RUN make build && \
     rm -rf /app/.git
-
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
-#ENTRYPOINT ["./main"]

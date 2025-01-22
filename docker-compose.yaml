@@ -36,7 +36,7 @@ services:
       - TCP_ADDRESS=server
       - TCP_PORT=4749
       - TEST=True
-      - HOME_WIFI=Vodafone-A60818803 # Change with your SSID xD
+      - HOME_WIFI=Vodafone-A60818803 # Change with your SSID 
       - BETTERCAP=False
     entrypoint: /app/rsp/build/daemon --username=admin --password=test1234 
     networks:
@@ -60,7 +60,7 @@ services:
       - DB_PORT=3306
       - DB_NAME=dp_hashcat
       - ALLOW_REGISTRATIONS=True # Disable if needed
-      - DEBUG=False  # This will enable more seeds for having handshake, clients, and raspberryPI mocked
+      - DEBUG=False  # This will enable seeds for having handshake, clients, and raspberryPI mocked
       - RESET=True
       - GRPC_URL=0.0.0.0:7777
       - GRPC_TIMEOUT=10s
