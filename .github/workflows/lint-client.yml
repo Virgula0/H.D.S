@@ -43,7 +43,14 @@ jobs:
           # Ensure the bin directory is in PATH for protoc-gen-go and protoc-gen-go-grpc
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-          git submodule update --init --remote --recursive
+          git submodule update --init --remote 
+          cd externals/gocat/externals/hashcat
+          git checkout v6.1.1
+          cd ../../../../
+          cd externals/hcxtools
+          git checkout master
+          git pull --recurse-submodule
+          
 
       - name: Install golangci-lint
         run: |
