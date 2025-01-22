@@ -4,12 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - ready_for_review
-      - synchronize
 
 jobs:
   build:
@@ -75,7 +69,6 @@ jobs:
         make build
         ls -l build
 
-
     # Zip the client build
     - name: Zip client build
       run: |  
@@ -91,4 +84,4 @@ jobs:
         name: "${{ env.VERSION }}-pre-${{ github.run_number }}"
         draft: false
         prerelease: true
-        artifacts: "server/build/*,client.zip,raspberry-pi/build/*"
+        artifacts: "server/build/*,client.zip,raspberry-pi/build/*,docs/docs.pdf"

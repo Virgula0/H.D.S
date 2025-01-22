@@ -1,9 +1,6 @@
 name: Replace Markdown Links and Generate PDF
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     types:
       - opened
