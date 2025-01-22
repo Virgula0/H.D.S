@@ -58,7 +58,6 @@ jobs:
     - name: Run client build
       run: |
         git submodule update --init --remote --recursive
-        git pull --recurse-submodules
         cd client
         make build
 

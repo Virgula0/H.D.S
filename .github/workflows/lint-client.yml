@@ -44,7 +44,6 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
           git submodule update --init --remote --recursive
-          git pull --recurse-submodules
 
       - name: Install golangci-lint
         run: |
