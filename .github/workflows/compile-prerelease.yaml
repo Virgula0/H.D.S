@@ -39,8 +39,12 @@ jobs:
 
     - name: Install protoc and dependencies
       run: |
+
+        # Install Go plugin for protoc
         go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
         go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+
+        # Ensure the bin directory is in PATH for protoc-gen-go and protoc-gen-go-grpc
         echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
     
     # build rsp
@@ -48,12 +52,14 @@ jobs:
       run: |
         cd raspberry-pi
         make build
+        ls -l build
 
     # build server
     - name: Run server build
       run: |
         cd server
         make build
+        ls -l build
 
     # build client
     - name: Run client build
@@ -63,15 +69,17 @@ jobs:
         sudo make install
         sudo make set-user-permissions USER=${USER}
         make test
-        cd ../../client
+        cd ../../
         make build
+        ls -l build
 
 
     # Zip the client build
     - name: Zip client build
-      run: | 
+      run: |  
             zip -r client.zip client/build/* && 
             chmod -R 777 client.zip
+            ls -la 
 
     - name: Create a pre-release
       uses: ncipollo/release-action@v1

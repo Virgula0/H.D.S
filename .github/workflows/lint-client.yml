@@ -62,7 +62,7 @@ jobs:
         run: |
           cd externals/gocat
           sudo make install
-          make set-user-permissions USER=${USER}
+          sudo make set-user-permissions USER=${USER}
           make test
 
       - name: Run golangci-lint:client
