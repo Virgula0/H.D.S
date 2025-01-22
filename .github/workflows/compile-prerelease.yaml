@@ -20,6 +20,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Fetch full history to ensure merge base can be found
+        submodules: recursive
 
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with:
@@ -59,15 +60,21 @@ jobs:
       run: |
         git submodule update --init --remote --recursive
         cd externals/gocat
-        make install
-        make set-user-permissions USER=${USER}
-        make test
+        sudo make install
+        sudo make set-user-permissions USER=${USER}
+        sudo make test
         cd ../../client
-        make build
+        sudo make build
+
+        sudo chmod -R 777 server/build
+        sudo chmod -R 777 raspberry-pi/build
+
 
     # Zip the client build
     - name: Zip client build
-      run: zip -r client.zip client/build/*
+      run: | 
+            sudo zip -r client.zip client/build/* && 
+            sudo chmod -R 777 client.zip
 
     - name: Create a pre-release
       uses: ncipollo/release-action@v1
