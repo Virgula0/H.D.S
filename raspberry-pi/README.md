@@ -58,14 +58,14 @@ Make sure the following requirements are met before building and running the dae
 > [!IMPORTANT]  
 > The file `/etc/machine-id` must exist on your machine.
 
-1. Comile daemon with:
+1. **Compile daemon with**
 
 ```bash
 cd raspberry-pi
 make build
 ```
 
-2. Run with
+2. **Run with**
 
 ```bash
 ./build/daemon --help

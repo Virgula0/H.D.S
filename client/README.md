@@ -123,7 +123,7 @@ git submodule update --init --remote --recursive
 git pull --recurse-submodule
 ```
 
-1. You need to install `hashcat` 6.1.1. This step is necesary only for the first time.
+1. **You need to install `hashcat` 6.1.1. This step is necesary only for the first time.**
 
 ```bash
 cd externals/gocat
@@ -132,7 +132,7 @@ sudo make set-user-permissions USER=${USER}
 cd ../../
 ```
 
-2. Then build with
+2. **Build with**
 
 ```bash
 cd client
@@ -149,7 +149,7 @@ Produces the following files tree
 └── OpenCL -> /usr/local/share/hashcat/OpenCL
 ```
 
-3. Run with 
+3. **Run with**
 
 ```bash
 make run-compiled
