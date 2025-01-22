@@ -41,13 +41,24 @@ links:
 	}
 .PHONY: links
 
+clean:
+	rm -rf OpenCL
+	rm -rf modules
+	rm -rf kernels
+	rm -f *.hctune 
+	rm -f *.dictstat*
+	rm -f main
+.PHONY: clean
+
 install-linter:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.62.2
 .PHONY: install-linter
 
-run:
-	go run main.go
-.PHONY: run
+run-compiled:
+	cd build && \
+	LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH ./client && \
+	cd ..
+.PHONY: run-compiled
 
 go-vuln:
 	govulncheck ./...
@@ -66,3 +77,4 @@ test: ## Starts tests locally
 .PHONY: test
 
 build: proto links-build build-hcxtools build-client
+run: build run-compiled
