@@ -3,7 +3,7 @@
 	url = https://github.com/ZerBea/hcxtools.git
 [submodule "externals/gocat"]
 	path = externals/gocat
-	url = https://github.com/mandiant/gocat.git
+	url = https://github.com/Virgula0/gocat.git
 [submodule "externals/hashcat"]
 	path = externals/hashcat
 	url = https://github.com/hashcat/hashcat.git
