@@ -70,7 +70,7 @@ jobs:
         sudo make set-user-permissions USER=${USER}
         make clean
         make test
-        cd ../../
+        cd ../../client
         make build
         ls -l build
 
