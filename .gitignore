@@ -19,7 +19,7 @@
 
 # Go workspace file
 go.work
-build/*
+build
 .vscode
 .idea
 .venv
@@ -42,3 +42,5 @@ client/modules
 client/main
 client/*.so
 client/hashcat.outfiles
+
+externals/hcxtools

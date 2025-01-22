@@ -53,17 +53,32 @@ wifi.recon.channel N; # N is the channel to recon
 Make sure the following requirements are met before building and running the daemon:
 
 > [!IMPORTANT]  
-> The daemon requires `libpcap0.8-dev` to be installed on your system.
+> The daemon requires `libpcap0.8-dev` to be installed on your system, even if you're using compiled binaries from releases.
 
 > [!IMPORTANT]  
 > The file `/etc/machine-id` must exist on your machine.
 
-Follow these steps to compile and run the daemon:
+1. **Compile daemon with**
 
 ```bash
 cd raspberry-pi
-go mod verify
-go mod tidy
-go build main.go
-sudo ./main
+make build
+```
+
+2. **Run with**
+
+```bash
+./build/daemon --help
+```
+
+but remeber to export these env var first, change them according to your needs
+
+```bash
+export SERVER_HOST=localhost
+export SERVER_PORT=4747
+export TCP_ADDRESS=localhost
+export TCP_PORT=4749
+export TEST=False
+export HOME_WIFI=Vodafone-A60818803 # Change with your SSID of your home Wireless Network
+export BETTERCAP=True
 ```

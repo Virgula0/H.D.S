@@ -1,9 +1,8 @@
 [submodule "externals/hcxtools"]
 	path = externals/hcxtools
 	url = https://github.com/ZerBea/hcxtools.git
+	branch = master
 [submodule "externals/gocat"]
 	path = externals/gocat
-	url = https://github.com/mandiant/gocat.git
-[submodule "externals/hashcat"]
-	path = externals/hashcat
-	url = https://github.com/hashcat/hashcat.git
+	url = https://github.com/Virgula0/gocat.git
+	branch = master

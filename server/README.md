@@ -33,25 +33,28 @@ The **frontend** performs the following tasks:
 
 ### **1. Start Database**
 
-```
+```bash
 cd database
 docker build -t dp-database .
 docker run -d \
---name dp-database \
--e MYSQL_RANDOM_ROOT_PASSWORD=yes \
---restart unless-stopped \
--p 3306:3306 \
---health-cmd="mysqladmin ping -h localhost -uagent -pSUPERSECUREUNCRACKABLEPASSWORD" \
---health-interval=20s \
---health-retries=10 \
-dp-database
+    --name dp-database \
+    -e MYSQL_RANDOM_ROOT_PASSWORD=yes \
+    --restart unless-stopped \
+    -p 3306:3306 \
+    --health-cmd="mysqladmin ping -h localhost -uagent -pSUPERSECUREUNCRACKABLEPASSWORD" \
+    --health-interval=20s \
+    --health-retries=10 \
+    dp-database
 ```
 
 ---
 
 ### **2. Export Environment Variables**
 
-```
+For simplicity you can save these into a `.env` and the `source .env`
+Change them accoding to your needs.
+
+```bash
 export BACKEND_HOST="0.0.0.0"
 export BACKEND_PORT="4747"
 export FRONTEND_HOST="0.0.0.0"
@@ -62,7 +65,7 @@ export DB_HOST="localhost"
 export DB_PORT="3306"
 export DB_NAME="dp_hashcat"
 export ALLOW_REGISTRATIONS="True" # Disable if needed
-export DEBUG="True"  # This will enable seeds for having some accounts for testing purposes. admin:test1234 will be created
+export DEBUG="True" 
 export RESET="True"
 export GRPC_URL="0.0.0.0:7777"
 export GRPC_TIMEOUT="10s"
@@ -74,14 +77,18 @@ export TCP_PORT="4749"
 
 ### **3. Compile and Run the Server**
 
-```
+```bash
 cd server
-make proto
-go mod tidy
-go build main.go
-./main
+make build
+```
+
+### **4. Run the Server**
+
+```bash
+./build/server
 ```
 
 ---
 
 After completing these steps, the **server** should be up and running, with both the **frontend** and **backend** components functioning as expected.
+Frontend will be available to `FRONTEND_PORT` port value.

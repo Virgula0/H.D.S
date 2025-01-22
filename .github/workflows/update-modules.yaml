@@ -1,5 +1,4 @@
 name: 'Submodules Sync'
-# Thanks https://stackoverflow.com/questions/64407333/using-github-actions-to-automatically-update-the-repos-submodules
 
 on:
   push:
@@ -25,15 +24,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: true
-          ref: main
+          submodules: recursive
 
       # Update references
       - name: Git Submodule Update
         run: |
-          git checkout main
-          git pull origin main --recurse-submodules
-          git submodule update --remote --recursive
+          git submodule update --init --remote --recursive
 
       - uses: docker://chinthakagodawita/autoupdate-action:v1
         env:

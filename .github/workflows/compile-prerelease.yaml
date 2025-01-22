@@ -1,0 +1,87 @@
+name: Compile and Pre-Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history to ensure merge base can be found
+        submodules: recursive
+
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: protobuf-compiler zip libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev \
+                  libminizip-dev ocl-icd-libopencl1 opencl-headers pocl-opencl-icd build-essential wget git ca-certificates libz-dev libssl-dev libpcap0.8-dev 
+        version: 1.0
+
+    - name: Read version from file
+      id: read_version
+      run: echo "VERSION=$(cat version)" >> $GITHUB_ENV
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.23.4
+
+    - name: Install protoc and dependencies
+      run: |
+
+        # Install Go plugin for protoc
+        go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
+        go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+
+        # Ensure the bin directory is in PATH for protoc-gen-go and protoc-gen-go-grpc
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+    
+    # build rsp
+    - name: Run rsp build
+      run: |
+        cd raspberry-pi
+        make build
+        ls -l build
+
+    # build server
+    - name: Run server build
+      run: |
+        cd server
+        make build
+        ls -l build
+
+    # build client
+    - name: Run client build
+      run: |
+        git submodule update --init --remote --recursive
+        cd externals/gocat
+        sudo make install
+        sudo make set-user-permissions USER=${USER}
+        make clean
+        make test
+        cd ../../client
+        make build
+        ls -l build
+
+    # Zip the client build
+    - name: Zip client build
+      run: |  
+            zip -r client.zip client/build/* && 
+            chmod -R 777 client.zip
+            ls -la 
+
+    - name: Create a pre-release
+      uses: ncipollo/release-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: "${{ env.VERSION }}-pre-${{ github.run_number }}"
+        name: "${{ env.VERSION }}-pre-${{ github.run_number }}"
+        draft: false
+        prerelease: true
+        artifacts: "server/build/*,client.zip,raspberry-pi/build/*,docs/docs.pdf"
