@@ -25,7 +25,8 @@ jobs:
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: protobuf-compiler zip libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev \
-                  libminizip-dev ocl-icd-libopencl1 opencl-headers pocl-opencl-icd build-essential wget git ca-certificates libz-dev libssl-dev libpcap0.8-dev
+                  libminizip-dev ocl-icd-libopencl1 opencl-headers pocl-opencl-icd build-essential wget git ca-certificates libz-dev libssl-dev libpcap0.8-dev \
+                  minizip
         version: 1.0
 
     - name: Read version from file

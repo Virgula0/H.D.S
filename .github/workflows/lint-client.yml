@@ -25,7 +25,8 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: protobuf-compiler libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev git
+          packages: protobuf-compiler libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev git \
+                    minizip
           version: 1.0
 
       - name: Set up Go
@@ -67,5 +68,5 @@ jobs:
       - name: Run golangci-lint:client
         run: |
           cd client
-          go mod tidy
+          sudo go mod tidy
           sudo make lint
