@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -43,16 +45,17 @@ jobs:
           # Ensure the bin directory is in PATH for protoc-gen-go and protoc-gen-go-grpc
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-          git submodule update --init --remote 
-          cd externals/gocat
-          git pull --recurse-submodules
-          cd externals/hashcat
-          git checkout v6.1.1
-          cd ../../../../
-          cd externals/hcxtools
-          git pull --recurse-submodule
-          git checkout master
-          
+          git submodule update --init --remote --recursive
+
+      - name: run action
+        id: run_action
+        uses: releasehub-com/github-action-create-pr-parent-submodule@v1
+        with:
+          github_token: ${{ secrets.RELEASE_HUB_SECRET }}
+          parent_repository: ${{ env.PARENT_REPOSITORY }}
+          checkout_branch: ${{ env.CHECKOUT_BRANCH}}
+          pr_against_branch: ${{ env.PR_AGAINST_BRANCH }}
+          owner: ${{ env.OWNER }} 
 
       - name: Install golangci-lint
         run: |
