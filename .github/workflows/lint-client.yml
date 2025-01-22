@@ -23,7 +23,7 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: protobuf-compiler libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
+          packages: protobuf-compiler libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev git
           version: 1.0
 
       - name: Set up Go
@@ -32,7 +32,7 @@ jobs:
           go-version: 1.23.4
 
       # sudo apt-get install -y protobuf-compiler
-      - name: Install protoc and dependencies
+      - name: Install protoc and git pull
         run: |
           # Install protoc (Protocol Buffers Compiler)
 
@@ -43,6 +43,9 @@ jobs:
           # Ensure the bin directory is in PATH for protoc-gen-go and protoc-gen-go-grpc
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
+          git submodule update --init --remote --recursive
+          git pull --recurse-submodules
+
       - name: Install golangci-lint
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.62.2
@@ -51,6 +54,12 @@ jobs:
         run: |
           cd client
           make proto 
+
+      # install hascat as well
+      - name: Build client
+        run: |
+          cd client
+          make build 
 
       - name: Run golangci-lint:client
         run: |
