@@ -19,7 +19,7 @@
 
 # Go workspace file
 go.work
-build/*
+build
 .vscode
 .idea
 .venv

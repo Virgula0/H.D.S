@@ -13,6 +13,5 @@ RUN dbus-uuidgen > /etc/machine-id && \
 
 USER rsp
 
-RUN go mod verify && \
-    go mod tidy
+RUN make build
 

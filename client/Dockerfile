@@ -1,4 +1,3 @@
-# Use Ubuntu as the base image
 FROM golang:1.23.4-bookworm
 
 # Install required dependencies
@@ -21,76 +20,50 @@ RUN apt update -y && \
 
 RUN dbus-uuidgen > /etc/machine-id
 
+WORKDIR /app 
+
 # Set some ENV
-ENV HASHCAT_SRC_PATH=/app/hashcat
-ENV CGO_CFLAGS="-I$HASHCAT_SRC_PATH/OpenCL -I$HASHCAT_SRC_PATH/deps/LZMA-SDK/C -I$HASHCAT_SRC_PATH/deps/zlib -I$HASHCAT_SRC_PATH/deps/zlib/contrib -I$HASHCAT_SRC_PATH/deps/OpenCL-Headers $CGO_CFLAGS"
+#ENV HASHCAT_SRC_PATH=/app/hashcat
+#ENV CGO_CFLAGS="-I$HASHCAT_SRC_PATH/OpenCL -I$HASHCAT_SRC_PATH/deps/LZMA-SDK/C -I$HASHCAT_SRC_PATH/deps/zlib -I$HASHCAT_SRC_PATH/deps/zlib/contrib -I$HASHCAT_SRC_PATH/deps/OpenCL-Headers $CGO_CFLAGS"
 
-WORKDIR /app/hashcat
+# you need to have dont a git recursive pull first
+COPY externals/gocat /app/externals/gocat
+COPY externals/hcxtools /app/externals/hcxtools
 
-# Clone and install Hashcat 6.1.1
-RUN git clone --branch v6.1.1 https://github.com/hashcat/hashcat . && \
-    make install SHARED=1 ENABLE_BRAIN=0 && \
-    cp deps/LZMA-SDK/C/LzmaDec.h /usr/local/include/hashcat/ && \
-    cp deps/LZMA-SDK/C/7zTypes.h /usr/local/include/hashcat/ && \
-    cp deps/LZMA-SDK/C/Lzma2Dec.h /usr/local/include/hashcat/ && \
-    cp -r OpenCL/inc_types.h /usr/local/include/hashcat/ && \
-    cp -r deps/zlib/contrib /usr/local/include/hashcat && \
-    # Important needed symlinks to the hashcat library
-    ln -s /usr/local/lib/libhashcat.so.6.1.1 /usr/local/lib/libhashcat.so &&\
-    ln -s /usr/local/lib/libhashcat.so.6.1.1 /usr/lib/libhashcat.so.6.1.1
+# this trick needs to be improved, but needed for git commands in 
+# gocat Makefile. this copies a ton of GB inside the container
+COPY .git /app/.git 
 
-WORKDIR /app/gocat
+# create user
+RUN useradd -ms /bin/bash client 
 
-# Clone the repository for the Go application
-RUN git clone https://github.com/mandiant/gocat . && \
-    go test -c && \
-    cp gocat.test /usr/local/share/hashcat && \
-    cp -r testdata /usr/local/share/hashcat
-
-# IMPORTANT! RUN TEST IN ORDER TO LET HASHCAT TO CREATE KERNELS
-RUN /usr/local/share/hashcat/gocat.test
+WORKDIR /app/externals/gocat
+# Install hashcat 6.1.1
+RUN make install && \
+    make set-user-permissions USER=client && \
+    chown client:client /app/externals/hcxtools && \
+    # IMPORTANT! RUN TEST IN ORDER TO LET HASHCAT TO CREATE KERNELS
+    make test 
 
 COPY client /app/client
 COPY proto-definitions /app/proto-definitions
 COPY proto.sh /app/proto.sh
-
 WORKDIR /app/client
 
-RUN useradd -ms /bin/bash client && \
-    chown -R client:client /app/client && \
-    chown -R client:client /usr/local/share/hashcat && \
-    # Symlinking necessary files from installed hashcat for running the client. We could have update PATH env var instead
-    ln -s /usr/local/share/hashcat/hashcat.hcstat2 /app/client/hashcat.hcstat2 && \
-    ln -s /usr/local/share/hashcat/hashcat.hctune /app/client/hashcat.hctune && \
-    ln -s /usr/local/share/hashcat/OpenCL /app/client/OpenCL && \
-    ln -s /usr/local/share/hashcat/kernels /app/client/kernels && \
-    ln -s /usr/local/share/hashcat/modules /app/client/modules && \
+RUN chown -R client:client /app && \
     # give permissions to run go on client
-    chown -R client:client /go 
-
+    chown -R client:client /go
+    
 USER client
 
 # install proto
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0 && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 
-WORKDIR /app/hcxtools
+ENV LD_LIBRARY_PATH=/app/client/build:/usr/local/lib
 
-COPY externals/hcxtools .
-
-# Replace main signature for compiling hcxtools lib
-RUN sed -i 's/int main(int argc, char \*argv\[\])/int convert_pcap(int argc, char *argv\[\])/' hcxpcapngtool.c && \
-    # Compile library
-    cc -fPIC -shared -o /app/client/libhcxpcapngtool.so /app/hcxtools/hcxpcapngtool.c -lz -lssl -lcrypto -DVERSION_TAG=\"6.3.5\" -DVERSION_YEAR=\"2024\"
-
-WORKDIR /app/client
-
-ENV LD_LIBRARY_PATH=.${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}:/usr/local/lib
-
-RUN make proto && \
-    go mod verify && \
-    go mod tidy && \
-    go build main.go
+RUN make build && \
+    rm -rf /app/.git
 
 #ENTRYPOINT ["tail", "-f", "/dev/null"]
-ENTRYPOINT ["./main"]
+#ENTRYPOINT ["./main"]

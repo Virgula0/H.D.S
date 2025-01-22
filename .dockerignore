@@ -1,8 +1,8 @@
 client/Dockerfile
 server/Dockerfile
+raspberry-pi/Dockerfile
 client/protobuf
 server/protobuf
-raspberry-pi/Dockerfile
 
 client/hashcat.dictstat*
 client/hashcat.pid
@@ -17,3 +17,7 @@ client/modules
 client/main
 client/*.so
 client/hashcat.outfiles
+
+client/build
+server/build
+raspberry-pi/build

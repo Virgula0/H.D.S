@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   dp-network:
     driver: bridge
@@ -20,6 +18,7 @@ services:
         condition: service_healthy
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix # X11 forwarding
+    entrypoint: /app/client/build/client
     networks:
       - dp-network
 
@@ -39,7 +38,7 @@ services:
       - TEST=True
       - HOME_WIFI=Vodafone-A60818803 # Change with your SSID xD
       - BETTERCAP=False
-    entrypoint: go run main.go run --username=admin --password=test1234 # these credentials won't work if DEBUG of server is disabled
+    entrypoint: /app/rsp/build/daemon --username=admin --password=test1234 
     networks:
       - dp-network
 
@@ -61,7 +60,7 @@ services:
       - DB_PORT=3306
       - DB_NAME=dp_hashcat
       - ALLOW_REGISTRATIONS=True # Disable if needed
-      - DEBUG=False  # This will enable seeds for having handshake, clients, and raspberryPI mocked
+      - DEBUG=False  # This will enable more seeds for having handshake, clients, and raspberryPI mocked
       - RESET=True
       - GRPC_URL=0.0.0.0:7777
       - GRPC_TIMEOUT=10s
@@ -69,7 +68,7 @@ services:
       - TCP_PORT=4749
     ports:
       - 4748:4748 
-    entrypoint: make run
+    entrypoint: /app/server/build/server
     healthcheck:
       test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' -X POST -d '{}' http://localhost:4747/v1/login || exit 1"]
       interval: 5s
