@@ -90,7 +90,7 @@ While this solution works for our current requirements, future improvements coul
 ## **Compile and Run**
 
 > [!IMPORTANT]  
-> The following dependencies are required before proceeding
+> The following dependencies needs to be installed before proceeding, even if you're using compiled binaries from releases
 
 ```bash
 apt update -y && \

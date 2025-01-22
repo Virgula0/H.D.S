@@ -53,7 +53,7 @@ wifi.recon.channel N; # N is the channel to recon
 Make sure the following requirements are met before building and running the daemon:
 
 > [!IMPORTANT]  
-> The daemon requires `libpcap0.8-dev` to be installed on your system.
+> The daemon requires `libpcap0.8-dev` to be installed on your system, even if you're using compiled binaries from releases.
 
 > [!IMPORTANT]  
 > The file `/etc/machine-id` must exist on your machine.
