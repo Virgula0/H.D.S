@@ -68,6 +68,7 @@ jobs:
         cd externals/gocat
         sudo make install
         sudo make set-user-permissions USER=${USER}
+        make clean
         make test
         cd ../../
         make build
