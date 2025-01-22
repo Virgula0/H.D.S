@@ -25,8 +25,8 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: protobuf-compiler libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev git \
-                    minizip
+          packages: libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev build-essential libminizip-dev \ 
+                    opencl-headers ocl-icd-libopencl1 protobuf-compiler git
           version: 1.0
 
       - name: Set up Go
@@ -45,7 +45,7 @@ jobs:
 
           # Ensure the bin directory is in PATH for protoc-gen-go and protoc-gen-go-grpc
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-
+          
           git submodule update --init --remote --recursive
 
       - name: Install golangci-lint
@@ -62,11 +62,11 @@ jobs:
         run: |
           cd externals/gocat
           sudo make install
-          sudo make set-user-permissions USER=${USER}
-          sudo make test
+          make set-user-permissions USER=${USER}
+          make test
 
       - name: Run golangci-lint:client
         run: |
           cd client
-          sudo go mod tidy
-          sudo make lint
+          go mod tidy
+          make lint

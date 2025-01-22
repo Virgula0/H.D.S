@@ -25,8 +25,7 @@ jobs:
     - uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: protobuf-compiler zip libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev \
-                  libminizip-dev ocl-icd-libopencl1 opencl-headers pocl-opencl-icd build-essential wget git ca-certificates libz-dev libssl-dev libpcap0.8-dev \
-                  minizip
+                  libminizip-dev ocl-icd-libopencl1 opencl-headers pocl-opencl-icd build-essential wget git ca-certificates libz-dev libssl-dev libpcap0.8-dev 
         version: 1.0
 
     - name: Read version from file
@@ -63,19 +62,16 @@ jobs:
         cd externals/gocat
         sudo make install
         sudo make set-user-permissions USER=${USER}
-        sudo make test
+        make test
         cd ../../client
-        sudo make build
-
-        sudo chmod -R 777 server/build
-        sudo chmod -R 777 raspberry-pi/build
+        make build
 
 
     # Zip the client build
     - name: Zip client build
       run: | 
-            sudo zip -r client.zip client/build/* && 
-            sudo chmod -R 777 client.zip
+            zip -r client.zip client/build/* && 
+            chmod -R 777 client.zip
 
     - name: Create a pre-release
       uses: ncipollo/release-action@v1
