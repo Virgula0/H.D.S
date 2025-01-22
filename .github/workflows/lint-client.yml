@@ -60,8 +60,8 @@ jobs:
       - name: Install hashcat
         run: |
           cd externals/gocat
-          make install
-          make set-user-permissions USER=${USER}  
+          sudo make install
+          sudo make set-user-permissions USER=${USER}  
 
       - name: Run golangci-lint:client
         run: |
