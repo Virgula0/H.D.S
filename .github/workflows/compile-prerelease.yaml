@@ -14,6 +14,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
     - name: Checkout code
@@ -90,7 +91,4 @@ jobs:
         name: "${{ env.VERSION }}-pre-${{ github.run_number }}"
         draft: false
         prerelease: true
-        files: |
-          server/build/*
-          client.zip
-          raspberry-pi/build/*
+        artifacts: "server/build/*,client.zip,raspberry-pi/build/*"
