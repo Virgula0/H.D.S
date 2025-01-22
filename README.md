@@ -96,8 +96,7 @@ This account can be used on the frontend to upload and submit WPA handshakes for
 ## Project Features
 
 1. **Handshake Capturing and Uploading:**  
-   Users can capture WPA handshakes using tools like **bettercap** (or similar) and use a **daemon** to upload them to the server. Although referred to as `RaspberryPI` in the project, the daemon can run on any platform supporting **Golang**. The daemon can travel around the world capturing handshakes and when it comes back at home, recognized
-   home WiFI and tries to send captured handshakes to the server
+   Users can capture WPA handshakes using tools like **bettercap** (or similar) and use a **daemon** to upload them to the server. Although referred to as `RaspberryPI` in the project, the daemon can run on any platform supporting **Golang**. The daemon can travel around the world capturing handshakes and when it comes back at home, recognized home WiFI and tries to send captured handshakes to the server
 
 2. **Frontend Management:**  
    Users can access the **Frontend (FE)** to:
