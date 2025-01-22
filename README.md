@@ -39,7 +39,7 @@ Since `client` within docker runs a GUI application using **Raylib**, it require
 Run the following commands:
 
 ```
-git submodule update --init --remote
+git submodule update --init --remote --recursive
 git pull --recurse-submodules
 export DISPLAY=:0.0 && \
 xhost +local:docker && \
