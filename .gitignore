@@ -42,3 +42,5 @@ client/modules
 client/main
 client/*.so
 client/hashcat.outfiles
+
+externals/hcxtools
