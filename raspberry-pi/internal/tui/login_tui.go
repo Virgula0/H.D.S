@@ -1,5 +1,7 @@
 package tui
 
+// https://github.com/charmbracelet/bubbletea/blob/main/examples/textinput/main.go
+
 import (
 	"fmt"
 	"strings"
@@ -20,6 +22,17 @@ var (
 
 	focusedButton = focusedStyle.Render("[ Login ]")
 	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Login"))
+)
+
+const (
+	ctrlC    = "ctrl+c"
+	ctrlR    = "ctrl+r"
+	esc      = "esc"
+	tab      = "tab"
+	shiftTab = "shift+tab"
+	enter    = "enter"
+	up       = "up"
+	down     = "down"
 )
 
 type model struct {
@@ -66,64 +79,72 @@ func (m model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
+func (m model) changeCursorMode() (tea.Model, tea.Cmd) {
+	m.cursorMode++
+	if m.cursorMode > cursor.CursorHide {
+		m.cursorMode = cursor.CursorBlink
+	}
+	cmds := make([]tea.Cmd, len(m.inputs))
+	for i := range m.inputs {
+		cmds[i] = m.inputs[i].Cursor.SetMode(m.cursorMode)
+	}
+	return m, tea.Batch(cmds...)
+}
+
+func (m model) focusNextInput(s string) (tea.Model, tea.Cmd) {
+
+	// Did the user press enter while the submit button was focused?
+	// If so, exit.
+	if s == enter && m.focusIndex == len(m.inputs) {
+		return m, tea.Quit
+	}
+
+	// Cycle indexes
+	if s == up || s == shiftTab {
+		m.focusIndex--
+	} else {
+		m.focusIndex++
+	}
+
+	if m.focusIndex > len(m.inputs) {
+		m.focusIndex = 0
+	} else if m.focusIndex < 0 {
+		m.focusIndex = len(m.inputs)
+	}
+
+	cmds := make([]tea.Cmd, len(m.inputs))
+	for i := 0; i <= len(m.inputs)-1; i++ {
+		if i == m.focusIndex {
+			// Set focused state
+			cmds[i] = m.inputs[i].Focus()
+			m.inputs[i].PromptStyle = focusedStyle
+			m.inputs[i].TextStyle = focusedStyle
+			continue
+		}
+		// Remove focused state
+		m.inputs[i].Blur()
+		m.inputs[i].PromptStyle = noStyle
+		m.inputs[i].TextStyle = noStyle
+	}
+
+	return m, tea.Batch(cmds...)
+}
+
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch msg.String() {
-		case "ctrl+c", "esc":
+		case ctrlC, esc:
 			return m, tea.Quit
 
 		// Change cursor mode
-		case "ctrl+r":
-			m.cursorMode++
-			if m.cursorMode > cursor.CursorHide {
-				m.cursorMode = cursor.CursorBlink
-			}
-			cmds := make([]tea.Cmd, len(m.inputs))
-			for i := range m.inputs {
-				cmds[i] = m.inputs[i].Cursor.SetMode(m.cursorMode)
-			}
-			return m, tea.Batch(cmds...)
+		case ctrlR:
+			return m.changeCursorMode()
 
 		// Set focus to next input
-		case "tab", "shift+tab", "enter", "up", "down":
+		case tab, shiftTab, enter, up, down:
 			s := msg.String()
-
-			// Did the user press enter while the submit button was focused?
-			// If so, exit.
-			if s == "enter" && m.focusIndex == len(m.inputs) {
-				return m, tea.Quit
-			}
-
-			// Cycle indexes
-			if s == "up" || s == "shift+tab" {
-				m.focusIndex--
-			} else {
-				m.focusIndex++
-			}
-
-			if m.focusIndex > len(m.inputs) {
-				m.focusIndex = 0
-			} else if m.focusIndex < 0 {
-				m.focusIndex = len(m.inputs)
-			}
-
-			cmds := make([]tea.Cmd, len(m.inputs))
-			for i := 0; i <= len(m.inputs)-1; i++ {
-				if i == m.focusIndex {
-					// Set focused state
-					cmds[i] = m.inputs[i].Focus()
-					m.inputs[i].PromptStyle = focusedStyle
-					m.inputs[i].TextStyle = focusedStyle
-					continue
-				}
-				// Remove focused state
-				m.inputs[i].Blur()
-				m.inputs[i].PromptStyle = noStyle
-				m.inputs[i].TextStyle = noStyle
-			}
-
-			return m, tea.Batch(cmds...)
+			return m.focusNextInput(s)
 		}
 	}
 
@@ -133,7 +154,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m *model) updateInputs(msg tea.Msg) tea.Cmd {
+func (m model) updateInputs(msg tea.Msg) tea.Cmd {
 	cmds := make([]tea.Cmd, len(m.inputs))
 
 	// Only text inputs with Focus() set will respond, so it's safe to simply
