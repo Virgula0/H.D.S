@@ -23,8 +23,8 @@ type TCPCreateRaspberryPIRequest struct {
 type ServerStatus int
 
 const (
-	ACK  = iota
-	FAIL = 1
+	ACK = iota + 1
+	FAIL
 )
 
 func (s ServerStatus) String() string {
@@ -75,36 +75,49 @@ func (wr *TCPServer) handleClientConnection(client net.Conn) {
 	}
 }
 
-// processClientRequest parses the client request
-func (wr *TCPServer) processClientRequest(client net.Conn) error {
+func (wr *TCPServer) sendACKToTheClient(client net.Conn) error {
 	var status ServerStatus = FAIL
-	reader := bufio.NewReader(client)
-
-	// Step 1: Read message size
-	messageSize, err := wr.readMessageSize(reader)
-	if err != nil {
-		wr.writeErrorToClient(client, fmt.Sprintf("Invalid message size %s", status))
-		return err
-	}
-
-	// Step 2: Read message content
-	buffer, err := wr.readMessageContent(reader, messageSize)
-	if err != nil {
-		wr.writeErrorToClient(client, fmt.Sprintf("Error reading message content %s", status))
-		return err
-	}
-
-	// Step 3: Send ACK to the client
 	status = ACK
-	_, err = client.Write([]byte(status.String()))
-	if err != nil {
+
+	if _, err := client.Write([]byte(status.String())); err != nil {
 		status = FAIL
 		wr.writeErrorToClient(client, fmt.Sprintf("Error reading ACK %s", status))
 		return err
 	}
 
+	return nil
+}
+
+// processClientRequest parses the client request
+func (wr *TCPServer) processClientRequest(client net.Conn) error {
+	reader := bufio.NewReader(client)
+
+	// Step 1: Read message size
+	messageSize, err := wr.readMessageSize(reader)
+	if err != nil {
+		wr.writeErrorToClient(client, fmt.Sprintf("Invalid message size"))
+		return err
+	}
+
+	// Step 2: Send ACK to the client for the length
+	if err = wr.sendACKToTheClient(client); err != nil {
+		return err
+	}
+
+	// Step 3: Read the actual message content
+	buffer, err := wr.readMessageContent(reader, messageSize)
+	if err != nil {
+		wr.writeErrorToClient(client, fmt.Sprintf("Error reading message content"))
+		return err
+	}
+
+	// Step 4: Send ACK to the client for the message
+	if err = wr.sendACKToTheClient(client); err != nil {
+		return err
+	}
+
 	log.Printf("[TCP/IP] Received message: %s", string(buffer))
 
-	// Step 4: Process the message type
+	// Step 5: Process the message type
 	return wr.processHandshakeMessage(buffer, client)
 }

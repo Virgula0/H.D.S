@@ -13,16 +13,12 @@ import (
 type ServerStatus int
 
 const (
-	ACK  = iota
-	FAIL = 1
+	ACK = iota + 1
+	FAIL
 )
 
 func (s ServerStatus) String() string {
-	if int(s) < 0 || int(s) >= len([]string{"ACK", "FAIL"}) {
-		return "UNKNOWN"
-	}
-
-	return [...]string{"ACK", "FAIL"}[s]
+	return [...]string{"ACK\n", "FAIL\n"}[s-1]
 }
 
 func (s ServerStatus) EnumIndex() int {
@@ -50,7 +46,7 @@ func (r *RaspberryPiInfo) Authenticator() {
 	}
 }
 
-func (c *Client) writeToServer(request entities.TCPCreateRaspberryPIRequest) (int, error) {
+func (c *Client) writeToServerHandshake(request entities.TCPCreateRaspberryPIRequest) (int, error) {
 	marshaled, err := json.Marshal(request)
 
 	if err != nil {
@@ -65,19 +61,21 @@ func (c *Client) writeToServer(request entities.TCPCreateRaspberryPIRequest) (in
 	}
 
 	// accept ack from the server
-	read, err := c.readFromServer()
+	err = c.readACKFromServer()
 
 	if err != nil {
 		return 0, err
 	}
 
-	if !c.isACKMessage(read) {
-		var status ServerStatus = FAIL
-		return 0, fmt.Errorf("error ACK from the server %s", status)
-	}
-
 	// Send the actual data
 	wrote, err := c.Conn.Write(marshaled)
+
+	if err != nil {
+		return 0, err
+	}
+
+	// accept ack from the server
+	err = c.readACKFromServer()
 
 	if err != nil {
 		return 0, err
@@ -89,6 +87,22 @@ func (c *Client) writeToServer(request entities.TCPCreateRaspberryPIRequest) (in
 func (c *Client) isACKMessage(msg string) bool {
 	var ack ServerStatus = ACK
 	return msg == ack.String()
+}
+
+func (c *Client) readACKFromServer() error {
+	// accept ack from the server
+	read, err := c.readFromServer()
+
+	if err != nil {
+		return err
+	}
+
+	if !c.isACKMessage(read) {
+		var status ServerStatus = FAIL
+		return fmt.Errorf("error ACK from the server %s", status)
+	}
+
+	return nil
 }
 
 func (c *Client) readFromServer() (string, error) {
@@ -110,7 +124,7 @@ func HandleServerCommunication(instance *RaspberryPiInfo, machineID string, hand
 		EncryptionKey: "",
 	}
 
-	wrote, err := client.writeToServer(request)
+	wrote, err := client.writeToServerHandshake(request)
 	if err != nil {
 		return fmt.Errorf("[RSP-PI] Failed to write to server: %s", err.Error())
 	}
