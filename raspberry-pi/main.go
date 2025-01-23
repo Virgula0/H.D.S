@@ -64,10 +64,7 @@ func processHandshakes(env daemon.Environment) []*entities.Handshake {
 	return toSend
 }
 
-// main orchestrates the Raspberry Pi client application.
-func main() {
-	ticker := time.NewTicker(5 * time.Minute)
-
+func runWifiCheckRoutine() {
 	// If it is not a test let's check for connection.
 	// This is because we're inside a container we can skip overcomplicating
 	if !constants.Test {
@@ -77,6 +74,13 @@ func main() {
 			}
 		}()
 	}
+}
+
+// main orchestrates the Raspberry Pi client application.
+func main() {
+	ticker := time.NewTicker(5 * time.Minute)
+
+	runWifiCheckRoutine()
 
 	instance, machineID := initializeInstance()
 	go instance.Authenticator()

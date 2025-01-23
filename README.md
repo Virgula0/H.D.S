@@ -2,7 +2,9 @@
 
 <h2 align="center">
   <br>
-  <a href="#"><img src="docs/images/logo.png" width="220" style='border-radius: 40%;'></a> (image AI generated)
+  <a href="#"><img src="docs/images/logo.png" width="220" style='border-radius: 40%;'></a> 
+
+<font size='2'>(image AI generated)</font>
   <br>
   <b>H.D.S</b>
   <font size='10'><strong></strong></font><br>
