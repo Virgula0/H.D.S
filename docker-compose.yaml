@@ -38,7 +38,7 @@ services:
       - TEST=True
       - HOME_WIFI=Vodafone-A60818803 # Change with your SSID 
       - BETTERCAP=False
-    entrypoint: /app/rsp/build/daemon --username=admin --password=test1234 
+    entrypoint: /app/rsp/build/daemon insecure-login --username=admin --password=test1234
     networks:
       - dp-network
 
