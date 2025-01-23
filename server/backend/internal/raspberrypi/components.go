@@ -34,19 +34,19 @@ func (wr *TCPServer) readMessageContent(reader *bufio.Reader, size int64) ([]byt
 	return buffer, err
 }
 
-// processMessage performs main tcp server actions
-func (wr *TCPServer) processMessage(buffer []byte, client net.Conn) error {
+// processHandshakeMessage performs main tcp server actions
+func (wr *TCPServer) processHandshakeMessage(buffer []byte, client net.Conn) error {
 	var createRequest TCPCreateRaspberryPIRequest
 
 	// Unmarshal the request
 	if err := json.Unmarshal(buffer, &createRequest); err != nil {
-		wr.writeError(client, "Invalid request format: "+err.Error())
+		wr.writeErrorToClient(client, fmt.Sprintf("Invalid request format: %s", err.Error()))
 		return err
 	}
 
 	// Validate the request
 	if err := utils.ValidateGenericStruct(createRequest); err != nil {
-		wr.writeError(client, "Invalid request data: "+err.Error())
+		wr.writeErrorToClient(client, fmt.Sprintf("Invalid request data: %s", err.Error()))
 		return err
 	}
 
@@ -55,14 +55,14 @@ func (wr *TCPServer) processMessage(buffer []byte, client net.Conn) error {
 	if err != nil {
 		errParsed := wr.handleCreationError(err, client)
 		if errParsed != nil {
-			wr.writeError(client, errParsed.Error())
+			wr.writeErrorToClient(client, errParsed.Error())
 		}
 	}
 
 	// Process Handshakes
 	handshakeSavedIDs, err := wr.processHandshakes(createRequest)
 	if err != nil {
-		wr.writeError(client, err.Error())
+		wr.writeErrorToClient(client, err.Error())
 		return err
 	}
 
@@ -103,14 +103,14 @@ func (wr *TCPServer) handleCreationError(err error, client net.Conn) error {
 		log.Errorf("[TCP/IP] Error creating RaspberryPI: %s", err.Error())
 		_, errWrite := client.Write([]byte(err.Error() + "\n"))
 		if errWrite != nil {
-			wr.writeError(client, errWrite.Error())
+			wr.writeErrorToClient(client, errWrite.Error())
 		}
 	}
 	return err
 }
 
-// writeError refactored function to send error whenever happens to the client
-func (wr *TCPServer) writeError(client net.Conn, message string) {
+// writeErrorToClient refactored function to send error whenever happens to the client
+func (wr *TCPServer) writeErrorToClient(client net.Conn, message string) {
 	_, err := client.Write([]byte(message + "\n"))
 	if err != nil {
 		log.Errorf("[TCP/IP] Error writing to client: %s", err.Error())

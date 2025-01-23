@@ -10,6 +10,25 @@ import (
 	"time"
 )
 
+type ServerStatus int
+
+const (
+	ACK  = iota
+	FAIL = 1
+)
+
+func (s ServerStatus) String() string {
+	if int(s) < 0 || int(s) >= len([]string{"ACK", "FAIL"}) {
+		return "UNKNOWN"
+	}
+
+	return [...]string{"ACK", "FAIL"}[s]
+}
+
+func (s ServerStatus) EnumIndex() int {
+	return int(s)
+}
+
 /*
 Authenticator
 
@@ -45,7 +64,17 @@ func (c *Client) writeToServer(request entities.TCPCreateRaspberryPIRequest) (in
 		return 0, err
 	}
 
-	time.Sleep(200 * time.Millisecond) //TODO: this MUST be improved, as we should receive an ACK by the server and not sleep then sending
+	// accept ack from the server
+	read, err := c.readFromServer()
+
+	if err != nil {
+		return 0, err
+	}
+
+	if !c.isACKMessage(read) {
+		var status ServerStatus = FAIL
+		return 0, fmt.Errorf("error ACK from the server %s", status)
+	}
 
 	// Send the actual data
 	wrote, err := c.Conn.Write(marshaled)
@@ -55,6 +84,11 @@ func (c *Client) writeToServer(request entities.TCPCreateRaspberryPIRequest) (in
 	}
 
 	return wrote, nil
+}
+
+func (c *Client) isACKMessage(msg string) bool {
+	var ack ServerStatus = ACK
+	return msg == ack.String()
 }
 
 func (c *Client) readFromServer() (string, error) {
