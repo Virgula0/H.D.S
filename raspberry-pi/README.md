@@ -71,7 +71,9 @@ make build
 ./build/daemon run
 ```
 
-but remember to export these env var first, change them according to your needs
+3. Insert your credentials
+
+But remember to export these env var first, change them according to your needs
 
 ```bash
 export SERVER_HOST=localhost
