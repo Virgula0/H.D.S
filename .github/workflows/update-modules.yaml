@@ -13,6 +13,8 @@ on:
 
 jobs:
   sync:
+    if: github.event.pull_request.draft != true
+
     name: 'Submodules Sync'
     runs-on: ubuntu-22.04
 
