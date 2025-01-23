@@ -9,6 +9,7 @@ import (
 	internalWIFI "github.com/Virgula0/progetto-dp/raspberrypi/internal/wifi"
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/wpaparser"
 	log "github.com/sirupsen/logrus"
+	"strings"
 	"time"
 )
 
@@ -27,7 +28,7 @@ func initializeInstance() (_ *daemon.RaspberryPiInfo, machineID string) {
 
 	return &daemon.RaspberryPiInfo{
 		JWT:         new(string),
-		FirstLogin:  make(chan bool),
+		FirstLogin:  make(chan bool, 1),
 		Credentials: credentials,
 	}, machineID
 }
@@ -42,7 +43,7 @@ func processHandshakes(env daemon.Environment) []*entities.Handshake {
 	handshakes := wpaparser.GetWPA(handles)
 	toSend := make([]*entities.Handshake, 0)
 
-	log.Println("-------------------------------------------")
+	log.Println(strings.Repeat("-", 43))
 	for _, handshakeInfo := range handshakes {
 		log.Println(*handshakeInfo)
 
@@ -59,19 +60,27 @@ func processHandshakes(env daemon.Environment) []*entities.Handshake {
 			HandshakePCAP: &content,
 		})
 	}
-	log.Println("-------------------------------------------")
+	log.Println(strings.Repeat("-", 43))
 	return toSend
+}
+
+func runWifiCheckRoutine() {
+	// If it is not a test let's check for connection.
+	// This is because we're inside a container we can skip overcomplicating
+	if !constants.Test {
+		go func() {
+			if err := internalWIFI.MonitorWiFiConnection(constants.HomeWIFISSID); err != nil {
+				log.Fatal(err.Error())
+			}
+		}()
+	}
 }
 
 // main orchestrates the Raspberry Pi client application.
 func main() {
 	ticker := time.NewTicker(5 * time.Minute)
 
-	// If it is not a test let's check for connection.
-	// This is because we're inside a container we can skip overcomplicating
-	if !constants.Test {
-		internalWIFI.MonitorWiFiConnection(constants.HomeWIFISSID)
-	}
+	runWifiCheckRoutine()
 
 	instance, machineID := initializeInstance()
 	go instance.Authenticator()

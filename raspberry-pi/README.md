@@ -68,10 +68,12 @@ make build
 2. **Run with**
 
 ```bash
-./build/daemon --help
+./build/daemon run
 ```
 
-but remeber to export these env var first, change them according to your needs
+3. Insert your credentials
+
+But remember to export these env var first, change them according to your needs
 
 ```bash
 export SERVER_HOST=localhost

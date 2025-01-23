@@ -25,7 +25,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+      - uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
           packages: libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev build-essential libminizip-dev \ 
                     opencl-headers ocl-icd-libopencl1 protobuf-compiler git

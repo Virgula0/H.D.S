@@ -20,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0  # Fetch full history to ensure merge base can be found
 
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+      - uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
           packages: pandoc texlive-xetex python3 python3-pip
           version: 1.0

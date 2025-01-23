@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mdlayher/wifi"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"time"
 )
@@ -51,22 +51,21 @@ func checkHouseConnection(targetSSID string) (bool, error) {
 }
 
 // MonitorWiFiConnection ensures the device is connected to the target SSID.
-func MonitorWiFiConnection(ssid string) {
+func MonitorWiFiConnection(ssid string) error {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
 	for {
 		connected, err := checkHouseConnection(ssid)
 		if err != nil {
-			logrus.Fatalf("[RSP-PI] Error checking Wi-Fi connection: %s", err.Error())
+			return fmt.Errorf("[RSP-PI] Error checking Wi-Fi connection: %s", err.Error())
 		}
 
 		if connected {
-			logrus.Printf("[RSP-PI] Successfully connected to '%s'", ssid)
-			return
+			log.Infof("[RSP-PI] Successfully connected to '%s'", ssid)
 		}
 
-		logrus.Printf("[RSP-PI] Not connected to '%s'. Re-attempting in 5 minutes...", ssid)
+		log.Warnf("[RSP-PI] Not connected to '%s'. Re-attempting in 5 minutes...", ssid)
 		<-ticker.C
 	}
 }

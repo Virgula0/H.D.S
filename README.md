@@ -2,7 +2,9 @@
 
 <h2 align="center">
   <br>
-  <a href="#"><img src="docs/images/logo.png" width="220" style='border-radius: 40%;'></a> (image AI generated)
+  <a href="#"><img src="docs/images/logo.png" width="220" style='border-radius: 40%;'></a> 
+
+<font size='2'>(image AI generated)</font>
   <br>
   <b>H.D.S</b>
   <font size='10'><strong></strong></font><br>
@@ -194,7 +196,7 @@ While security auditing and privacy were not primary objectives for this project
 
 2. **Daemon Authentication:**
     - Daemon authenticates via **REST API** before establishing a **TCP** connection.
-    - Credentials are sent via command-line arguments, which could be stolen easily if a malicious actor have access remotely to the machine.
+    - ~~Credentials are sent via command-line arguments, which could be stolen easily if a malicious actor have access remotely to the machine.~~ Fixed with https://github.com/Virgula0/H.D.S/pull/39
 
 3. **gRPC Security:**
     - gRPC communication currently lacks **SSL/TLS certificates** for encryption.

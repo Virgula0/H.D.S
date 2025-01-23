@@ -53,7 +53,7 @@ jobs:
         with:
           go-version: 1.23.4
 
-      - uses: awalsh128/cache-apt-pkgs-action@latest
+      - uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
           packages: protobuf-compiler
           version: 1.0
