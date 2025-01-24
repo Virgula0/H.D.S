@@ -3,7 +3,7 @@ package raspberrypi
 import (
 	"bufio"
 	"context"
-	"fmt"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/enums"
 	"github.com/Virgula0/progetto-dp/server/entities"
 	log "github.com/sirupsen/logrus"
 	"net"
@@ -18,21 +18,6 @@ type TCPCreateRaspberryPIRequest struct {
 	Jwt           string `validate:"required,jwt"`
 	MachineID     string `validate:"required,len=32"`
 	EncryptionKey string `validate:"omitempty,len=64"`
-}
-
-type ServerStatus int
-
-const (
-	ACK = iota + 1
-	FAIL
-)
-
-func (s ServerStatus) String() string {
-	return [...]string{"ACK\n", "FAIL\n"}[s-1]
-}
-
-func (s ServerStatus) EnumIndex() int {
-	return int(s)
 }
 
 // RunTCPServer Start TCP server
@@ -76,48 +61,131 @@ func (wr *TCPServer) handleClientConnection(client net.Conn) {
 }
 
 func (wr *TCPServer) sendACKToTheClient(client net.Conn) error {
-	var status ServerStatus = FAIL
-	status = ACK
+	var status = enums.ACK
 
 	if _, err := client.Write([]byte(status.String())); err != nil {
-		status = FAIL
-		wr.writeErrorToClient(client, fmt.Sprintf("Error reading ACK %s", status))
 		return err
 	}
 
 	return nil
 }
 
-// processClientRequest parses the client request
-func (wr *TCPServer) processClientRequest(client net.Conn) error {
-	reader := bufio.NewReader(client)
+func (wr *TCPServer) sendACKFailedToTheClient(client net.Conn) error {
+	var status = enums.FAIL
 
-	// Step 1: Read message size
-	messageSize, err := wr.readMessageSize(reader)
-	if err != nil {
-		wr.writeErrorToClient(client, fmt.Sprintf("Invalid message size"))
+	if _, err := client.Write([]byte(status.String())); err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func (wr *TCPServer) handshake(client net.Conn) error {
+	reader := bufio.NewReader(client)
+
+	// Step 1: Read message size
+	messageSize, errReadMsg := wr.readMessageSize(reader)
+	if errReadMsg != nil {
+		wr.writeErrorToClient(client, "Invalid message size")
+		return errReadMsg
+	}
+
 	// Step 2: Send ACK to the client for the length
-	if err = wr.sendACKToTheClient(client); err != nil {
-		return err
+	if errFirstAckClient := wr.sendACKToTheClient(client); errFirstAckClient != nil {
+		return errFirstAckClient
 	}
 
 	// Step 3: Read the actual message content
 	buffer, err := wr.readMessageContent(reader, messageSize)
 	if err != nil {
-		wr.writeErrorToClient(client, fmt.Sprintf("Error reading message content"))
+		wr.writeErrorToClient(client, "Error reading message content")
 		return err
 	}
 
 	// Step 4: Send ACK to the client for the message
-	if err = wr.sendACKToTheClient(client); err != nil {
-		return err
+	if errSecondAckClient := wr.sendACKToTheClient(client); errSecondAckClient != nil {
+		return errSecondAckClient
 	}
 
 	log.Printf("[TCP/IP] Received message: %s", string(buffer))
 
 	// Step 5: Process the message type
 	return wr.processHandshakeMessage(buffer, client)
+}
+
+func (wr *TCPServer) login(client net.Conn) error {
+	reader := bufio.NewReader(client)
+	// 1. Read message size
+	messageSize, err := wr.readMessageSize(reader)
+	if err != nil {
+		wr.writeErrorToClient(client, "Invalid message size")
+		return err
+	}
+
+	// Step 2: Send ACK to the client for the length
+	if errFirstAckClient := wr.sendACKToTheClient(client); errFirstAckClient != nil {
+		return errFirstAckClient
+	}
+
+	// Step 3: Read the actual message content
+	buffer, err := wr.readMessageContent(reader, messageSize)
+	if err != nil {
+		wr.writeErrorToClient(client, "Error reading message content")
+		return err
+	}
+
+	// Step 4: Send ACK to the client for the message
+	if errSecondAckClient := wr.sendACKToTheClient(client); errSecondAckClient != nil {
+		return errSecondAckClient
+	}
+
+	// Step 5: process login
+	return wr.processLoginMessage(buffer, client)
+}
+
+// processClientRequest parses the client request
+func (wr *TCPServer) processClientRequest(client net.Conn) error {
+	reader := bufio.NewReader(client)
+	// 1. Read message size
+	messageSize, err := wr.readMessageSize(reader)
+	if err != nil {
+		wr.writeErrorToClient(client, "Invalid message size")
+		return err
+	}
+
+	// Step 3: Send ACK of the message length to the client
+	if errFirstAckClient := wr.sendACKToTheClient(client); errFirstAckClient != nil {
+		return errFirstAckClient
+	}
+	// Step 4: Read the actual message content
+	buffer, err := wr.readMessageContent(reader, messageSize)
+	if err != nil {
+		wr.writeErrorToClient(client, "Error reading message content")
+		return err
+	}
+
+	// Step 3. Process login or command action
+	switch string(buffer) {
+	case enums.LOGIN.String():
+		// Step 4: Send ACK of the message length to the client
+		log.Infof("[TCP/IP] Received login message")
+		if errSecondAckClient := wr.sendACKToTheClient(client); errSecondAckClient != nil {
+			return errSecondAckClient
+		}
+		return wr.login(client)
+	case enums.HANDSHAKE.String():
+		// Step 4: Send ACK of the message length to the client
+		log.Infof("[TCP/IP] Received handshake message")
+		if errSecondAckClient := wr.sendACKToTheClient(client); errSecondAckClient != nil {
+			return errSecondAckClient
+		}
+		return wr.handshake(client)
+	default:
+		// Step 4: Send ACK of the message length to the client
+		log.Errorf("[TCP/IP] Received invalid command request: %s", string(buffer))
+		if errSecondAckFailClient := wr.sendACKFailedToTheClient(client); errSecondAckFailClient != nil {
+			return errSecondAckFailClient
+		}
+		return err
+	}
 }

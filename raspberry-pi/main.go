@@ -70,7 +70,7 @@ func runWifiCheckRoutine() {
 	if !constants.Test {
 		go func() {
 			if err := internalWIFI.MonitorWiFiConnection(constants.HomeWIFISSID); err != nil {
-				log.Fatal(err.Error())
+				log.Fatalf("[RSP-PI] error wifi monitor %s", err.Error())
 			}
 		}()
 	}
@@ -82,21 +82,37 @@ func main() {
 
 	runWifiCheckRoutine()
 
+	// Initialize connection to the server
+	client, err := daemon.InitClientConnection()
+
+	if err != nil {
+		log.Errorf("[RSP-PI] Failed to initialize client connection: %s", err.Error())
+		return
+	}
+
+	defer client.Conn.Close()
+
+	communicateInstance := &daemon.Communicate{
+		Client: client,
+	}
+
 	instance, machineID := initializeInstance()
-	go instance.Authenticator()
+	go instance.Authenticator(communicateInstance)
 
 	<-instance.FirstLogin
 
 	env, err := daemon.ChooseEnvironment()
 	if err != nil {
-		log.Fatalf("[RSP-PI] Failed to choose environment: %s", err.Error())
+		log.Errorf("[RSP-PI] Failed to choose environment: %s", err.Error())
+		return
 	}
 
 	for {
 		handshakes := processHandshakes(env)
-		err := daemon.HandleServerCommunication(instance, machineID, handshakes)
+		err := communicateInstance.HandleServerCommunication(instance, machineID, handshakes)
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Errorf("error while sending handshake to the server %s", err.Error())
+			return
 		}
 		<-ticker.C
 	}

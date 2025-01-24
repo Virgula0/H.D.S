@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func (s *ServerTCPIPSuite) Test_TCPServer_Connection() {
+func (s *ServerTCPIPSuite) Test_TCPServer_ConnectionButFailInCommand() {
 
 	client := s.Client()
 	defer client.Close()
@@ -25,7 +25,7 @@ func (s *ServerTCPIPSuite) Test_TCPServer_Connection() {
 	}{
 		{
 			testname:       "Valid name",
-			expectedOutput: "invalid character 'h' looking for beginning of value",
+			expectedOutput: "FAIL\n",
 		},
 	}
 
@@ -38,6 +38,11 @@ func (s *ServerTCPIPSuite) Test_TCPServer_Connection() {
 			_, err := client.Write(ll)
 			s.Require().NoError(err, "Failed to send size")
 
+			//ack
+			response, err := bufio.NewReader(client).ReadString('\n')
+			s.Require().NoError(err, "Failed to read from server")
+			s.Require().Contains(response, "ACK\n", "unexpected response from server")
+
 			// Optional: Add a delay to simulate network conditions
 			time.Sleep(10 * time.Millisecond)
 
@@ -45,11 +50,89 @@ func (s *ServerTCPIPSuite) Test_TCPServer_Connection() {
 			_, err = client.Write(marshaled)
 			s.Require().NoError(err, "Failed to send data")
 
-			// read response from server
+			// read message
+			response, err = bufio.NewReader(client).ReadString('\n')
+			s.Require().NoError(err, "Failed to read from server")
+			s.Require().Contains(response, tt.expectedOutput, "unexpected response from server")
+		})
+	}
+}
+
+func (s *ServerTCPIPSuite) Test_TCPServer_LoginCommand() {
+
+	client := s.Client()
+	defer client.Close()
+
+	tests := []struct {
+		testname       string
+		expectedOutput func(pattern, input string) bool
+	}{
+		{
+			testname: "Valid login",
+			expectedOutput: func(pattern, input string) bool {
+				// Compile the regex pattern
+				re, err := regexp.Compile(pattern)
+				s.Require().NoError(err, "Failed to compile regexp")
+
+				// Check if the input matches the pattern
+				return re.MatchString(input)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.testname, func() {
+			marshaled := []byte("LOGIN")
+
+			// Send length of data first
+			ll := []byte(fmt.Sprintf("%v", len(marshaled)) + "\n")
+			_, err := client.Write(ll)
+			s.Require().NoError(err, "Failed to send size")
+
+			//ack
 			response, err := bufio.NewReader(client).ReadString('\n')
 			s.Require().NoError(err, "Failed to read from server")
+			s.Require().Contains(response, "ACK\n", "unexpected response from server")
 
-			s.Require().Contains(response, tt.expectedOutput, "Cannot unmarshal TCPCreateRaspberryPIRequest from client")
+			// Send the actual data
+			_, err = client.Write(marshaled)
+			s.Require().NoError(err, "Failed to send data")
+
+			//ack
+			response, err = bufio.NewReader(client).ReadString('\n')
+			s.Require().NoError(err, "Failed to read from server")
+			s.Require().Contains(response, "ACK\n", "unexpected response from server")
+
+			var loginRequest = entities.AuthRequest{
+				Username: s.UserFixture.Username,
+				Password: s.UserFixture.Password,
+			}
+
+			marshaled, err = json.Marshal(&loginRequest)
+			s.Require().NoError(err)
+
+			// Send length of data first
+			ll = []byte(fmt.Sprintf("%v", len(marshaled)) + "\n")
+			_, err = client.Write(ll)
+			s.Require().NoError(err, "Failed to send size")
+
+			//ack
+			response, err = bufio.NewReader(client).ReadString('\n')
+			s.Require().NoError(err, "Failed to read from server")
+			s.Require().Contains(response, "ACK\n", "unexpected response from server")
+
+			// Send the actual data
+			_, err = client.Write(marshaled)
+			s.Require().NoError(err, "Failed to send data")
+
+			// ack
+			response, err = bufio.NewReader(client).ReadString('\n')
+			s.Require().NoError(err, "Failed to read from server")
+			s.Require().Contains(response, "ACK\n", "unexpected response from server")
+
+			// check token
+			response, err = bufio.NewReader(client).ReadString('\n')
+			s.Require().True(tt.expectedOutput(".*\\..*\\..*", response))
 		})
 	}
 }
@@ -69,7 +152,8 @@ func (s *ServerTCPIPSuite) Test_TCPServer_CreateRaspberryPIValidation() {
 				EncryptionKey: utils.GenerateToken(64),
 			},
 			expectedOutput: func(response string) bool {
-				return strings.Contains(response, "Error:Field validation for 'Jwt'")
+				log.Println(response)
+				return strings.Contains(response, "failed on the 'jwt' tag")
 			},
 		},
 		{
@@ -134,25 +218,51 @@ func (s *ServerTCPIPSuite) Test_TCPServer_CreateRaspberryPIValidation() {
 			client := s.Client()
 			defer client.Close()
 
-			marshaled, err := json.Marshal(tt.request)
-			s.Require().NoError(err, "Failed to marshal request")
+			marshaled := []byte("HANDSHAKE")
 
 			// Send length of data first
 			ll := []byte(fmt.Sprintf("%v", len(marshaled)) + "\n")
+			_, err := client.Write(ll)
+			s.Require().NoError(err, "Failed to send size")
+
+			//ack
+			response, err := bufio.NewReader(client).ReadString('\n')
+			s.Require().NoError(err, "Failed to read from server")
+			s.Require().Contains(response, "ACK\n", "unexpected response from server")
+
+			_, err = client.Write(marshaled)
+			s.Require().NoError(err, "Failed to send size")
+
+			//ack
+			response, err = bufio.NewReader(client).ReadString('\n')
+			s.Require().NoError(err, "Failed to read from server")
+			s.Require().Contains(response, "ACK\n", "unexpected response from server")
+
+			marshaled, err = json.Marshal(tt.request)
+			s.Require().NoError(err, "Failed to marshal request")
+
+			// Send length of data first
+			ll = []byte(fmt.Sprintf("%v", len(marshaled)) + "\n")
 			_, err = client.Write(ll)
 			s.Require().NoError(err, "Failed to send size")
 
-			// Optional: Add a delay to simulate network conditions
-			time.Sleep(10 * time.Millisecond)
+			//ack
+			response, err = bufio.NewReader(client).ReadString('\n')
+			s.Require().NoError(err, "Failed to read from server")
+			s.Require().Contains(response, "ACK\n", "unexpected response from server")
 
 			// Send the actual data
 			_, err = client.Write(marshaled)
 			s.Require().NoError(err, "Failed to send data")
 
-			// read response from server
-			response, err := bufio.NewReader(client).ReadString('\n')
+			//ack
+			response, err = bufio.NewReader(client).ReadString('\n')
 			s.Require().NoError(err, "Failed to read from server")
+			s.Require().Contains(response, "ACK\n", "unexpected response from server")
 
+			// read response from server
+			response, err = bufio.NewReader(client).ReadString('\n')
+			s.Require().NoError(err, "Failed to read from server")
 			s.Require().True(tt.expectedOutput(response), "Condition not matched for "+tt.testname)
 		})
 	}

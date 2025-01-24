@@ -34,6 +34,39 @@ func (wr *TCPServer) readMessageContent(reader *bufio.Reader, size int64) ([]byt
 	return buffer, err
 }
 
+func (wr *TCPServer) processLoginMessage(buffer []byte, client net.Conn) error {
+	var loginRequest entities.AuthRequest
+
+	// Unmarshal the request
+	if err := json.Unmarshal(buffer, &loginRequest); err != nil {
+		wr.writeErrorToClient(client, fmt.Sprintf("Invalid request format: %s", err.Error()))
+		return err
+	}
+
+	// Validate the request
+	if err := utils.ValidateGenericStruct(loginRequest); err != nil {
+		wr.writeErrorToClient(client, fmt.Sprintf("Invalid request data: %s", err.Error()))
+		return err
+	}
+
+	user, role, err := wr.usecase.GetUserByUsername(loginRequest.Username)
+
+	if err != nil {
+		wr.writeErrorToClient(client, fmt.Sprintf("login failed: %s", err.Error()))
+		return err
+	}
+
+	// Create the auth token
+	token, err := wr.usecase.CreateAuthToken(user.UserUUID, role.RoleString)
+	if err != nil {
+		wr.writeErrorToClient(client, fmt.Sprintf("login failed: %s", err.Error()))
+		return err
+	}
+
+	_, err = client.Write([]byte(token + "\n"))
+	return err
+}
+
 // processHandshakeMessage performs main tcp server actions
 func (wr *TCPServer) processHandshakeMessage(buffer []byte, client net.Conn) error {
 	var createRequest TCPCreateRaspberryPIRequest
@@ -51,7 +84,7 @@ func (wr *TCPServer) processHandshakeMessage(buffer []byte, client net.Conn) err
 	}
 
 	// Create Raspberry PI
-	_, err := wr.CreateRaspberryPI(&createRequest)
+	_, err := wr.createRaspberryPI(&createRequest)
 	if err != nil {
 		errParsed := wr.handleCreationError(err, client)
 		if errParsed != nil {
@@ -79,7 +112,7 @@ func (wr *TCPServer) processHandshakes(request TCPCreateRaspberryPIRequest) ([]s
 		if handshake.BSSID == "" || handshake.SSID == "" {
 			continue
 		}
-		handshakeID, err := wr.CreateHandshake(request.Jwt, handshake)
+		handshakeID, err := wr.createHandshake(request.Jwt, handshake)
 		if err != nil {
 			return nil, fmt.Errorf("error creating handshake: %w", err)
 		}
@@ -91,7 +124,7 @@ func (wr *TCPServer) processHandshakes(request TCPCreateRaspberryPIRequest) ([]s
 	return handshakeSavedIDs, nil
 }
 
-// handleCreationError useful function for handling the error returned from CreateRaspberryPI. If the error is a duplicate error
+// handleCreationError useful function for handling the error returned from createRaspberryPI. If the error is a duplicate error
 // we can ignore it, as we assume the device already exists
 func (wr *TCPServer) handleCreationError(err error, client net.Conn) error {
 	var mysqlErr *mysql.MySQLError
@@ -117,8 +150,8 @@ func (wr *TCPServer) writeErrorToClient(client net.Conn, message string) {
 	}
 }
 
-// CreateRaspberryPI create a raspberrypi entity in the database if it does not exist
-func (wr *TCPServer) CreateRaspberryPI(request *TCPCreateRaspberryPIRequest) (result []byte, err error) {
+// createRaspberryPI create a raspberrypi entity in the database if it does not exist
+func (wr *TCPServer) createRaspberryPI(request *TCPCreateRaspberryPIRequest) (result []byte, err error) {
 
 	data, err := wr.usecase.GetDataFromToken(request.Jwt)
 
@@ -133,8 +166,8 @@ func (wr *TCPServer) CreateRaspberryPI(request *TCPCreateRaspberryPIRequest) (re
 	return []byte(raspID), err
 }
 
-// CreateHandshake create a new handshake if it does not exist
-func (wr *TCPServer) CreateHandshake(jwt string, handshake *entities.Handshake) (result string, err error) {
+// createHandshake create a new handshake if it does not exist
+func (wr *TCPServer) createHandshake(jwt string, handshake *entities.Handshake) (result string, err error) {
 
 	data, err := wr.usecase.GetDataFromToken(jwt)
 

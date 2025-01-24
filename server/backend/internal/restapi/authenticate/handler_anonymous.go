@@ -15,16 +15,11 @@ type Handler struct {
 	Usecase *usecase.Usecase
 }
 
-type AuthRequest struct {
-	Username string `json:"username" validate:"required"`
-	Password string `json:"password" validate:"required"`
-}
-
 // LoginHandler RestAPI login logic
 func (u Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	c := rr.Initializer{ResponseWriter: w}
 
-	var request AuthRequest
+	var request entities.AuthRequest
 
 	err := utils.ValidateJSON(&request, r)
 

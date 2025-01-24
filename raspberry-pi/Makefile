@@ -11,7 +11,6 @@ install-linter:
 
 # run with make run USERNAME=XXXX PASSWORD=XXX
 run:
-	@echo "Running with username: $(USERNAME) and password: $(PASSWORD)"
 	go run main.go insecure-login --username=$(USERNAME) --password=$(PASSWORD)
 .PHONY: run
 
