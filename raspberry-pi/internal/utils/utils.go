@@ -7,6 +7,7 @@ import (
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/constants"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func BytesToBase64String(b []byte) string {
@@ -76,4 +77,22 @@ func MachineID() (string, error) {
 	}
 
 	return fmt.Sprintf("%x", md5.Sum(bytes)), nil // #nosec G401
+}
+
+// IsJWT checks if a string is in valid JWT format.
+func IsJWT(t string) bool {
+	parts := strings.Split(t, ".")
+	if len(parts) != 3 {
+		return false
+	}
+
+	for _, part := range parts {
+		// base64 decode should not return an error.
+		_, err := base64.RawURLEncoding.DecodeString(part)
+		if err != nil {
+			return false
+		}
+	}
+
+	return true
 }

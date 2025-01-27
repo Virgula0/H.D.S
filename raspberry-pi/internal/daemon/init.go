@@ -19,9 +19,11 @@ type Client struct {
 
 func InitClientConnection() (*Client, error) {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", constants.TCPAddress, constants.TCPPort))
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &Client{
 		Conn: conn,
 	}, nil

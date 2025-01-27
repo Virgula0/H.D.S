@@ -59,7 +59,6 @@ jobs:
     # build client
     - name: Run client build
       run: |
-        git submodule update --init --remote --recursive
         cd externals/gocat
         sudo make install
         sudo make set-user-permissions USER=${USER}
@@ -68,12 +67,12 @@ jobs:
         cd ../../client
         make build
         ls -l build
+        cp -r wordlists build/.
 
     # Zip the client build
     - name: Zip client build
       run: |  
             zip -r client.zip client/build/* && 
-            chmod -R 777 client.zip
             ls -la 
 
     - name: Create a pre-release

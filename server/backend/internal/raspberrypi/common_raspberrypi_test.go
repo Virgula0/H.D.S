@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/repository"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/authenticate"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/seed"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/testsuite"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
@@ -63,13 +62,13 @@ func (s *ServerTCPIPSuite) SetupSuite() {
 	s.ExistingRaspberryMachineID = machineID
 	s.RaspberryPIExistingID = respID
 
-	s.AdminToken, err = testsuite.AuthAPI(authenticate.AuthRequest{
+	s.AdminToken, err = testsuite.AuthAPI(entities.AuthRequest{
 		Username: s.UserFixture.Username,
 		Password: s.UserFixture.Password,
 	})
 	s.Require().NoError(err)
 
-	s.NormalUserToken, err = testsuite.AuthAPI(authenticate.AuthRequest{
+	s.NormalUserToken, err = testsuite.AuthAPI(entities.AuthRequest{
 		Username: s.NormalUser.Username,
 		Password: s.NormalUser.Password,
 	})
