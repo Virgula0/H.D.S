@@ -9,8 +9,11 @@ import (
 	"github.com/Virgula0/progetto-dp/server/entities"
 	log "github.com/sirupsen/logrus"
 	"net"
+	"sync"
 	"time"
 )
+
+var lastOperationMutex sync.Mutex
 
 type TCPHandler interface {
 	RunTCPServer()
@@ -41,30 +44,33 @@ func (wr *TCPServer) RunTCPServer() error {
 	}
 }
 
-func (wr *TCPServer) timeOutClientManager(processTimeoutRequestErrChann chan error, lastOperation time.Time) {
+func (wr *TCPServer) timeOutClientManager(processTimeoutRequestErrChann chan error, lastOperation *time.Time) {
 	defer func() {
 		if _, closed := <-processTimeoutRequestErrChann; closed {
 			return
 		}
 		close(processTimeoutRequestErrChann)
-		return
 	}()
 
+	lastOperationMutex.Lock()
+	defer lastOperationMutex.Unlock()
+
 	for {
-		if time.Since(lastOperation) > wr.timeout {
+		lastOperationMutex.Lock()
+		if time.Since(*lastOperation) > wr.timeout {
 			processTimeoutRequestErrChann <- fmt.Errorf("client timed out")
 			return
 		}
+		lastOperationMutex.Unlock()
 	}
 }
 
-func (wr *TCPServer) processClientRequestManager(processClientRequestErrChann chan error, client net.Conn, lastOperation time.Time) {
+func (wr *TCPServer) processClientRequestManager(processClientRequestErrChann chan error, client net.Conn, lastOperation *time.Time) {
 	defer func() {
 		if _, closed := <-processClientRequestErrChann; closed {
 			return
 		}
 		close(processClientRequestErrChann)
-		return
 	}()
 
 	// for loop needed for sending both handshake and login using a single connection
@@ -73,7 +79,9 @@ func (wr *TCPServer) processClientRequestManager(processClientRequestErrChann ch
 			processClientRequestErrChann <- err
 			return
 		}
-		lastOperation = time.Now()
+		lastOperationMutex.Lock()
+		*lastOperation = time.Now()
+		lastOperationMutex.Unlock()
 	}
 }
 
@@ -85,10 +93,10 @@ func (wr *TCPServer) handleClientConnection(client net.Conn) {
 	lastOperation := time.Now()
 
 	// routine for managing client time out
-	go wr.timeOutClientManager(processTimeoutRequestErrChann, lastOperation)
+	go wr.timeOutClientManager(processTimeoutRequestErrChann, &lastOperation)
 
 	// Start processing the client request in a separate goroutine
-	go wr.processClientRequestManager(processClientRequestErrChann, client, lastOperation)
+	go wr.processClientRequestManager(processClientRequestErrChann, client, &lastOperation)
 
 	select {
 	case err := <-processTimeoutRequestErrChann:

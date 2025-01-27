@@ -5,10 +5,7 @@ import (
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/constants"
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/entities"
 	"net"
-	"time"
 )
-
-var timeout = time.Second * 30
 
 type RaspberryPiInfo struct {
 	JWT         *string
