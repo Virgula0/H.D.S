@@ -19,9 +19,15 @@ links-build:
 		fi; \
 		if [ ! -e "build/hashcat.hctune" ]; then \
 			ln -s /usr/local/share/hashcat/hashcat.hctune build/hashcat.hctune; \
+			echo "Created symbolic link for hashcat.hctune"; \
 		fi; \
 		if [ ! -e "build/modules" ]; then \
 			ln -s /usr/local/share/hashcat/modules build/modules; \
+			echo "Created symbolic link for modules"; \
+		fi; \
+		if [ ! -e "build/hashcat.hcstat2" ]; then \
+			ln -s /usr/local/share/hashcat/hashcat.hcstat2 build/hashcat.hcstat2; \
+			echo "Created symbolic link for hashcat.hcstat2"; \
 		fi; \
 	}
 .PHONY: links-build
@@ -34,9 +40,15 @@ links:
 		fi; \
 		if [ ! -e "hashcat.hctune" ]; then \
 			ln -s /usr/local/share/hashcat/hashcat.hctune hashcat.hctune; \
+			echo "Created symbolic link for hashcat.hctune"; \
 		fi; \
 		if [ ! -e "modules" ]; then \
 			ln -s /usr/local/share/hashcat/modules modules; \
+			echo "Created symbolic link for modules"; \
+		fi; \
+		if [ ! -e "hashcat.hcstat2" ]; then \
+			ln -s /usr/local/share/hashcat/hashcat.hcstat2 hashcat.hcstat2; \
+			echo "Created symbolic link for hashcat.hcstat2"; \
 		fi; \
 	}
 .PHONY: links
@@ -46,6 +58,7 @@ clean:
 	rm -rf modules
 	rm -rf kernels
 	rm -f *.hctune 
+	rm -f hashcat.hcstat2
 	rm -f *.dictstat*
 	rm -f main
 .PHONY: clean

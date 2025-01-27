@@ -93,22 +93,18 @@ While this solution works for our current requirements, future improvements coul
 > The following dependencies needs to be installed before proceeding, even if you're using compiled binaries from releases
 
 ```bash
-apt update -y && \
-    apt install -y --no-install-recommends \
-    protobuf-compiler
+sudo apt update -y && \
+sudo apt install -y --no-install-recommends \
+    protobuf-compiler \
     libminizip-dev \
     ocl-icd-libopencl1 \
     opencl-headers \
     pocl-opencl-icd \
     build-essential \
-    wget \
-    git \
-    dumb-init \
     ca-certificates \
     libz-dev \
     libssl-dev \
     dbus \
-    # Graphic libraries for raylib
     libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
 ```
 
@@ -118,9 +114,7 @@ apt update -y && \
 Follow these steps to compile and run the client, run it from project root dir
 
 ```bash
-git submodule init
 git submodule update --init --remote --recursive
-git pull --recurse-submodule
 ```
 
 1. **You need to install `hashcat` 6.1.1. This step is necesary only for the first time.**
@@ -132,24 +126,35 @@ sudo make set-user-permissions USER=${USER}
 cd ../../
 ```
 
-2. **Build with**
+2. **Install protobuf**
+
+> ![NOTE]
+> This was tested out using go `1.23.4`. Other version may have problems.
+
+```bash
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0 &&
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+```
+
+3. **Build client**
 
 ```bash
 cd client
 make build
 ```
 
-Produces the following files tree
+Produces the following files tree in `build`
 
 ```
 ├── client
 ├── hashcat.hctune -> /usr/local/share/hashcat/hashcat.hctune
+├── hashcat.hcstat2 -> /usr/local/share/hashcat/hashcat.hcstat2
 ├── libhcxpcapngtool.so
 ├── modules -> /usr/local/share/hashcat/modules
 └── OpenCL -> /usr/local/share/hashcat/OpenCL
 ```
 
-3. **Run with**
+4. **Run with**
 
 ```bash
 make run-compiled

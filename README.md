@@ -91,7 +91,7 @@ The provided `docker-compose.yml` file already includes all necessary environmen
 **Default credentials:** `admin:test1234`  
 This account can be used on the frontend to upload and submit WPA handshakes for cracking.
 
-> While the software is primarily designed for **Linux**, GPU capabilities can potentially be shared with a containerized `client` via **WSL** on Windows. Future improvements may include native support for additional operating systems.
+> While the software is primarily designed for **Linux**, GPU capabilities can potentially be shared with a `client` via **WSL** on Windows. Future improvements may include native support for additional operating systems but it has tested out to work with both containers and compiled code from **WSL** (version 2). 
 
 ---
 
@@ -480,4 +480,5 @@ Ignoring gRPC and other basic deps
 - **Gopacket** `github.com/google/gopacket` Parse `.PCAP` files as layers
 - **Wifi** `github.com/mdlayher/wifi` used by daemon for understanding if we're connected to our local network
 - **Cobra** `github.com/spf13/cobra` used for parsing command line arguments easily in daemon
+- **bubbletea** `https://github.com/charmbracelet/bubbletea` tui for login used by daemon
 - Other dependencies could be implicitly downloaded and used because of these deps
