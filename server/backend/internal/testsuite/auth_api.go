@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/authenticate"
 	"github.com/Virgula0/progetto-dp/server/entities"
 	"io"
 	"net/http"
@@ -66,7 +65,7 @@ func HTTPRequest(method, urlStr string, headers map[string]string, queryParams u
 	return string(bodyBytes), nil
 }
 
-func AuthAPI(auth authenticate.AuthRequest) (string, error) {
+func AuthAPI(auth entities.AuthRequest) (string, error) {
 	marshaled, err := json.Marshal(&auth)
 
 	if err != nil {

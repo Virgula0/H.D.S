@@ -27,6 +27,9 @@ var ErrOnUpdateTask = errors.New("[GRPC]: HashcatChat -> Cannot update client ta
 var ErrCannotAnswerToClient = errors.New("[GRPC]: HashcatChat -> Cannot reply to the client -> ")
 var ErrGetHandshakeStatus = errors.New("[GRPC]: HashcatChat GetHandshakesByStatus -> ")
 
+// Daemon
+var ErrHandshakeAlreadyPresent = errors.New("error creating handshake: handshake already present")
+
 // SQL
 const (
 	ErrCodeDuplicateEntry = 1062 // MySQL error code for duplicate entry
