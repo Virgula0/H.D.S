@@ -114,6 +114,7 @@ func main() {
 			log.Errorf("error while sending handshake to the server %s", err.Error())
 			return
 		}
+
 		<-ticker.C
 	}
 }

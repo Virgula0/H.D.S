@@ -2,11 +2,14 @@ package raspberrypi
 
 import (
 	"bufio"
-	"context"
+	"errors"
+	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/enums"
+	customErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/entities"
 	log "github.com/sirupsen/logrus"
 	"net"
+	"time"
 )
 
 type TCPHandler interface {
@@ -20,12 +23,15 @@ type TCPCreateRaspberryPIRequest struct {
 	EncryptionKey string `validate:"omitempty,len=64"`
 }
 
+var statusACK = enums.ACK.String()
+var statusErrorACK = enums.FAIL.String()
+
 // RunTCPServer Start TCP server
 func (wr *TCPServer) RunTCPServer() error {
-	log.Printf("[TCP/IP Server] TCP/IP server running on %s", wr.w.Addr())
+	log.Printf("[TCP/IP Server] TCP/IP server running on %s", wr.l.Addr())
 
 	for {
-		client, err := wr.w.Accept()
+		client, err := wr.l.Accept()
 		if err != nil {
 			log.Errorf("[TCP/IP] Error accepting connection: %s", err.Error())
 			continue
@@ -35,48 +41,87 @@ func (wr *TCPServer) RunTCPServer() error {
 	}
 }
 
-// handleClientConnection accept request from client
-func (wr *TCPServer) handleClientConnection(client net.Conn) {
-	defer client.Close()
-
-	// Set a timeout for the request handling
-	ctx, cancel := context.WithTimeout(context.Background(), wr.timeout)
-	defer cancel()
-
-	done := make(chan error, 1)
-
-	// let's do this for managing timeout connection
-	go func() {
-		done <- wr.processClientRequest(client) // process client request and prepare to read the next one
+func (wr *TCPServer) timeOutClientManager(processTimeoutRequestErrChann chan error, lastOperation time.Time) {
+	defer func() {
+		if _, closed := <-processTimeoutRequestErrChann; closed {
+			return
+		}
+		close(processTimeoutRequestErrChann)
+		return
 	}()
 
-	select {
-	case <-ctx.Done():
-		log.Errorf("[TCP/IP] Request timed out for client: %s", client.RemoteAddr())
-	case err := <-done:
-		if err != nil {
-			log.Errorf("[TCP/IP] Error processing request: %s", err.Error())
+	for {
+		if time.Since(lastOperation) > wr.timeout {
+			processTimeoutRequestErrChann <- fmt.Errorf("client timed out")
+			return
 		}
 	}
 }
 
-func (wr *TCPServer) sendACKToTheClient(client net.Conn) error {
-	var status = enums.ACK
+func (wr *TCPServer) processClientRequestManager(processClientRequestErrChann chan error, client net.Conn, lastOperation time.Time) {
+	defer func() {
+		if _, closed := <-processClientRequestErrChann; closed {
+			return
+		}
+		close(processClientRequestErrChann)
+		return
+	}()
 
-	if _, err := client.Write([]byte(status.String())); err != nil {
+	// for loop needed for sending both handshake and login using a single connection
+	for {
+		if err := wr.processClientRequest(client); err != nil && !errors.Is(err, customErrors.ErrHandshakeAlreadyPresent) {
+			processClientRequestErrChann <- err
+			return
+		}
+		lastOperation = time.Now()
+	}
+}
+
+// handleClientConnection accept request from client
+func (wr *TCPServer) handleClientConnection(client net.Conn) {
+	defer client.Close()
+	processClientRequestErrChann := make(chan error, 1)
+	processTimeoutRequestErrChann := make(chan error, 1)
+	lastOperation := time.Now()
+
+	// routine for managing client time out
+	go wr.timeOutClientManager(processTimeoutRequestErrChann, lastOperation)
+
+	// Start processing the client request in a separate goroutine
+	go wr.processClientRequestManager(processClientRequestErrChann, client, lastOperation)
+
+	select {
+	case err := <-processTimeoutRequestErrChann:
+		log.Errorf("[TCP/IP] Error: %s", err.Error())
+	case err := <-processClientRequestErrChann:
+		log.Errorf("[TCP/IP] Error processing client request: %s", err.Error())
+		return
+	}
+}
+
+func (wr *TCPServer) sendACKToTheClient(client net.Conn) error {
+	if _, err := client.Write([]byte(statusACK)); err != nil {
 		return err
 	}
-
+	/*
+		for some reason, it can happen that ACKs are read after error messages even if they're sent first. this may need further investigations
+		The Nagle's Algorithm in TCP stack is not the problem, as by default is disabled in go
+		there is no way to avoid this sleep, I tried everything, mutex, channels and so on...
+	*/
+	time.Sleep(wr.sleepTime)
 	return nil
 }
 
 func (wr *TCPServer) sendACKFailedToTheClient(client net.Conn) error {
-	var status = enums.FAIL
-
-	if _, err := client.Write([]byte(status.String())); err != nil {
+	if _, err := client.Write([]byte(statusErrorACK)); err != nil {
 		return err
 	}
-
+	/*
+		for some reason, it can happen that ACKs are read after error messages even if they're sent first. this may need further investigations
+		The Nagle's Algorithm in TCP stack is not the problem, as by default is disabled in go
+		there is no way to avoid this sleep, I tried everything, mutex, channels and so on...
+	*/
+	time.Sleep(wr.sleepTime)
 	return nil
 }
 
@@ -157,6 +202,7 @@ func (wr *TCPServer) processClientRequest(client net.Conn) error {
 	if errFirstAckClient := wr.sendACKToTheClient(client); errFirstAckClient != nil {
 		return errFirstAckClient
 	}
+
 	// Step 4: Read the actual message content
 	buffer, err := wr.readMessageContent(reader, messageSize)
 	if err != nil {
@@ -181,7 +227,7 @@ func (wr *TCPServer) processClientRequest(client net.Conn) error {
 		}
 		return wr.handshake(client)
 	default:
-		// Step 4: Send ACK of the message length to the client
+		// Step 4: Send ACK FAIL of command to the client
 		log.Errorf("[TCP/IP] Received invalid command request: %s", string(buffer))
 		if errSecondAckFailClient := wr.sendACKFailedToTheClient(client); errSecondAckFailClient != nil {
 			return errSecondAckFailClient

@@ -3,31 +3,37 @@ package daemon
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/entities"
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/enums"
+	"github.com/Virgula0/progetto-dp/raspberrypi/internal/utils"
 	log "github.com/sirupsen/logrus"
 	"strings"
 	"time"
 )
 
+type Communicate struct {
+	Client *Client
+}
+
 /*
 Authenticator
 
-Uses provided credentials for authenticating the user via REST/API each hour
+Uses provided credentials for authenticating the user via TCP each hour
 */
 func (r *RaspberryPiInfo) Authenticator(wr *Communicate) {
 	ticker := time.NewTicker(1 * time.Hour) // every hour
 
 	for {
 		// 1. Send login request
-		err := wr.writeToServerCommand(enums.LOGIN)
+		err := wr.Client.writeToServerCommand(enums.LOGIN)
 
 		if err != nil {
 			log.Fatalf("[RSP-PI] Failed to write command to the server: %s", err.Error())
 		}
 
-		if jwt, err := wr.writeToServerAuthRequest(r.Credentials); err == nil {
+		if jwt, err := wr.Client.writeToServerAuthRequest(r.Credentials); err == nil {
 			*r.JWT = jwt
 			r.FirstLogin <- true
 		} else {
@@ -36,10 +42,6 @@ func (r *RaspberryPiInfo) Authenticator(wr *Communicate) {
 
 		<-ticker.C
 	}
-}
-
-type Communicate struct {
-	*Client
 }
 
 func (c *Client) readFromServer() (string, error) {
@@ -125,14 +127,17 @@ func (c *Client) writeToServerAuthRequest(request *entities.AuthRequest) (string
 		return "", err
 	}
 
-	// read token
-	token, err := c.readFromServer()
+	// read token or error
+	msg, err := c.readFromServer()
 	if err != nil {
 		return "", err
-
 	}
 
-	return token, nil
+	if !utils.IsJWT(msg) {
+		return "", errors.New(msg)
+	}
+
+	return msg, nil
 }
 
 func (c *Client) writeToServerHandshake(request entities.TCPCreateRaspberryPIRequest) (int, error) {
@@ -192,7 +197,7 @@ func (c *Client) readACKFromServer() error {
 // HandleServerCommunication handles data exchange with the server.
 func (c *Communicate) HandleServerCommunication(instance *RaspberryPiInfo, machineID string, handshakes []*entities.Handshake) error {
 	// 1. Send hadnshake request
-	err := c.writeToServerCommand(enums.HANDSHAKE)
+	err := c.Client.writeToServerCommand(enums.HANDSHAKE)
 
 	if err != nil {
 		return fmt.Errorf("[RSP-PI] Failed to write command to the server: %s", err.Error())
@@ -205,13 +210,13 @@ func (c *Communicate) HandleServerCommunication(instance *RaspberryPiInfo, machi
 		EncryptionKey: "",
 	}
 
-	wrote, err := c.writeToServerHandshake(request)
+	wrote, err := c.Client.writeToServerHandshake(request)
 	if err != nil {
 		return fmt.Errorf("[RSP-PI] Failed to write to server: %s", err.Error())
 	}
 	log.Printf("[RSP-PI] Wrote %v bytes", wrote)
 
-	response, err := c.readFromServer()
+	response, err := c.Client.readFromServer()
 	if err != nil {
 		return fmt.Errorf("[RSP-PI] Failed to write to server: %s", err.Error())
 	}

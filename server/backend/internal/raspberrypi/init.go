@@ -9,9 +9,10 @@ import (
 )
 
 type TCPServer struct {
-	w       net.Listener
-	timeout time.Duration
-	usecase *usecase.Usecase
+	l         net.Listener
+	timeout   time.Duration
+	sleepTime time.Duration
+	usecase   *usecase.Usecase
 	TCPHandler
 }
 
@@ -24,8 +25,9 @@ func NewTCPServer(service *handlers.ServiceHandler, address, port string) (*TCPS
 	}
 
 	return &TCPServer{
-		w:       conn,
-		usecase: service.Usecase,
-		timeout: 30 * time.Second,
+		l:         conn,
+		usecase:   service.Usecase,
+		timeout:   8 * time.Minute, // if client latest operation was greater than timeout min, server closes connection
+		sleepTime: 200 * time.Millisecond,
 	}, nil
 }

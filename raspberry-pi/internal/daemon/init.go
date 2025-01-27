@@ -5,7 +5,10 @@ import (
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/constants"
 	"github.com/Virgula0/progetto-dp/raspberrypi/internal/entities"
 	"net"
+	"time"
 )
+
+var timeout = time.Second * 30
 
 type RaspberryPiInfo struct {
 	JWT         *string
@@ -19,9 +22,11 @@ type Client struct {
 
 func InitClientConnection() (*Client, error) {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", constants.TCPAddress, constants.TCPPort))
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &Client{
 		Conn: conn,
 	}, nil

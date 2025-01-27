@@ -11,14 +11,21 @@ import (
 	"github.com/Virgula0/progetto-dp/server/entities"
 	"github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 	"io"
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 )
+
+var readMessageMutex sync.Mutex
+var writeMessageMutex sync.Mutex
 
 // readMessageSize the first message from the client is the length of the content will be sent so we can initialize a buffer
 func (wr *TCPServer) readMessageSize(reader *bufio.Reader) (int64, error) {
+	readMessageMutex.Lock()
+	defer readMessageMutex.Unlock()
 	lengthOfMessage, err := reader.ReadString('\n')
 	if err != nil {
 		return 0, err
@@ -29,9 +36,21 @@ func (wr *TCPServer) readMessageSize(reader *bufio.Reader) (int64, error) {
 
 // readMessageContent read the real message from the client
 func (wr *TCPServer) readMessageContent(reader *bufio.Reader, size int64) ([]byte, error) {
+	readMessageMutex.Lock()
+	defer readMessageMutex.Unlock()
 	buffer := make([]byte, size)
 	_, err := io.ReadFull(reader, buffer)
 	return buffer, err
+}
+
+// writeErrorToClient refactored function to send error whenever happens to the client
+func (wr *TCPServer) writeErrorToClient(client net.Conn, message string) {
+	writeMessageMutex.Lock()
+	defer writeMessageMutex.Unlock()
+	_, err := client.Write([]byte(message + "\n"))
+	if err != nil {
+		log.Errorf("[TCP/IP] Error writing to client: %s", err.Error())
+	}
 }
 
 func (wr *TCPServer) processLoginMessage(buffer []byte, client net.Conn) error {
@@ -56,10 +75,17 @@ func (wr *TCPServer) processLoginMessage(buffer []byte, client net.Conn) error {
 		return err
 	}
 
+	// Compare password
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password))
+	if err != nil {
+		wr.writeErrorToClient(client, fmt.Sprintf("login failed: %s", customErrors.ErrInvalidCredentials))
+		return fmt.Errorf("login failed, wrong password for user %s", user.Username)
+	}
+
 	// Create the auth token
 	token, err := wr.usecase.CreateAuthToken(user.UserUUID, role.RoleString)
 	if err != nil {
-		wr.writeErrorToClient(client, fmt.Sprintf("login failed: %s", err.Error()))
+		wr.writeErrorToClient(client, fmt.Sprintf("login failed: %s", customErrors.ErrInvalidCredentials))
 		return err
 	}
 
@@ -114,7 +140,10 @@ func (wr *TCPServer) processHandshakes(request TCPCreateRaspberryPIRequest) ([]s
 		}
 		handshakeID, err := wr.createHandshake(request.Jwt, handshake)
 		if err != nil {
-			return nil, fmt.Errorf("error creating handshake: %w", err)
+			if errors.Is(err, customErrors.ErrHandshakeAlreadyPresent) {
+				return nil, err
+			}
+			return nil, fmt.Errorf("error creating handshake: %l", err)
 		}
 		handshakeSavedIDs = append(handshakeSavedIDs, handshakeID)
 	}
@@ -140,14 +169,6 @@ func (wr *TCPServer) handleCreationError(err error, client net.Conn) error {
 		}
 	}
 	return err
-}
-
-// writeErrorToClient refactored function to send error whenever happens to the client
-func (wr *TCPServer) writeErrorToClient(client net.Conn, message string) {
-	_, err := client.Write([]byte(message + "\n"))
-	if err != nil {
-		log.Errorf("[TCP/IP] Error writing to client: %s", err.Error())
-	}
 }
 
 // createRaspberryPI create a raspberrypi entity in the database if it does not exist
@@ -184,7 +205,7 @@ func (wr *TCPServer) createHandshake(jwt string, handshake *entities.Handshake) 
 	}
 
 	if saved > 0 { // we don't save the handshake if already saved
-		return "", fmt.Errorf("handshake already present")
+		return "", customErrors.ErrHandshakeAlreadyPresent
 	}
 
 	// TODO: use encryption key of the raspberryPI for exchanging handshakes bytes securely
