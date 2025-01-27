@@ -30,7 +30,7 @@ Student: <font color='orange'>Angelo Rosa</font>
 
 ## Brief
 
-> **H.D.S (Hashcat-Distributed-Service)** is a university project entirely written in **Go** that can find practical applications for collecting and then distributing hashes and handshakes cracking tasks on multiple hashcat clients through a control panel centre. Include a Deamon for collecting and verifying WPA handshakes from IOT devices. 
+> **H.D.S (Hashcat-Distributed-Service)** is a university project entirely written in **Go** that can find practical applications for collecting and then distributing hashes and handshakes cracking tasks on multiple hashcat clients through a control panel centre. Include a Daemon for collecting and verifying WPA handshakes from IOT devices. 
 You can have multiple clients for multiple tasks and each one operates independently on different machines.
 
 For more information about the project capabilities, please read the [feature section](#project-features)
@@ -38,7 +38,7 @@ You can find releases compiled at: [https://github.com/Virgula0/H.D.S/releases](
 
 But remember to read the following compiling procedures anyway
 
-- [Compile Deamon](raspberry-pi/README.md#compile-and-run-the-daemon)
+- [Compile Daemon](raspberry-pi/README.md#compile-and-run-the-daemon)
 - [Compile Server](server/README.md#compile-and-run)
 - [Compile Client](client/README.md#compile-and-run)
 
