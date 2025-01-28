@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	windowWidth      = 850
+	windowWidth      = 851
 	windowHeight     = 550
 	defaultLogHeight = 300
 

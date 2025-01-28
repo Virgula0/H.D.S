@@ -99,6 +99,8 @@ sudo apt install -y --no-install-recommends \
     libminizip-dev \
     ocl-icd-libopencl1 \
     opencl-headers \
+    git \
+    git-lfs \ 
     pocl-opencl-icd \
     build-essential \
     ca-certificates \
@@ -114,7 +116,9 @@ sudo apt install -y --no-install-recommends \
 Follow these steps to compile and run the client, run it from project root dir
 
 ```bash
-git submodule update --init --remote --recursive
+git submodule update --init --remote --recursive && \
+git lfs install && \  
+git lfs pull
 ```
 
 1. **You need to install `hashcat` 6.1.1. This step is necesary only for the first time.**

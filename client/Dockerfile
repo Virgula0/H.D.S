@@ -8,8 +8,6 @@ RUN apt update -y && \
     opencl-headers \
     pocl-opencl-icd \
     build-essential \
-    wget \
-    git \
     ca-certificates \
     libz-dev \
     libssl-dev \
@@ -28,10 +26,10 @@ COPY externals/hcxtools /app/externals/hcxtools
 
 # this trick needs to be improved, but needed for git commands in 
 # gocat Makefile. this copies a ton of GB inside the container
-COPY .git /app/.git 
+COPY .git /app/.git
 
 # create user
-RUN useradd -ms /bin/bash client 
+RUN useradd -ms /bin/bash client
 
 WORKDIR /app/externals/gocat
 # Install hashcat 6.1.1
@@ -44,12 +42,13 @@ RUN make install && \
 COPY client /app/client
 COPY proto-definitions /app/proto-definitions
 COPY proto.sh /app/proto.sh
+
 WORKDIR /app/client
 
 RUN chown -R client:client /app && \
     # give permissions to run go on client
     chown -R client:client /go
-    
+
 USER client
 
 # install proto

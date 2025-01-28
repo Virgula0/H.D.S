@@ -25,6 +25,7 @@ Student: <font color='orange'>Angelo Rosa</font>
   <img src="docs/images/Screenshots/2.png" width="400">
   <img src="docs/images/Screenshots/3.png" width="400">
   <img src="docs/images/Screenshots/4.png" width="400">
+  <img src="docs/images/Screenshots/5.png" width="400">
 
 </p>
 
@@ -70,6 +71,9 @@ sudo pacman -S xorg-xhost
 git submodule init && \
 git submodule update && \
 git pull --recurse-submodules && \
+# download wordlists
+git lfs install && \   
+git lfs pull && \
 # change display values as you need
 export DISPLAY=:0.0 && \ 
 xhost +local:docker && \
@@ -91,7 +95,7 @@ The provided `docker-compose.yml` file already includes all necessary environmen
 **Default credentials:** `admin:test1234`  
 This account can be used on the frontend to upload and submit WPA handshakes for cracking.
 
-> While the software is primarily designed for **Linux**, GPU capabilities can potentially be shared with a `client` via **WSL** on Windows. Future improvements may include native support for additional operating systems but it has tested out to work with both containers and compiled code from **WSL** (version 2). 
+> While the software is primarily designed for **Linux**, GPU capabilities can potentially be shared with a containerized `client` via **WSL** on Windows. Future improvements may include native support for additional operating systems.
 
 ---
 
@@ -195,13 +199,14 @@ While security auditing and privacy were not primary objectives for this project
     - A symmetric encryption key has been generated, but encryption is yet to be implemented.
 
 2. **Daemon Authentication:**
-    - Daemon authenticates via **REST API** before establishing a **TCP** connection.
+    - ~~Daemon authenticates via **REST API** before establishing a **TCP** connection.~~ Fixed with https://github.com/Virgula0/H.D.S/pull/42
     - ~~Credentials are sent via command-line arguments, which could be stolen easily if a malicious actor have access remotely to the machine.~~ Fixed with https://github.com/Virgula0/H.D.S/pull/39
 
 3. **gRPC Security:**
     - gRPC communication currently lacks **SSL/TLS certificates** for encryption.
 
 ### Security Measures Implemented:
+
 - Basic protection against vulnerabilities like **SQL Injection** and **IDORs** has been considered.
 
 > If you have suggestions or improvements, feel free to **open a pull request**.
@@ -480,5 +485,5 @@ Ignoring gRPC and other basic deps
 - **Gopacket** `github.com/google/gopacket` Parse `.PCAP` files as layers
 - **Wifi** `github.com/mdlayher/wifi` used by daemon for understanding if we're connected to our local network
 - **Cobra** `github.com/spf13/cobra` used for parsing command line arguments easily in daemon
-- **bubbletea** `https://github.com/charmbracelet/bubbletea` tui for login used by daemon
+- **bubbletea** `github.com/charmbracelet/bubbletea` tui for login implemented in daemon
 - Other dependencies could be implicitly downloaded and used because of these deps

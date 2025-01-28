@@ -65,6 +65,7 @@ jobs:
           cd externals/gocat
           sudo make install
           sudo make set-user-permissions USER=${USER}
+          git reset --hard # needed for update-submodules.yaml
 
       - name: Run golangci-lint:client
         run: |
