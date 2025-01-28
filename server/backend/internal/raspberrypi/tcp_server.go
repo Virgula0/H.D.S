@@ -3,17 +3,14 @@ package raspberrypi
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/enums"
 	customErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/entities"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"net"
-	"sync"
 	"time"
 )
-
-var lastOperationMutex sync.Mutex
 
 type TCPHandler interface {
 	RunTCPServer()
@@ -43,29 +40,7 @@ func (wr *TCPServer) RunTCPServer() error {
 		go wr.handleClientConnection(client)
 	}
 }
-
-func (wr *TCPServer) timeOutClientManager(processTimeoutRequestErrChann chan error, lastOperation *time.Time) {
-	defer func() {
-		if _, closed := <-processTimeoutRequestErrChann; closed {
-			return
-		}
-		close(processTimeoutRequestErrChann)
-	}()
-
-	lastOperationMutex.Lock()
-	defer lastOperationMutex.Unlock()
-
-	for {
-		lastOperationMutex.Lock()
-		if time.Since(*lastOperation) > wr.timeout {
-			processTimeoutRequestErrChann <- fmt.Errorf("client timed out")
-			return
-		}
-		lastOperationMutex.Unlock()
-	}
-}
-
-func (wr *TCPServer) processClientRequestManager(processClientRequestErrChann chan error, client net.Conn, lastOperation *time.Time) {
+func (wr *TCPServer) processClientRequestManager(processClientRequestErrChann chan error, client net.Conn) {
 	defer func() {
 		if _, closed := <-processClientRequestErrChann; closed {
 			return
@@ -79,9 +54,6 @@ func (wr *TCPServer) processClientRequestManager(processClientRequestErrChann ch
 			processClientRequestErrChann <- err
 			return
 		}
-		lastOperationMutex.Lock()
-		*lastOperation = time.Now()
-		lastOperationMutex.Unlock()
 	}
 }
 
@@ -89,19 +61,21 @@ func (wr *TCPServer) processClientRequestManager(processClientRequestErrChann ch
 func (wr *TCPServer) handleClientConnection(client net.Conn) {
 	defer client.Close()
 	processClientRequestErrChann := make(chan error, 1)
-	processTimeoutRequestErrChann := make(chan error, 1)
-	lastOperation := time.Now()
 
-	// routine for managing client time out
-	go wr.timeOutClientManager(processTimeoutRequestErrChann, &lastOperation)
+	err := client.SetDeadline(time.Now().Add(wr.timeout))
+	if err != nil {
+		log.Errorf("[TCP/IP] Error setting deadline: %s", err.Error())
+		return
+	}
 
 	// Start processing the client request in a separate goroutine
-	go wr.processClientRequestManager(processClientRequestErrChann, client, &lastOperation)
+	go wr.processClientRequestManager(processClientRequestErrChann, client)
 
-	select {
-	case err := <-processTimeoutRequestErrChann:
-		log.Errorf("[TCP/IP] Error: %s", err.Error())
-	case err := <-processClientRequestErrChann:
+	if err := <-processClientRequestErrChann; err != nil {
+		if err == io.EOF {
+			log.Warnf("[TCP/IP] Connection closed by client: %s", err.Error())
+			return
+		}
 		log.Errorf("[TCP/IP] Error processing client request: %s", err.Error())
 		return
 	}

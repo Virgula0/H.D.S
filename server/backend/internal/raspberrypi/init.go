@@ -27,7 +27,7 @@ func NewTCPServer(service *handlers.ServiceHandler, address, port string) (*TCPS
 	return &TCPServer{
 		l:         conn,
 		usecase:   service.Usecase,
-		timeout:   8 * time.Minute, // if client latest operation was greater than timeout min, server closes connection
+		timeout:   30 * time.Second,
 		sleepTime: 200 * time.Millisecond,
 	}, nil
 }

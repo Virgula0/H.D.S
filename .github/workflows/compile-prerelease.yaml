@@ -67,6 +67,11 @@ jobs:
         cd ../../client
         make build
         ls -l build
+
+        # pull wordlist
+        git lfs install
+        git lfs pull
+
         cp -r wordlists build/.
 
     # Zip the client build
