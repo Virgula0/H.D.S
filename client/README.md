@@ -132,7 +132,7 @@ cd ../../
 
 2. **Install protobuf**
 
-> ![NOTE]
+> [!NOTE]
 > This was tested out using go `1.23.4`. Other version may have problems.
 
 ```bash
