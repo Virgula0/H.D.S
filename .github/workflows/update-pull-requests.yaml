@@ -4,17 +4,9 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - ready_for_review
-      - synchronize
 
 jobs:
   sync:
-    if: github.event.pull_request.draft != true
-
     name: 'Sync Branches'
     runs-on: ubuntu-22.04
 
