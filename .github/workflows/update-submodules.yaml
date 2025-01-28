@@ -1,6 +1,8 @@
 name: 'Update submodules Branches'
 
 on:
+  schedule:
+    - cron: '0 0 * * 0'  # Runs every Sunday at midnight (UTC)
   pull_request:
     types:
       - opened
