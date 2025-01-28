@@ -13,34 +13,40 @@ import (
 	"time"
 )
 
-type Communicate struct {
-	Client *Client
-}
-
 /*
 Authenticator
 
 Uses provided credentials for authenticating the user via TCP each hour
 */
-func (r *RaspberryPiInfo) Authenticator(wr *Communicate) {
-	ticker := time.NewTicker(1 * time.Hour) // every hour
+func (r *RaspberryPiInfo) Authenticator() {
+	tickerLogin := time.NewTicker(1 * time.Hour) // every hour
 
 	for {
+		client, err := InitClientConnection()
+
+		if err != nil {
+			log.Fatalf("Failed to initialize client connection: %v", err)
+		}
+
 		// 1. Send login request
-		err := wr.Client.writeToServerCommand(enums.LOGIN)
+		err = client.writeToServerCommand(enums.LOGIN)
 
 		if err != nil {
 			log.Fatalf("[RSP-PI] Failed to write command to the server: %s", err.Error())
 		}
 
-		if jwt, err := wr.Client.writeToServerAuthRequest(r.Credentials); err == nil {
+		if jwt, errRequest := client.writeToServerAuthRequest(r.Credentials); err == nil {
 			*r.JWT = jwt
 			r.FirstLogin <- true
 		} else {
-			log.Fatal(err)
+			log.Fatal(errRequest)
 		}
 
-		<-ticker.C
+		err = client.Conn.Close()
+		if err != nil {
+			log.Fatalf("[RSP-PI] Failed to close the connection: %v", err)
+		}
+		<-tickerLogin.C
 	}
 }
 
@@ -195,9 +201,17 @@ func (c *Client) readACKFromServer() error {
 }
 
 // HandleServerCommunication handles data exchange with the server.
-func (c *Communicate) HandleServerCommunication(instance *RaspberryPiInfo, machineID string, handshakes []*entities.Handshake) error {
+func HandleServerCommunication(instance *RaspberryPiInfo, machineID string, handshakes []*entities.Handshake) error {
+	client, err := InitClientConnection()
+
+	if err != nil {
+		return err
+	}
+
+	defer client.Conn.Close()
+
 	// 1. Send hadnshake request
-	err := c.Client.writeToServerCommand(enums.HANDSHAKE)
+	err = client.writeToServerCommand(enums.HANDSHAKE)
 
 	if err != nil {
 		return fmt.Errorf("[RSP-PI] Failed to write command to the server: %s", err.Error())
@@ -210,13 +224,13 @@ func (c *Communicate) HandleServerCommunication(instance *RaspberryPiInfo, machi
 		EncryptionKey: "",
 	}
 
-	wrote, err := c.Client.writeToServerHandshake(request)
+	wrote, err := client.writeToServerHandshake(request)
 	if err != nil {
 		return fmt.Errorf("[RSP-PI] Failed to write to server: %s", err.Error())
 	}
 	log.Printf("[RSP-PI] Wrote %v bytes", wrote)
 
-	response, err := c.Client.readFromServer()
+	response, err := client.readFromServer()
 	if err != nil {
 		return fmt.Errorf("[RSP-PI] Failed to write to server: %s", err.Error())
 	}
