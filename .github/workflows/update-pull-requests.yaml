@@ -1,21 +1,13 @@
-name: 'Submodules Sync'
+name: 'Sync Branches'
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - ready_for_review
-      - synchronize
 
 jobs:
   sync:
-    if: github.event.pull_request.draft != true
-
-    name: 'Submodules Sync'
+    name: 'Sync Branches'
     runs-on: ubuntu-22.04
 
     defaults:
@@ -27,11 +19,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      # Update references
-      - name: Git Submodule Update
-        run: |
-          git submodule update --init --remote --recursive
 
       - uses: docker://chinthakagodawita/autoupdate-action:v1
         env:

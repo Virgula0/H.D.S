@@ -55,6 +55,11 @@ Make sure the following requirements are met before building and running the dae
 > [!IMPORTANT]  
 > The daemon requires `libpcap0.8-dev` to be installed on your system, even if you're using compiled binaries from releases.
 
+```bash
+sudo apt update -y && \
+sudo apt install -y libpcap0.8-dev
+```
+
 > [!IMPORTANT]  
 > The file `/etc/machine-id` must exist on your machine.
 

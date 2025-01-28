@@ -34,8 +34,8 @@ The **frontend** performs the following tasks:
 ### **1. Start Database**
 
 ```bash
-cd database
-docker build -t dp-database .
+cd database && \
+docker build -t dp-database . && \
 docker run -d \
     --name dp-database \
     -e MYSQL_RANDOM_ROOT_PASSWORD=yes \

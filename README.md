@@ -25,12 +25,13 @@ Student: <font color='orange'>Angelo Rosa</font>
   <img src="docs/images/Screenshots/2.png" width="400">
   <img src="docs/images/Screenshots/3.png" width="400">
   <img src="docs/images/Screenshots/4.png" width="400">
+  <img src="docs/images/Screenshots/5.png" width="400">
 
 </p>
 
 ## Brief
 
-> **H.D.S (Hashcat-Distributed-Service)** is a university project entirely written in **Go** that can find practical applications for collecting and then distributing hashes and handshakes cracking tasks on multiple hashcat clients through a control panel centre. Include a Deamon for collecting and verifying WPA handshakes from IOT devices. 
+> **H.D.S (Hashcat-Distributed-Service)** is a university project entirely written in **Go** that can find practical applications for collecting and then distributing hashes and handshakes cracking tasks on multiple hashcat clients through a control panel centre. Include a Daemon for collecting and verifying WPA handshakes from IOT devices. 
 You can have multiple clients for multiple tasks and each one operates independently on different machines.
 
 For more information about the project capabilities, please read the [feature section](#project-features)
@@ -38,7 +39,7 @@ You can find releases compiled at: [https://github.com/Virgula0/H.D.S/releases](
 
 But remember to read the following compiling procedures anyway
 
-- [Compile Deamon](raspberry-pi/README.md#compile-and-run-the-daemon)
+- [Compile Daemon](raspberry-pi/README.md#compile-and-run-the-daemon)
 - [Compile Server](server/README.md#compile-and-run)
 - [Compile Client](client/README.md#compile-and-run)
 
@@ -70,6 +71,9 @@ sudo pacman -S xorg-xhost
 git submodule init && \
 git submodule update && \
 git pull --recurse-submodules && \
+# download wordlists
+git lfs install && \   
+git lfs pull && \
 # change display values as you need
 export DISPLAY=:0.0 && \ 
 xhost +local:docker && \
@@ -195,13 +199,14 @@ While security auditing and privacy were not primary objectives for this project
     - A symmetric encryption key has been generated, but encryption is yet to be implemented.
 
 2. **Daemon Authentication:**
-    - Daemon authenticates via **REST API** before establishing a **TCP** connection.
+    - ~~Daemon authenticates via **REST API** before establishing a **TCP** connection.~~ Fixed with https://github.com/Virgula0/H.D.S/pull/42
     - ~~Credentials are sent via command-line arguments, which could be stolen easily if a malicious actor have access remotely to the machine.~~ Fixed with https://github.com/Virgula0/H.D.S/pull/39
 
 3. **gRPC Security:**
     - gRPC communication currently lacks **SSL/TLS certificates** for encryption.
 
 ### Security Measures Implemented:
+
 - Basic protection against vulnerabilities like **SQL Injection** and **IDORs** has been considered.
 
 > If you have suggestions or improvements, feel free to **open a pull request**.
@@ -480,4 +485,5 @@ Ignoring gRPC and other basic deps
 - **Gopacket** `github.com/google/gopacket` Parse `.PCAP` files as layers
 - **Wifi** `github.com/mdlayher/wifi` used by daemon for understanding if we're connected to our local network
 - **Cobra** `github.com/spf13/cobra` used for parsing command line arguments easily in daemon
+- **bubbletea** `github.com/charmbracelet/bubbletea` tui for login implemented in daemon
 - Other dependencies could be implicitly downloaded and used because of these deps

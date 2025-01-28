@@ -60,7 +60,7 @@ services:
       - DB_PORT=3306
       - DB_NAME=dp_hashcat
       - ALLOW_REGISTRATIONS=True # Disable if needed
-      - DEBUG=False  # This will enable seeds for having handshake, clients, and raspberryPI mocked
+      - DEBUG=True  # This will enable seeds for having handshake, clients, and raspberryPI mocked
       - RESET=True
       - GRPC_URL=0.0.0.0:7777
       - GRPC_TIMEOUT=10s
