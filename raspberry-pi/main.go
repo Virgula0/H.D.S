@@ -82,22 +82,8 @@ func main() {
 
 	runWifiCheckRoutine()
 
-	// Initialize connection to the server
-	client, err := daemon.InitClientConnection()
-
-	if err != nil {
-		log.Errorf("[RSP-PI] Failed to initialize client connection: %s", err.Error())
-		return
-	}
-
-	defer client.Conn.Close()
-
-	communicateInstance := &daemon.Communicate{
-		Client: client,
-	}
-
 	instance, machineID := initializeInstance()
-	go instance.Authenticator(communicateInstance)
+	go instance.Authenticator()
 
 	<-instance.FirstLogin
 
@@ -109,7 +95,7 @@ func main() {
 
 	for {
 		handshakes := processHandshakes(env)
-		err := communicateInstance.HandleServerCommunication(instance, machineID, handshakes)
+		err := daemon.HandleServerCommunication(instance, machineID, handshakes)
 		if err != nil {
 			log.Errorf("error while sending handshake to the server %s", err.Error())
 			return
