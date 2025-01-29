@@ -25,7 +25,7 @@ jobs:
       image: semgrep/semgrep
 
     # Skip any PR created by dependabot to avoid permission issues:
-    if: (github.actor != 'dependabot[bot]') || (github.event.pull_request.draft != true)
+    if: (github.actor != 'dependabot[bot]') && (github.event.pull_request.draft != true)
 
     steps:
       # Fetch project source with GitHub Actions Checkout. Use either v3 or v4.
