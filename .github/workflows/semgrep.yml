@@ -7,8 +7,6 @@ on:
       - main
   pull_request:
     types:
-      - opened
-      - reopened
       - ready_for_review
       - synchronize
     paths:
@@ -17,8 +15,6 @@ on:
 
 jobs:
   semgrep:
-    if: github.event.pull_request.draft != true
-    
     # User definable name of this GitHub Actions job.
     name: semgrep/ci
     # If you are self-hosting, change the following `runs-on` value:
@@ -29,7 +25,7 @@ jobs:
       image: semgrep/semgrep
 
     # Skip any PR created by dependabot to avoid permission issues:
-    if: (github.actor != 'dependabot[bot]')
+    if: (github.actor != 'dependabot[bot]') && (github.event.pull_request.draft != true)
 
     steps:
       # Fetch project source with GitHub Actions Checkout. Use either v3 or v4.
