@@ -49,7 +49,7 @@ To understand how to set up env variables.
 
 ## Run the Application (Test Mode) with Docker
 
-A docker environment can be run to see everything up and running without dealing with compilations or envrinoment setups first.
+A docker environment can be run to see everything up and running without dealing with compilations or environment setups first.
 Since `client` within docker runs a GUI application using **Raylib**, it requires access to the host's desktop environment. A utility called `xhost` is needed for this.
 
 > [!WARNING]  
@@ -59,8 +59,11 @@ Since `client` within docker runs a GUI application using **Raylib**, it require
 
 ```bash
 sudo apt update -y && \
+sudo apt install git-lfs && \ 
 sudo apt install x11-xserver-utils -y
 ```
+
+Or on arch:
 
 ```bash
 sudo pacman && \
@@ -95,7 +98,9 @@ The provided `docker-compose.yml` file already includes all necessary environmen
 **Default credentials:** `admin:test1234`  
 This account can be used on the frontend to upload and submit WPA handshakes for cracking.
 
-> While the software is primarily designed for **Linux**, GPU capabilities can potentially be shared with a containerized `client` via **WSL** on Windows. Future improvements may include native support for additional operating systems.
+> While the software is primarily designed for **Linux**, GPU capabilities can be shared with to `client` using **WSL** on Windows. Future improvements may include native support for additional operating systems but 
+> at the moment compiling or running the docker file within a **WSL** works just fine.
+> In order to use GPUs capabilities, be sure to share resources to **WSL** with nvidia-cuda packages.
 
 ---
 
@@ -274,14 +279,14 @@ While security auditing and privacy were not primary objectives for this project
 │   │   │   ├── 1.png
 │   │   │   ├── 2.png
 │   │   │   ├── 3.png
-│   │   │   └── 4.png
+│   │   │   ├── 4.png
+│   │   │   └── 5.png
 │   │   └── test-diagram.png
 │   ├── styles
 │   │   └── main.css
 │   └── test-diagram.drawio
 ├── externals
 │   ├── gocat
-│   ├── hashcat
 │   └── hcxtools
 ├── LICENSE
 ├── proto-definitions
@@ -297,8 +302,6 @@ While security auditing and privacy were not primary objectives for this project
 │   ├── handshakes
 │   │   └── test.pcap
 │   ├── internal
-│   │   ├── authapi
-│   │   │   └── authenticate.go
 │   │   ├── cmd
 │   │   │   └── command_parser.go
 │   │   ├── constants
@@ -310,6 +313,10 @@ While security auditing and privacy were not primary objectives for this project
 │   │   ├── entities
 │   │   │   ├── api_entities.go
 │   │   │   └── handshake.go
+│   │   ├── enums
+│   │   │   └── daemon_enums.go
+│   │   ├── tui
+│   │   │   └── login_tui.go
 │   │   ├── utils
 │   │   │   └── utils.go
 │   │   ├── wifi
@@ -321,142 +328,145 @@ While security auditing and privacy were not primary objectives for this project
 │   ├── Makefile
 │   └── README.md
 ├── README.md
-└── server
-    ├── backend
-    │   ├── cmd
-    │   │   └── main.go
-    │   └── internal
-    │       ├── constants
-    │       │   └── constants.go
-    │       ├── errors
-    │       │   └── errors.go
-    │       ├── grpcserver
-    │       │   ├── commands.go
-    │       │   ├── common_grpc_test.go
-    │       │   ├── controllers.go
-    │       │   ├── grpc_test.go
-    │       │   ├── init.go
-    │       │   └── options.go
-    │       ├── infrastructure
-    │       │   └── database.go
-    │       ├── raspberrypi
-    │       │   ├── common_raspberrypi_test.go
-    │       │   ├── components.go
-    │       │   ├── init.go
-    │       │   ├── raspberrypi_test.go
-    │       │   └── tcp_server.go
-    │       ├── repository
-    │       │   └── repository.go
-    │       ├── response
-    │       │   └── response.go
-    │       ├── restapi
-    │       │   ├── authenticate
-    │       │   │   ├── handler_anonymous.go
-    │       │   │   └── handler_user.go
-    │       │   ├── client
-    │       │   │   └── handler_user.go
-    │       │   ├── handlers.go
-    │       │   ├── handshake
-    │       │   │   └── handler_user.go
-    │       │   ├── logout
-    │       │   │   └── handler_user.go
-    │       │   ├── middlewares
-    │       │   │   ├── auth_middlware.go
-    │       │   │   ├── common_middleware.go
-    │       │   │   └── log_requests.go
-    │       │   ├── raspberrypi
-    │       │   │   └── handler_user.go
-    │       │   ├── register
-    │       │   │   └── anonymous_handler.go
-    │       │   └── routes.go
-    │       ├── seed
-    │       │   └── seed_api.go
-    │       ├── testsuite
-    │       │   ├── auth_api.go
-    │       │   ├── setup_grpc.go
-    │       │   └── tcp_ip.go
-    │       ├── usecase
-    │       │   └── usecase.go
-    │       └── utils
-    │           ├── utils.go
-    │           └── validator.go
-    ├── Dockerfile
-    ├── entities
-    │   ├── client.go
-    │   ├── handshake.go
-    │   ├── raspberry_pi.go
-    │   ├── role.go
-    │   ├── uniform_response.go
-    │   └── user.go
-    ├── frontend
-    │   ├── cmd
-    │   │   ├── custom.go
-    │   │   └── main.go
-    │   ├── internal
-    │   │   ├── constants
-    │   │   │   └── constants.go
-    │   │   ├── errors
-    │   │   │   └── errors.go
-    │   │   ├── middlewares
-    │   │   │   ├── auth_middleware.go
-    │   │   │   ├── cookie_middleware.go
-    │   │   │   └── log_requests.go
-    │   │   ├── pages
-    │   │   │   ├── clients
-    │   │   │   │   └── clients.go
-    │   │   │   ├── handshakes
-    │   │   │   │   └── handshake.go
-    │   │   │   ├── login
-    │   │   │   │   └── login.go
-    │   │   │   ├── logout
-    │   │   │   │   └── logout.go
-    │   │   │   ├── pages.go
-    │   │   │   ├── raspberrypi
-    │   │   │   │   └── raspberrypi.go
-    │   │   │   ├── register
-    │   │   │   │   └── register.go
-    │   │   │   ├── routes.go
-    │   │   │   └── welcome
-    │   │   │       └── welcome.go
-    │   │   ├── repository
-    │   │   │   └── repository.go
-    │   │   ├── response
-    │   │   │   └── response.go
-    │   │   ├── usecase
-    │   │   │   └── usecase.go
-    │   │   └── utils
-    │   │       ├── utils.go
-    │   │       └── validator.go
-    │   ├── static
-    │   │   ├── images
-    │   │   │   └── logo.png
-    │   │   ├── scripts
-    │   │   │   ├── bootstrap.min.js
-    │   │   │   ├── dashboard.js
-    │   │   │   ├── github-stats.js
-    │   │   │   ├── jquery-3.3.1.min.js
-    │   │   │   ├── popper.min.js
-    │   │   │   └── theme-toggle.js
-    │   │   ├── static.go
-    │   │   └── styles
-    │   │       ├── bootstrap-4.3.1.min.css
-    │   │       ├── custom.css
-    │   │       └── main.css
-    │   └── views
-    │       ├── clients.html
-    │       ├── handshake.html
-    │       ├── login.html
-    │       ├── raspberrypi.html
-    │       ├── register.html
-    │       ├── views.go
-    │       └── welcome.html
-    ├── go.mod
-    ├── go.sum
-    ├── main.go
-    ├── Makefile
-    └── README.md
+├── server
+│   ├── backend
+│   │   ├── cmd
+│   │   │   └── main.go
+│   │   └── internal
+│   │       ├── constants
+│   │       │   └── constants.go
+│   │       ├── enums
+│   │       │   └── tcp_server.go
+│   │       ├── errors
+│   │       │   └── errors.go
+│   │       ├── grpcserver
+│   │       │   ├── commands.go
+│   │       │   ├── common_grpc_test.go
+│   │       │   ├── controllers.go
+│   │       │   ├── grpc_test.go
+│   │       │   ├── init.go
+│   │       │   └── options.go
+│   │       ├── infrastructure
+│   │       │   └── database.go
+│   │       ├── raspberrypi
+│   │       │   ├── common_raspberrypi_test.go
+│   │       │   ├── components.go
+│   │       │   ├── init.go
+│   │       │   ├── raspberrypi_test.go
+│   │       │   └── tcp_server.go
+│   │       ├── repository
+│   │       │   └── repository.go
+│   │       ├── response
+│   │       │   └── response.go
+│   │       ├── restapi
+│   │       │   ├── authenticate
+│   │       │   │   ├── handler_anonymous.go
+│   │       │   │   └── handler_user.go
+│   │       │   ├── client
+│   │       │   │   └── handler_user.go
+│   │       │   ├── handlers.go
+│   │       │   ├── handshake
+│   │       │   │   └── handler_user.go
+│   │       │   ├── logout
+│   │       │   │   └── handler_user.go
+│   │       │   ├── middlewares
+│   │       │   │   ├── auth_middlware.go
+│   │       │   │   ├── common_middleware.go
+│   │       │   │   └── log_requests.go
+│   │       │   ├── raspberrypi
+│   │       │   │   └── handler_user.go
+│   │       │   ├── register
+│   │       │   │   └── anonymous_handler.go
+│   │       │   └── routes.go
+│   │       ├── seed
+│   │       │   └── seed_api.go
+│   │       ├── testsuite
+│   │       │   ├── auth_api.go
+│   │       │   ├── setup_grpc.go
+│   │       │   └── tcp_ip.go
+│   │       ├── usecase
+│   │       │   └── usecase.go
+│   │       └── utils
+│   │           ├── utils.go
+│   │           └── validator.go
+│   ├── Dockerfile
+│   ├── entities
+│   │   ├── client.go
+│   │   ├── handshake.go
+│   │   ├── raspberry_pi.go
+│   │   ├── role.go
+│   │   ├── uniform_operation.go
+│   │   └── user.go
+│   ├── frontend
+│   │   ├── cmd
+│   │   │   ├── custom.go
+│   │   │   └── main.go
+│   │   ├── internal
+│   │   │   ├── constants
+│   │   │   │   └── constants.go
+│   │   │   ├── errors
+│   │   │   │   └── errors.go
+│   │   │   ├── middlewares
+│   │   │   │   ├── auth_middleware.go
+│   │   │   │   ├── cookie_middleware.go
+│   │   │   │   └── log_requests.go
+│   │   │   ├── pages
+│   │   │   │   ├── clients
+│   │   │   │   │   └── clients.go
+│   │   │   │   ├── handshakes
+│   │   │   │   │   └── handshake.go
+│   │   │   │   ├── login
+│   │   │   │   │   └── login.go
+│   │   │   │   ├── logout
+│   │   │   │   │   └── logout.go
+│   │   │   │   ├── pages.go
+│   │   │   │   ├── raspberrypi
+│   │   │   │   │   └── raspberrypi.go
+│   │   │   │   ├── register
+│   │   │   │   │   └── register.go
+│   │   │   │   ├── routes.go
+│   │   │   │   └── welcome
+│   │   │   │       └── welcome.go
+│   │   │   ├── repository
+│   │   │   │   └── repository.go
+│   │   │   ├── response
+│   │   │   │   └── response.go
+│   │   │   ├── usecase
+│   │   │   │   └── usecase.go
+│   │   │   └── utils
+│   │   │       ├── utils.go
+│   │   │       └── validator.go
+│   │   ├── static
+│   │   │   ├── images
+│   │   │   │   └── logo.png
+│   │   │   ├── scripts
+│   │   │   │   ├── bootstrap.min.js
+│   │   │   │   ├── dashboard.js
+│   │   │   │   ├── github-stats.js
+│   │   │   │   ├── jquery-3.3.1.min.js
+│   │   │   │   ├── popper.min.js
+│   │   │   │   └── theme-toggle.js
+│   │   │   ├── static.go
+│   │   │   └── styles
+│   │   │       ├── bootstrap-4.3.1.min.css
+│   │   │       ├── custom.css
+│   │   │       └── main.css
+│   │   └── views
+│   │       ├── clients.html
+│   │       ├── handshake.html
+│   │       ├── login.html
+│   │       ├── raspberrypi.html
+│   │       ├── register.html
+│   │       ├── views.go
+│   │       └── welcome.html
+│   ├── go.mod
+│   ├── go.sum
+│   ├── main.go
+│   ├── Makefile
+│   └── README.md
+└── version
 
-84 directories, 152 files
+85 directories, 156 files
 ```
 
 </details>
