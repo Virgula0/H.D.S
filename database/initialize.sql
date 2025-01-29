@@ -1,6 +1,9 @@
 SELECT 'Creating user...';
 CREATE USER 'agent'@'%' IDENTIFIED BY 'SUPERSECUREUNCRACKABLEPASSWORD';
 
+SELECT 'Creating cert user...';
+CREATE USER 'certs'@'%' IDENTIFIED BY 'SUPERSECUREUNCRACKABLEPASSWORD';
+
 DROP DATABASE IF EXISTS dp_hashcat;
 CREATE DATABASE IF NOT EXISTS dp_hashcat;
 USE dp_hashcat;
@@ -15,12 +18,14 @@ CREATE TABLE IF NOT EXISTS user (
     UUID varchar(36),
     USERNAME varchar(255) UNIQUE,
     PASSWORD varchar(255),
+
     PRIMARY KEY(UUID)
 );
 
 CREATE TABLE IF NOT EXISTS role (
     UUID varchar(36),
     ROLE_STRING varchar(20),
+
     PRIMARY KEY (UUID),
     FOREIGN KEY (`UUID`) REFERENCES `user` (`UUID`) ON DELETE CASCADE
 );
@@ -30,6 +35,7 @@ CREATE TABLE IF NOT EXISTS raspberry_pi (
     UUID varchar(36),
     MACHINE_ID varchar(32) UNIQUE,
     ENCRYPTION_KEY varchar(64),
+
     PRIMARY KEY(UUID),
     FOREIGN KEY (`UUID_USER`) REFERENCES `user` (`UUID`) ON DELETE CASCADE
 );
@@ -42,6 +48,8 @@ CREATE TABLE IF NOT EXISTS client (
     CREATION_DATETIME DATETIME,
     LATEST_CONNECTION DATETIME,
     MACHINE_ID varchar(32) UNIQUE,
+    ENABLED_ENCRYPTION BOOLEAN DEFAULT FALSE, -- not enabled, us IS operator instead of == or !=: http://mariadb.com/kb/en/sql-language-structure-boolean-literals/
+
     PRIMARY KEY(UUID),
     FOREIGN KEY (`UUID_USER`) REFERENCES `user` (`UUID`) ON DELETE CASCADE
 );
@@ -64,7 +72,26 @@ CREATE TABLE IF NOT EXISTS handshake (
     FOREIGN KEY (`UUID_ASSIGNED_CLIENT`) REFERENCES `client` (`UUID`) ON DELETE SET NULL
 );
 
+DROP DATABASE IF EXISTS dp_certs;
+CREATE DATABASE IF NOT EXISTS dp_certs;
+USE dp_certs;
+
+DROP TABLE IF EXISTS certs;
+
+CREATE TABLE IF NOT EXISTS certs (
+    UUID varchar(36) NOT NULL PRIMARY KEY,
+    CLIENT_UUID varchar(36),
+    CA_CERT text,
+    SERVER_CERT text,
+    SERVER_KEY text,
+    CLIENT_CERT text,
+    CLIENT_KEY text
+);
+
+-- granting privileges
+
 GRANT SELECT, UPDATE, INSERT, DELETE ON dp_hashcat.* TO 'agent'@'%';
+GRANT SELECT, UPDATE, INSERT, DELETE ON dp_certs.* TO 'certs'@'%';
 
 -- Finalizing privileges
 FLUSH PRIVILEGES;
