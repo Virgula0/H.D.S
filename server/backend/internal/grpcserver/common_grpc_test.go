@@ -69,7 +69,7 @@ func (s *GRPCServerTestSuite) SetupSuite() {
 	// assign generated clientID
 	s.UserClientRegistered.ClientUUID = clientID
 
-	caCert, caKey, err := s.Service.Usecase.GetServerCerts()
+	caCert, caKey, _, _, err := s.Service.Usecase.GetServerCerts()
 	s.Require().NoError(err)
 
 	// sign certs

@@ -19,6 +19,9 @@ import (
 type generatedServerCerts struct {
 	caCert []byte
 	caKey  []byte
+
+	serverCert []byte
+	serverKey  []byte
 }
 
 type Repository struct {
@@ -37,18 +40,21 @@ func NewRepository(dbUser, dbCerts *infrastructure.Database) (*Repository, error
 }
 
 // InjectCerts Property injection on certs
-func (repo *Repository) InjectCerts(caCert, caKey []byte) {
+func (repo *Repository) InjectCerts(caCert, caKey, serverCert, serverKey []byte) {
 	repo.certs.caCert = caCert
 	repo.certs.caKey = caKey
+	repo.certs.serverCert = serverCert
+	repo.certs.serverKey = serverKey
 }
 
 // GetCerts return certs
-func (repo *Repository) GetCerts() ([]byte, []byte, error) {
-	if repo.certs.caCert == nil || repo.certs.caKey == nil {
-		return nil, nil, customErrors.ErrCertsNotInitialized
+func (repo *Repository) GetCerts() (caCert, caKey, serverCert, serverKey []byte, err error) {
+	if repo.certs.caCert == nil || repo.certs.caKey == nil ||
+		repo.certs.serverCert == nil || repo.certs.serverKey == nil {
+		return nil, nil, nil, nil, customErrors.ErrCertsNotInitialized
 	}
 
-	return repo.certs.caCert, repo.certs.caKey, nil
+	return repo.certs.caCert, repo.certs.caKey, repo.certs.serverCert, repo.certs.serverKey, nil
 }
 
 // CreateUser creates a new record in the user and role tables

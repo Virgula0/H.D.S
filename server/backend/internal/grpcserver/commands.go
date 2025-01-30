@@ -84,7 +84,7 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 				return nil, errClientCreation
 			}
 
-			caCert, caKey, err := s.Usecase.GetServerCerts()
+			caCert, caKey, _, _, err := s.Usecase.GetServerCerts()
 
 			if err != nil {
 				return nil, err

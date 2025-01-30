@@ -8,6 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	"math/big"
 	"net/http"
 	"time"
@@ -40,13 +41,19 @@ func (uc *Usecase) CreateServerCerts() error {
 		return err
 	}
 
-	uc.repo.InjectCerts(caCert, caKey)
+	// sign server certs
+	serverCert, serverKey, err := uc.SignCert(caCert, caKey, utils.GenerateToken(32)) // the clientID is not important for the server, we can generate a random va
+	if err != nil {
+		return err
+	}
+
+	uc.repo.InjectCerts(caCert, caKey, serverCert, serverKey)
 
 	return nil
 }
 
 // GetServerCerts if CreateServerCerts has been called before this, no error will be returned
-func (uc *Usecase) GetServerCerts() ([]byte, []byte, error) {
+func (uc *Usecase) GetServerCerts() (caCert, caKey, serverCert, serverKey []byte, err error) {
 	return uc.repo.GetCerts()
 }
 
