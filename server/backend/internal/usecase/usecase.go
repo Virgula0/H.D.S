@@ -264,12 +264,12 @@ func (uc *Usecase) GetClientInfo(userUUID, machineID string) (*entities.Client, 
 func (uc *Usecase) GetHandshakesByStatus(filterStatus string) (handshakes []*entities.Handshake, length int, e error) {
 	return uc.repo.GetHandshakesByStatus(filterStatus)
 }
-func (uc *Usecase) UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
-	return uc.repo.UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake)
+func (uc *Usecase) UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, hashcatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
+	return uc.repo.UpdateClientTask(userUUID, handshakeUUID, assignedClientUUID, status, hashcatOptions, hashcatLogs, crackedHandshake)
 }
 
-func (uc *Usecase) UpdateClientTaskRest(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
-	return uc.repo.UpdateClientTaskRest(userUUID, handshakeUUID, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake)
+func (uc *Usecase) UpdateClientTaskRest(userUUID, handshakeUUID, assignedClientUUID, status, hashcatOptions, hashcatLogs, crackedHandshake string) (*entities.Handshake, error) {
+	return uc.repo.UpdateClientTaskRest(userUUID, handshakeUUID, assignedClientUUID, status, hashcatOptions, hashcatLogs, crackedHandshake)
 }
 
 func (uc *Usecase) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string) (handshakes []*entities.Handshake, length int, e error) {
