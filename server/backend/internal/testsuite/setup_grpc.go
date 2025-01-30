@@ -21,8 +21,9 @@ import (
 
 type GRPCTestSuite struct {
 	suite.Suite
-	Service  *restapi.ServiceHandler // contains Usecase as well
-	Database *infrastructure.Database
+	Service      *restapi.ServiceHandler // contains Usecase as well
+	DatabaseUser *infrastructure.Database
+	DatabaseCert *infrastructure.Database
 
 	server        server.Server
 	serverContext context.Context
@@ -35,12 +36,16 @@ type GRPCTestSuite struct {
 }
 
 func (s *GRPCTestSuite) SetupSuite() {
-	dbConn, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
+	dbConnUser, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
 	s.Require().NoError(err)
-	s.Database = dbConn
+	s.DatabaseUser = dbConnUser
+
+	dbConnCerts, err := infrastructure.NewDatabaseConnection(constants.DBCertUser, constants.DBCertPass, constants.DBHost, constants.DBPort, constants.DBCert)
+	s.Require().NoError(err)
+	s.DatabaseCert = dbConnCerts
 
 	// Run rest api too
-	service, err := restapi.NewServiceHandler(dbConn) // run seeds internally
+	service, err := restapi.NewServiceHandler(dbConnUser, dbConnCerts) // run seeds internally
 	s.Require().NoError(err)
 	s.Service = &service
 
@@ -61,6 +66,10 @@ func (s *GRPCTestSuite) SetupSuite() {
 		restErr := srv.ListenAndServe()
 		s.Require().NoError(restErr)
 	}()
+
+	// create server certs, TODO: tests
+	err = s.Service.Usecase.CreateServerCerts()
+	s.Require().NoError(err)
 
 	// server context
 	srvCtx, srvCtxCancel := context.WithCancel(context.Background())

@@ -18,8 +18,8 @@ import (
 )
 
 // runService initialize service infrastructure connecting to the database and saving the instance
-func runService(m *mux.Router, database *infrastructure.Database) (*handlers.ServiceHandler, error) {
-	ms, err := handlers.NewServiceHandler(database)
+func runService(m *mux.Router, dbUser, dbCerts *infrastructure.Database) (*handlers.ServiceHandler, error) {
+	ms, err := handlers.NewServiceHandler(dbUser, dbCerts)
 	if err != nil {
 		return nil, fmt.Errorf("fail handlers.Handlers: %s", err.Error())
 	}
@@ -73,15 +73,20 @@ func tcpServerInstance(service *handlers.ServiceHandler, host, port string) (*ra
 func RunBackend() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	// ---- SETUP REST API SERVER -> FOR FE AND RASPBERRY PI COMMUNICATIONS-----
-	gorillaMux := mux.NewRouter()
-
-	database, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
+	dbUser, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
 
-	service, err := runService(gorillaMux, database)
+	dbCerts, err := infrastructure.NewDatabaseConnection(constants.DBCertUser, constants.DBCertPass, constants.DBHost, constants.DBPort, constants.DBCert)
+	if err != nil {
+		log.Fatalf("%s", err.Error())
+	}
+
+	// ---- SETUP REST API SERVER -> FOR FE COMMUNICATIONS-----
+	gorillaMux := mux.NewRouter()
+
+	service, err := runService(gorillaMux, dbUser, dbCerts)
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
@@ -90,7 +95,7 @@ func RunBackend() {
 
 	// Go Routine for the REST-API server
 	go func() {
-		go database.StartDBPinger()
+		go dbUser.StartDBPinger()
 		log.Infof("[REST-API] Server running on %s:%s", constants.ServerHost, constants.ServerPort)
 		if restErr := srv.ListenAndServe(); restErr != nil && !errors.Is(restErr, http.ErrServerClosed) {
 			log.Fatalf("listen: %v", restErr)
@@ -98,6 +103,10 @@ func RunBackend() {
 	}()
 
 	// ---- SETUP gRPC SERVER -> CLIENT COMMUNICATION -----
+	err = service.Usecase.CreateServerCerts() // create certs for mTLS scopes
+	if err != nil {
+		log.Fatalf("Cannot create mTLS certs! %s", err.Error())
+	}
 
 	go func() {
 		err = startGRPC(service)

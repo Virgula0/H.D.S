@@ -1,11 +1,19 @@
 package usecase
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"fmt"
+	"math/big"
 	"net/http"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
+	customErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/repository"
 	"github.com/Virgula0/progetto-dp/server/entities"
 	"github.com/golang-jwt/jwt"
@@ -23,6 +31,123 @@ func NewUsecase(repo *repository.Repository) *Usecase {
 	return &Usecase{
 		repo: repo,
 	}
+}
+
+// CreateServerCerts InjectCerts Injects generated certs into Repository
+func (uc *Usecase) CreateServerCerts() error {
+	caCert, caKey, err := uc.createCA()
+	if err != nil {
+		return err
+	}
+
+	uc.repo.InjectCerts(caCert, caKey)
+
+	return nil
+}
+
+// GetServerCerts if CreateServerCerts has been called before this, no error will be returned
+func (uc *Usecase) GetServerCerts() ([]byte, []byte, error) {
+	return uc.repo.GetCerts()
+}
+
+func (uc *Usecase) createCA() ([]byte, []byte, error) {
+	// Generate a private key for the CA
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%s %v", customErrors.ErrFailToGeneratePrivateKey, err)
+	}
+
+	// Create a CA certificate template
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(time.Now().UnixNano()),
+		Subject: pkix.Name{
+			Organization: []string{constants.OrganizationCertName},
+			CommonName:   constants.CertCommonName,
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour), // 10 years
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+	}
+
+	// Self-sign the CA certificate
+	caCertDER, err := x509.CreateCertificate(rand.Reader, ca, ca, &priv.PublicKey, priv)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create CA certificate: %v", err)
+	}
+
+	marshalPrivateKey, err := x509.MarshalECPrivateKey(priv)
+	if err != nil {
+		return nil, nil, fmt.Errorf("marshal private key error: %v", err)
+	}
+
+	// Encode the CA certificate and private key to PEM
+	caCertPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caCertDER})
+	caKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: marshalPrivateKey})
+
+	return caCertPEM, caKeyPEM, nil
+}
+
+func (uc *Usecase) SignCert(caCertPEM, caKeyPEM []byte, commonNameClientUUID string) ([]byte, []byte, error) {
+	// Decode CA certificate
+	certBlock, _ := pem.Decode(caCertPEM)
+	if certBlock == nil {
+		return nil, nil, fmt.Errorf("failed to decode CA certificate")
+	}
+
+	caCert, err := x509.ParseCertificate(certBlock.Bytes)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse CA certificate: %v", err)
+	}
+
+	// Decode CA key
+	keyBlock, _ := pem.Decode(caKeyPEM)
+	if keyBlock == nil {
+		return nil, nil, fmt.Errorf("failed to decode CA key")
+	}
+
+	caKey, err := x509.ParseECPrivateKey(keyBlock.Bytes)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse CA private key: %v", err)
+	}
+
+	// Generate a private key
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Create a certificate template
+	cert := &x509.Certificate{
+		SerialNumber: big.NewInt(time.Now().UnixNano()),
+		Subject: pkix.Name{
+			Organization: []string{constants.OrganizationCertName},
+			CommonName:   commonNameClientUUID,
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour), // 10 year
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		BasicConstraintsValid: true,
+	}
+
+	// Sign the certificate with the CA
+	certDER, err := x509.CreateCertificate(rand.Reader, cert, caCert, &priv.PublicKey, caKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	marshalPrivateKey, err := x509.MarshalECPrivateKey(priv)
+	if err != nil {
+		return nil, nil, fmt.Errorf("marshal private key error: %v", err)
+	}
+
+	// Encode the certificate and private key to PEM
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: marshalPrivateKey})
+
+	return certPEM, keyPEM, nil
 }
 
 func (uc *Usecase) GetDataFromToken(tokenInput string) (jwt.MapClaims, error) {
@@ -44,7 +169,7 @@ func (uc *Usecase) GetUserIDFromToken(r *http.Request) (uuid.UUID, error) {
 	token, ok := ctx.Value(constants.TokenConstant).(string)
 
 	if !ok {
-		return uuid.UUID{}, errors.ErrUnableToGetDataFromToken
+		return uuid.UUID{}, customErrors.ErrUnableToGetDataFromToken
 	}
 
 	data, err := uc.GetDataFromToken(token)
@@ -103,6 +228,10 @@ func (uc *Usecase) GetClientsInstalled(userUUID string, offset uint) ([]*entitie
 
 func (uc *Usecase) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
 	return uc.repo.CreateClient(userUUID, machineID, latestIP, name)
+}
+
+func (uc *Usecase) CreateCertForClient(clientUUID string, clientCert, clientKey []byte) (string, error) {
+	return uc.repo.CreateCertForClient(clientUUID, clientCert, clientKey)
 }
 
 func (uc *Usecase) CreateHandshake(userUUID, ssid, bssid, status, handshakePcap string) (string, error) {

@@ -19,6 +19,9 @@ var ErrNotValidClientIP = errors.New("not valid client IP")
 var ErrClientIsBusy = errors.New("client is busy")
 var ErrCannotDeleteElement = errors.New("unable to delete element")
 
+var ErrCertsNotInitialized = errors.New("caCerts not initialized in repository ")
+var ErrFailToGeneratePrivateKey = errors.New("fail to generate private key ")
+
 // GRPC
 var ErrGRPCClosedConnection = errors.New("[GRPC]: HashcatChat -> Client has closed the connection ->")
 var ErrGRPCFailedToReceive = errors.New("[GRPC]: HashcatChat -> Failed to receive message -> ")

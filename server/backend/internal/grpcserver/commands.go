@@ -84,6 +84,23 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 				return nil, errClientCreation
 			}
 
+			caCert, caKey, err := s.Usecase.GetServerCerts()
+
+			if err != nil {
+				return nil, err
+			}
+
+			// sign certs
+			clientCert, clientKey, err := s.Usecase.SignCert(caCert, caKey, newID)
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = s.Usecase.CreateCertForClient(newID, clientCert, clientKey)
+			if err != nil {
+				return nil, err
+			}
+
 			// client created
 			return &pb.GetClientInfoResponse{
 				IsRegistered:       false,

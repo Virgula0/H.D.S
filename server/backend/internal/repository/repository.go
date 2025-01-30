@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
-	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
+	customErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
 	"github.com/Virgula0/progetto-dp/server/entities"
 	_ "github.com/go-sql-driver/mysql"
@@ -16,15 +16,39 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Repository struct {
-	db *sql.DB
+type generatedServerCerts struct {
+	caCert []byte
+	caKey  []byte
 }
 
-// NewRepository Dependency Injection Pattern for injecting db instance within Repository
-func NewRepository(db *infrastructure.Database) (*Repository, error) {
+type Repository struct {
+	dbUser  *sql.DB
+	dbCerts *sql.DB
+	certs   *generatedServerCerts
+}
+
+// NewRepository Dependency Injection Pattern for injecting dbUser instance within Repository
+func NewRepository(dbUser, dbCerts *infrastructure.Database) (*Repository, error) {
 	return &Repository{
-		db.DB,
+		dbUser:  dbUser.DB,
+		dbCerts: dbCerts.DB,
+		certs:   new(generatedServerCerts),
 	}, nil
+}
+
+// InjectCerts Property injection on certs
+func (repo *Repository) InjectCerts(caCert, caKey []byte) {
+	repo.certs.caCert = caCert
+	repo.certs.caKey = caKey
+}
+
+// GetCerts return certs
+func (repo *Repository) GetCerts() ([]byte, []byte, error) {
+	if repo.certs.caCert == nil || repo.certs.caKey == nil {
+		return nil, nil, customErrors.ErrCertsNotInitialized
+	}
+
+	return repo.certs.caCert, repo.certs.caKey, nil
 }
 
 // CreateUser creates a new record in the user and role tables
@@ -38,7 +62,7 @@ func (repo *Repository) CreateUser(userEntity *entities.User, role constants.Rol
 		return err
 	}
 
-	_, err = repo.db.Exec(query, userEntity.Username, string(passwordBytes), userEntity.UserUUID)
+	_, err = repo.dbUser.Exec(query, userEntity.Username, string(passwordBytes), userEntity.UserUUID)
 	if err != nil {
 		return err
 	}
@@ -46,7 +70,7 @@ func (repo *Repository) CreateUser(userEntity *entities.User, role constants.Rol
 	// Seed user role
 
 	query = fmt.Sprintf("INSERT INTO %s(uuid,role_string) VALUES(?,?)", entities.RoleTableName)
-	_, err = repo.db.Exec(query, userEntity.UserUUID, role)
+	_, err = repo.dbUser.Exec(query, userEntity.UserUUID, role)
 	if err != nil {
 		return err
 	}
@@ -54,7 +78,7 @@ func (repo *Repository) CreateUser(userEntity *entities.User, role constants.Rol
 	return nil
 }
 
-// GetUserByUsername Get an user info by username
+// GetUserByUsername Get a user info by username
 func (repo *Repository) GetUserByUsername(username string) (*entities.User, *entities.Role, error) {
 
 	var user entities.User
@@ -63,10 +87,10 @@ func (repo *Repository) GetUserByUsername(username string) (*entities.User, *ent
 	query := fmt.Sprintf("SELECT * FROM %s AS u NATURAL JOIN %s WHERE u.username = ? LIMIT 1", entities.UserTableName, entities.RoleTableName)
 
 	// Execute the query expecting a single row.
-	rows, err := repo.db.Query(query, username)
+	rows, err := repo.dbUser.Query(query, username)
 
 	if err != nil {
-		return nil, nil, errors.ErrInvalidCredentials
+		return nil, nil, customErrors.ErrInvalidCredentials
 	}
 
 	defer rows.Close()
@@ -74,13 +98,13 @@ func (repo *Repository) GetUserByUsername(username string) (*entities.User, *ent
 	hasNext := rows.Next()
 
 	if !hasNext {
-		return nil, nil, errors.ErrInvalidCredentials
+		return nil, nil, customErrors.ErrInvalidCredentials
 	}
 
 	err = rows.Scan(&user.UserUUID, &user.Username, &user.Password, &role.RoleString)
 
 	if err != nil {
-		return nil, nil, errors.ErrInvalidCredentials
+		return nil, nil, customErrors.ErrInvalidCredentials
 	}
 
 	return &user, &role, nil
@@ -91,7 +115,7 @@ func (repo *Repository) countQueryResults(query string, args ...any) (int, error
 
 	var count int
 	// Query for a value based on a single row.
-	if err := repo.db.QueryRow(query, args...).Scan(&count); err != nil {
+	if err := repo.dbUser.QueryRow(query, args...).Scan(&count); err != nil {
 		return 0, err
 	}
 	return count, nil
@@ -102,11 +126,11 @@ func (repo *Repository) countQueryResults(query string, args ...any) (int, error
 func (repo *Repository) queryEntities(query string, columnsFunc func() (any, []any), args ...any) ([]any, error) {
 	var ent []any
 
-	rows, err := repo.db.Query(query, args...)
+	rows, err := repo.dbUser.Query(query, args...)
 
 	if err != nil {
 		log.Error(err.Error())
-		return nil, errors.ErrInternalServerError
+		return nil, customErrors.ErrInternalServerError
 	}
 	defer rows.Close()
 
@@ -116,14 +140,14 @@ func (repo *Repository) queryEntities(query string, columnsFunc func() (any, []a
 
 		if err := rows.Scan(rowColumns...); err != nil {
 			log.Error(err.Error())
-			return nil, errors.ErrInternalServerError
+			return nil, customErrors.ErrInternalServerError
 		}
 		ent = append(ent, rowEntity)
 	}
 
 	if err := rows.Err(); err != nil {
 		log.Error(err.Error())
-		return nil, errors.ErrInternalServerError
+		return nil, customErrors.ErrInternalServerError
 	}
 
 	return ent, nil
@@ -147,6 +171,7 @@ func (repo *Repository) GetClientsInstalledByUserID(userUUID string, offset uint
 			&c.CreationTime,
 			&c.LatestConnectionTime,
 			&c.MachineID,
+			&c.EnabledEncryption,
 		}
 		return c, cols
 	}
@@ -160,7 +185,7 @@ func (repo *Repository) GetClientsInstalledByUserID(userUUID string, offset uint
 	for _, item := range results {
 		client, ok := item.(*entities.Client)
 		if !ok {
-			return nil, 0, fmt.Errorf("%w *entities.Client", errors.ErrInvalidType)
+			return nil, 0, fmt.Errorf("%w *entities.Client", customErrors.ErrInvalidType)
 		}
 		clients = append(clients, client)
 	}
@@ -198,7 +223,7 @@ func (repo *Repository) GetRaspberryPiByUserID(userUUID string, offset uint) (rs
 	for _, item := range results {
 		rsp, ok := item.(*entities.RaspberryPI)
 		if !ok {
-			return nil, 0, fmt.Errorf("%w *entities.RaspberryPI", errors.ErrInvalidType)
+			return nil, 0, fmt.Errorf("%w *entities.RaspberryPI", customErrors.ErrInvalidType)
 		}
 		rsps = append(rsps, rsp)
 	}
@@ -244,7 +269,7 @@ func (repo *Repository) GetHandshakesByUserID(userUUID string, offset uint) (han
 	for _, item := range results {
 		hdk, ok := item.(*entities.Handshake)
 		if !ok {
-			return nil, 0, fmt.Errorf("%w *entities.Handshake", errors.ErrInvalidType)
+			return nil, 0, fmt.Errorf("%w *entities.Handshake", customErrors.ErrInvalidType)
 		}
 		handshakes = append(handshakes, hdk)
 	}
@@ -290,7 +315,7 @@ func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes [
 	for _, item := range results {
 		hdk, ok := item.(*entities.Handshake)
 		if !ok {
-			return nil, 0, fmt.Errorf("%w *entities.Handshake", errors.ErrInvalidType)
+			return nil, 0, fmt.Errorf("%w *entities.Handshake", customErrors.ErrInvalidType)
 		}
 		handshakes = append(handshakes, hdk)
 	}
@@ -336,7 +361,7 @@ func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string
 	for _, item := range results {
 		hdk, ok := item.(*entities.Handshake)
 		if !ok {
-			return nil, 0, fmt.Errorf("%w *entities.Handshake", errors.ErrInvalidType)
+			return nil, 0, fmt.Errorf("%w *entities.Handshake", customErrors.ErrInvalidType)
 		}
 		handshakes = append(handshakes, hdk)
 	}
@@ -346,6 +371,22 @@ func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string
 	return handshakes, count, err
 }
 
+func (repo *Repository) CreateCertForClient(clientUUID string, clientCert, clientKey []byte) (string, error) {
+
+	if repo.certs.caCert == nil || repo.certs.caKey == nil {
+		return "", customErrors.ErrCertsNotInitialized
+	}
+
+	certID := uuid.New().String()
+	query := fmt.Sprintf("INSERT INTO %s(uuid, client_uuid, ca_cert, client_cert, client_key) VALUES(?,?,?,?,?)", entities.CertTableName)
+	_, err := repo.dbCerts.Exec(query, certID, clientUUID, repo.certs.caCert, clientCert, clientKey)
+	if err != nil {
+		return "", err
+	}
+
+	return certID, nil
+}
+
 // CreateClient GRPC - CreateClient creates a new record in the client table
 func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, name, latest_ip, creation_datetime, latest_connection, machine_id) VALUES(?,?,?,?,?,?,?)",
@@ -353,7 +394,7 @@ func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string)
 
 	formattedDateTime := time.Now().Format(constants.DateTimeExample)
 	clientNewID := uuid.New().String()
-	_, err := repo.db.Exec(query, userUUID, clientNewID, name, latestIP, formattedDateTime, formattedDateTime, machineID)
+	_, err := repo.dbUser.Exec(query, userUUID, clientNewID, name, latestIP, formattedDateTime, formattedDateTime, machineID)
 
 	if err != nil {
 		return "", err
@@ -376,10 +417,11 @@ func (repo *Repository) GetClientInfo(userUUID, machineID string) (*entities.Cli
 		&client.CreationTime,
 		&client.LatestConnectionTime,
 		&client.MachineID,
+		&client.EnabledEncryption,
 	}
 
 	// Execute the query expecting a single row.
-	rows, err := repo.db.Query(query, userUUID, machineID)
+	rows, err := repo.dbUser.Query(query, userUUID, machineID)
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +430,7 @@ func (repo *Repository) GetClientInfo(userUUID, machineID string) (*entities.Cli
 	hasNext := rows.Next()
 
 	if !hasNext {
-		return nil, errors.ErrNoClientFound
+		return nil, customErrors.ErrNoClientFound
 	}
 
 	err = rows.Scan(columnsToBind...)
@@ -409,7 +451,7 @@ func (repo *Repository) CreateHandshake(userUUID, ssid, bssid, status, handshake
 	// clientID will be assigned via REST-API by the user
 	// we save the userID to specify that the task can be run only from that specific user and no one else
 	// in particular such userID is the same for the raspberryPI userID
-	_, err := repo.db.Exec(query, userUUID, handshakeID, ssid, bssid, status, handshakePcap)
+	_, err := repo.dbUser.Exec(query, userUUID, handshakeID, ssid, bssid, status, handshakePcap)
 
 	if err != nil {
 		return "", err
@@ -424,7 +466,7 @@ func (repo *Repository) CreateRaspberryPI(userUUID, machineID, encryptionKey str
 		entities.RaspberryPiTableName)
 
 	rspNewID := uuid.New().String()
-	_, err := repo.db.Exec(query, userUUID, rspNewID, machineID, encryptionKey)
+	_, err := repo.dbUser.Exec(query, userUUID, rspNewID, machineID, encryptionKey)
 
 	if err != nil {
 		return "", err
@@ -461,19 +503,19 @@ func (repo *Repository) updateClientTaskCommon(userUUID, handshakeUUID, assigned
 		return nil, err
 	}
 	if len(handshakes) == 0 {
-		return nil, errors.ErrElementNotFound
+		return nil, customErrors.ErrElementNotFound
 	}
 
 	handshake, ok := handshakes[0].(*entities.Handshake)
 	if !ok {
-		return nil, errors.ErrInvalidType
+		return nil, customErrors.ErrInvalidType
 	}
 
 	// Specific REST API behavior: Check if the client is busy
 	if restMode && handshake.ClientUUID != nil {
 		switch handshake.Status {
 		case constants.PendingStatus, constants.WorkingStatus:
-			return nil, errors.ErrClientIsBusy
+			return nil, customErrors.ErrClientIsBusy
 		}
 	}
 
@@ -482,7 +524,7 @@ func (repo *Repository) updateClientTaskCommon(userUUID, handshakeUUID, assigned
 		"UPDATE %s SET uuid_assigned_client = ?, status = ?, hashcat_options = ?, hashcat_logs = ?, cracked_handshake = ? WHERE uuid_user = ? AND uuid = ?",
 		entities.HandshakeTableName,
 	)
-	_, err = repo.db.Exec(updateQuery, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, userUUID, handshakeUUID)
+	_, err = repo.dbUser.Exec(updateQuery, assignedClientUUID, status, haschatOptions, hashcatLogs, crackedHandshake, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -493,12 +535,12 @@ func (repo *Repository) updateClientTaskCommon(userUUID, handshakeUUID, assigned
 		return nil, err
 	}
 	if len(handshakes) == 0 {
-		return nil, errors.ErrElementNotFound
+		return nil, customErrors.ErrElementNotFound
 	}
 
 	updatedHandshake, ok := handshakes[0].(*entities.Handshake)
 	if !ok {
-		return nil, errors.ErrInvalidType
+		return nil, customErrors.ErrInvalidType
 	}
 
 	return updatedHandshake, nil
@@ -518,9 +560,9 @@ func (repo *Repository) UpdateClientTaskRest(userUUID, handshakeUUID, assignedCl
 func (repo *Repository) DeleteClient(userUUID, clientUUID string) (bool, error) {
 	deleteQuery := fmt.Sprintf("DELETE FROM %s WHERE uuid_user = ? AND uuid = ?", entities.ClientTableName)
 
-	_, err := repo.db.Exec(deleteQuery, userUUID, clientUUID)
+	_, err := repo.dbUser.Exec(deleteQuery, userUUID, clientUUID)
 	if err != nil {
-		return false, fmt.Errorf("%s ERROR: %v", errors.ErrCannotDeleteElement, err)
+		return false, fmt.Errorf("%s ERROR: %v", customErrors.ErrCannotDeleteElement, err)
 	}
 
 	return true, nil
@@ -530,9 +572,9 @@ func (repo *Repository) DeleteClient(userUUID, clientUUID string) (bool, error) 
 func (repo *Repository) DeleteRaspberryPI(userUUID, rspUUID string) (bool, error) {
 	deleteQuery := fmt.Sprintf("DELETE FROM %s WHERE uuid_user = ? AND uuid = ?", entities.RaspberryPiTableName)
 
-	_, err := repo.db.Exec(deleteQuery, userUUID, rspUUID)
+	_, err := repo.dbUser.Exec(deleteQuery, userUUID, rspUUID)
 	if err != nil {
-		return false, fmt.Errorf("%s ERROR: %v", errors.ErrCannotDeleteElement, err)
+		return false, fmt.Errorf("%s ERROR: %v", customErrors.ErrCannotDeleteElement, err)
 	}
 
 	return true, nil
@@ -542,9 +584,9 @@ func (repo *Repository) DeleteRaspberryPI(userUUID, rspUUID string) (bool, error
 func (repo *Repository) DeleteHandshake(userUUID, handshakeUUID string) (bool, error) {
 	deleteQuery := fmt.Sprintf("DELETE FROM %s WHERE uuid_user = ? AND uuid = ?", entities.HandshakeTableName)
 
-	_, err := repo.db.Exec(deleteQuery, userUUID, handshakeUUID)
+	_, err := repo.dbUser.Exec(deleteQuery, userUUID, handshakeUUID)
 	if err != nil {
-		return false, fmt.Errorf("%s ERROR: %v", errors.ErrCannotDeleteElement, err)
+		return false, fmt.Errorf("%s ERROR: %v", customErrors.ErrCannotDeleteElement, err)
 	}
 
 	return true, nil

@@ -15,17 +15,22 @@ import (
 
 type TCPServerSuite struct {
 	suite.Suite
-	Service  *restapi.ServiceHandler // contains Usecase as well for mocking
-	Database *infrastructure.Database
+	Service      *restapi.ServiceHandler // contains Usecase as well for mocking
+	DatabaseUser *infrastructure.Database
+	DatabaseCert *infrastructure.Database
 }
 
 func (s *TCPServerSuite) SetupSuite() {
-	dbConn, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
+	dbConnUser, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
 	s.Require().NoError(err)
-	s.Database = dbConn
+	s.DatabaseUser = dbConnUser
+
+	dbConnCerts, err := infrastructure.NewDatabaseConnection(constants.DBCertUser, constants.DBCertPass, constants.DBHost, constants.DBPort, constants.DBCert)
+	s.Require().NoError(err)
+	s.DatabaseCert = dbConnCerts
 
 	// Run rest api too
-	service, err := restapi.NewServiceHandler(dbConn) // run seeds internally
+	service, err := restapi.NewServiceHandler(dbConnUser, dbConnCerts) // run seeds internally
 	s.Require().NoError(err)
 	s.Service = &service
 

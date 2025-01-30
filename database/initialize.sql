@@ -80,12 +80,10 @@ DROP TABLE IF EXISTS certs;
 
 CREATE TABLE IF NOT EXISTS certs (
     UUID varchar(36) NOT NULL PRIMARY KEY,
-    CLIENT_UUID varchar(36),
-    CA_CERT text,
-    SERVER_CERT text,
-    SERVER_KEY text,
-    CLIENT_CERT text,
-    CLIENT_KEY text
+    CLIENT_UUID varchar(36) UNIQUE,
+    CA_CERT BLOB,
+    CLIENT_CERT BLOB,
+    CLIENT_KEY BLOB
 );
 
 -- granting privileges
