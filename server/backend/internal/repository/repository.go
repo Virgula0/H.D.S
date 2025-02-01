@@ -159,6 +159,48 @@ func (repo *Repository) queryEntities(query string, columnsFunc func() (any, []a
 	return ent, nil
 }
 
+// GetClientsInstalledByUserID Needed in main.go for updating certs on existing clients every time the server restart
+func (repo *Repository) GetClientsInstalled() (clients []*entities.Client, length int, e error) {
+	query := fmt.Sprintf("SELECT * FROM %s", entities.ClientTableName)
+	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s", entities.ClientTableName)
+
+	columnsFunc := func() (any, []any) {
+		// Each time called, we make a fresh instance
+		c := &entities.Client{}
+
+		// Return the entity plus the columns slice
+		cols := []any{
+			&c.UserUUID,
+			&c.ClientUUID,
+			&c.Name,
+			&c.LatestIP,
+			&c.CreationTime,
+			&c.LatestConnectionTime,
+			&c.MachineID,
+			&c.EnabledEncryption,
+		}
+		return c, cols
+	}
+
+	results, err := repo.queryEntities(query, columnsFunc)
+
+	if err != nil {
+		return nil, -1, err
+	}
+
+	for _, item := range results {
+		client, ok := item.(*entities.Client)
+		if !ok {
+			return nil, 0, fmt.Errorf("%w *entities.Client", customErrors.ErrInvalidType)
+		}
+		clients = append(clients, client)
+	}
+
+	count, err := repo.countQueryResults(queryCount)
+
+	return clients, count, err
+}
+
 // GetClientsInstalledByUserID REST-API GetClientsInstalledByUserID
 func (repo *Repository) GetClientsInstalledByUserID(userUUID string, offset uint) (clients []*entities.Client, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.ClientTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
@@ -377,6 +419,7 @@ func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string
 	return handshakes, count, err
 }
 
+// CreateCertForClient GRPC - Called only once when a client does not exist
 func (repo *Repository) CreateCertForClient(clientUUID string, clientCert, clientKey []byte) (string, error) {
 
 	if repo.certs.caCert == nil || repo.certs.caKey == nil {
@@ -391,6 +434,21 @@ func (repo *Repository) CreateCertForClient(clientUUID string, clientCert, clien
 	}
 
 	return certID, nil
+}
+
+// UpdateCerts called by main.go for updating certs when server starts
+func (repo *Repository) UpdateCerts(client *entities.Client, caCert, clientCert, clientKey []byte) error {
+	// Update query
+	updateQuery := fmt.Sprintf(
+		"UPDATE %s SET ca_cert = ?, client_cert = ?, client_key = ? WHERE client_uuid = ?",
+		entities.CertTableName,
+	)
+	_, err := repo.dbCerts.Exec(updateQuery, caCert, clientCert, clientKey, client.ClientUUID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // CreateClient GRPC - CreateClient creates a new record in the client table

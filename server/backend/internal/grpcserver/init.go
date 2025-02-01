@@ -2,7 +2,11 @@ package grpcserver
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"fmt"
+	"google.golang.org/grpc/credentials"
 	"net"
 	"os"
 	"os/signal"
@@ -28,6 +32,54 @@ func New(ctx *ServerContext) *Server {
 
 // Run start gRPC server-grpc listening on given port
 func (s *Server) Run(ctx context.Context, opt *Option) error {
+
+	serverCert, err := tls.X509KeyPair(opt.ServerCert, opt.ServerKey)
+	if err != nil {
+		return fmt.Errorf("failed to load server certificate and key: %v", err)
+	}
+
+	// Create a certificate pool and add the CA certificate
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(opt.CACert) {
+		return errors.New("failed to append CA certificate to pool")
+	}
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientCAs:    certPool,
+		ClientAuth:   tls.RequireAnyClientCert,
+		GetConfigForClient: func(info *tls.ClientHelloInfo) (*tls.Config, error) {
+			// Get the client configuration
+			clientConfig, exists := opt.ClientConfigStorage.GetClientConfig(info.ServerName)
+			if !exists {
+				log.Warnf("No config found for client: %s", info.ServerName)
+				return &tls.Config{
+					Certificates: []tls.Certificate{serverCert},
+					ClientCAs:    certPool,
+					ClientAuth:   tls.NoClientCert, // Allows clients to connect without certificates
+				}, nil // Allow plaintext by default if no config is found
+			}
+
+			if !clientConfig.EncryptionEnabled {
+				log.Warnf("Encryption disabled for client: %s; allowing plaintext connection", clientConfig.ID)
+				// Return a nil config to allow plaintext
+				return &tls.Config{
+					Certificates: []tls.Certificate{serverCert},
+					ClientCAs:    certPool,
+					ClientAuth:   tls.NoClientCert, // Allows clients to connect without certificates
+				}, nil
+			}
+
+			// If encryption is enabled, create a new TLS config that requires mutual authentication
+			return &tls.Config{
+				Certificates:       []tls.Certificate{serverCert},
+				ClientCAs:          certPool,
+				ClientAuth:         tls.RequireAndVerifyClientCert,
+				InsecureSkipVerify: false,
+			}, nil
+		},
+	}
+
 	var lc net.ListenConfig
 	lis, err := lc.Listen(ctx, "tcp", opt.GrpcURL)
 	if err != nil {
@@ -36,8 +88,10 @@ func (s *Server) Run(ctx context.Context, opt *Option) error {
 
 	// grpc server-grpc options
 	options := []grpc.ServerOption{
+		grpc.Creds(credentials.NewTLS(tlsConfig)),
 		grpc.ConnectionTimeout(opt.GrpcConnTimeout),
 	}
+
 	if opt.Debug {
 		options = append(options, grpc.UnaryInterceptor(logInterceptor))
 	}

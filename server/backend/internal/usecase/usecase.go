@@ -229,8 +229,28 @@ func (uc *Usecase) CreateUser(userEntity *entities.User, role constants.Role) er
 	return uc.repo.CreateUser(userEntity, role)
 }
 
-func (uc *Usecase) GetClientsInstalled(userUUID string, offset uint) ([]*entities.Client, int, error) {
+func (uc *Usecase) GetClientsInstalledByUserID(userUUID string, offset uint) ([]*entities.Client, int, error) {
 	return uc.repo.GetClientsInstalledByUserID(userUUID, offset)
+}
+
+func (uc *Usecase) GetClientsInstalled() (clients []*entities.Client, length int, e error) {
+	return uc.repo.GetClientsInstalled()
+}
+
+func (uc *Usecase) UpdateCerts(client *entities.Client) error {
+	caCert, caKey, _, _, err := uc.GetServerCerts()
+
+	if err != nil {
+		return err
+	}
+
+	clientCert, clientKey, err := uc.SignCert(caCert, caKey, client.ClientUUID)
+
+	if err != nil {
+		return err
+	}
+
+	return uc.repo.UpdateCerts(client, caCert, clientCert, clientKey)
 }
 
 func (uc *Usecase) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {

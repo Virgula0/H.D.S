@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/grpcserver/encryption"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/raspberrypi"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -40,6 +41,28 @@ func createServer(handler http.Handler, host, port string) *http.Server {
 	}
 }
 
+func updateClientConfigRuntime(service *handlers.ServiceHandler, storage *encryption.ClientConfigStore) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		clients, _, err := service.Usecase.GetClientsInstalled()
+
+		if err != nil {
+			log.Errorf("fail to get clients: %s", err.Error())
+		}
+
+		for _, client := range clients {
+			storage.UpdateClientConfig(client.ClientUUID, &encryption.ClientConfig{
+				ID:                client.ClientUUID,
+				EncryptionEnabled: client.EnabledEncryption,
+			})
+		}
+
+		<-ticker.C
+	}
+}
+
 // StartAsGRPC start the grpc_server server-grpc_server with the required business logic usecases
 func startGRPC(service *handlers.ServiceHandler) error {
 	grpc := grpcserver.New(grpcserver.NewServerContext(service.Usecase))
@@ -50,10 +73,38 @@ func startGRPC(service *handlers.ServiceHandler) error {
 		return constants.GrpcTimeoutParseError
 	}
 
-	err := grpc.Run(context.Background(), &grpcserver.Option{
-		GrpcURL:         constants.GrpcURL,
-		GrpcConnTimeout: timeout,
-		Debug:           constants.DebugEnabled,
+	caCert, caKey, serverCert, serverKey, err := service.Usecase.GetServerCerts()
+
+	if err != nil {
+		return err
+	}
+
+	storage := encryption.NewClientCertStore()
+
+	// for each client update client config already existing from db
+	// this is needed since we need to update client certs with new generated server keys
+	clients, _, err := service.Usecase.GetClientsInstalled()
+
+	for _, client := range clients {
+		// update in db, but only if the encryption was enabled
+		if client.EnabledEncryption {
+			if err = service.Usecase.UpdateCerts(client); err != nil {
+				return err
+			}
+		}
+	}
+
+	go updateClientConfigRuntime(service, storage)
+
+	err = grpc.Run(context.Background(), &grpcserver.Option{
+		Debug:               constants.DebugEnabled,
+		GrpcURL:             constants.GrpcURL,
+		GrpcConnTimeout:     timeout,
+		CACert:              caCert,
+		CAKey:               caKey,
+		ServerCert:          serverCert,
+		ServerKey:           serverKey,
+		ClientConfigStorage: storage,
 	})
 	return err
 }
