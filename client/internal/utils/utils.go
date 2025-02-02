@@ -8,8 +8,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/Virgula0/progetto-dp/client/internal/constants"
+	"github.com/Virgula0/progetto-dp/client/internal/enums"
+	log "github.com/sirupsen/logrus"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -111,6 +115,52 @@ func ReadFileBytes(rootPath string) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+type Keys struct {
+	CACert     []byte
+	ClientCert []byte
+	ClientKey  []byte
+}
+
+// CallBackFunc Useful struct for a receiver for passing RecursiveDirectoryWalk to WalkDir maintaining the same function signature
+type CallBackFunc struct {
+	CallBack func(fileName string, data []byte) (enums.FileType, error)
+	Keys     *Keys
+}
+
+func (c *CallBackFunc) RecursiveDirectoryWalk(path string, d fs.DirEntry, _ error) error {
+	if d.IsDir() || strings.HasPrefix(filepath.Base(path), ".") {
+		return nil // skip
+	}
+
+	fileBytes, err := ReadFileBytes(path)
+	fileName := filepath.Base(path)
+
+	if err != nil {
+		return err
+	}
+
+	typeName, err := c.CallBack(fileName, fileBytes)
+
+	if err != nil {
+		return fmt.Errorf("error processing file %s: %v", fileName, err)
+	}
+
+	log.Infof("[CLIENT] Recognized crypto file: %s -> Type: %s", fileName, typeName)
+
+	switch typeName {
+	case enums.CaCert:
+		c.Keys.CACert = fileBytes
+	case enums.ClientCert:
+		c.Keys.ClientCert = fileBytes
+	case enums.ClientKey:
+		c.Keys.ClientKey = fileBytes
+	default:
+		return fmt.Errorf("unknown crypto type: %s", typeName)
+	}
+
+	return nil
 }
 
 func StringBase64DataToBinary(input string) ([]byte, error) {

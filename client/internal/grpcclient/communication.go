@@ -2,6 +2,7 @@ package grpcclient
 
 import (
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
+	"github.com/Virgula0/progetto-dp/client/internal/utils"
 	pb "github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -30,6 +31,17 @@ func ResetLogs() {
 	logsMu.Lock()
 	logsSB.Reset()
 	logsMu.Unlock()
+}
+
+/*
+Test
+
+healthcheck to check if server is up and running
+*/
+func (c *Client) Test() (*pb.HelloResponse, error) {
+	return c.PBInstance.Test(c.ClientContext, &pb.HelloRequest{
+		Name: utils.GenerateToken(3),
+	})
 }
 
 /*

@@ -2,6 +2,7 @@ package gui
 
 import (
 	"github.com/Virgula0/progetto-dp/client/internal/grpcclient"
+	log "github.com/sirupsen/logrus"
 	"strings"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -87,12 +88,16 @@ func handleInput(state *loginState, ui *loginUI) {
 func handleLogin(client *grpcclient.Client, state *loginState, ui *loginUI) bool {
 	if rl.IsMouseButtonPressed(rl.MouseLeftButton) && rl.CheckCollisionPointRec(rl.GetMousePosition(), ui.loginButtonRect) {
 		resp, err := client.Authenticate(state.username, state.password)
+
 		if err == nil {
 			client.Credentials.Auth.Username = state.username
 			client.Credentials.Auth.Password = state.password
 			*client.Credentials.JWT = resp.GetDetails()
 			return true
+		} else {
+			log.Errorf("error on Authenticate rpc call: %v", err)
 		}
+
 		state.errorMessage = "Invalid username or password"
 	}
 	return false

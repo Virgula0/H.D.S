@@ -2,12 +2,16 @@ package grpcclient
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
 	"github.com/Virgula0/progetto-dp/client/internal/constants"
+	"github.com/Virgula0/progetto-dp/client/internal/encryption"
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
+	"github.com/Virgula0/progetto-dp/client/internal/utils"
 	pb "github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"time"
 )
 
@@ -32,20 +36,20 @@ InitClient
 Initialize gRPC client
 */
 func InitClient() (*Client, error) {
-	ticker := time.NewTicker(time.Second * 5)
 	var conn *grpc.ClientConn
 	var err error
-	for {
-		conn, err = grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	creds := credentials.NewTLS(&tls.Config{
+		InsecureSkipVerify: true, //#nosec:G402 // use unsecure connection for first client installation or if security is disabled
+		ServerName:         fmt.Sprintf("UnsecureConn-%s", utils.GenerateToken(32)),
+	})
 
-		if err == nil {
-			log.Infof("[CLIENT] Connected with: %s", constants.GrpcURL)
-			break
-		}
+	conn, err = grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(creds))
 
-		log.Errorf("[CLIENT] Error while attempting to connect to grpc server. Re-attempting in 5 seconds.")
-		<-ticker.C
+	if err != nil {
+		log.Fatalf("[CLIENT] Cannot enstablish a connection with server %s %v", constants.GrpcURL, err)
 	}
+
+	log.Infof("[CLIENT] Connection instance created for %s", constants.GrpcURL)
 
 	duration, err := time.ParseDuration(constants.GrpcTimeout)
 	if err != nil {
@@ -65,6 +69,34 @@ func InitClient() (*Client, error) {
 			Auth: new(entities.AuthRequest),
 		},
 	}, nil
+}
+
+// ReloadConnectionWithCred will create a new connection with the updated credentials.
+func (c *Client) ReloadConnectionWithCred(caCertPEM, clientKeyPEM, clientCertPEM []byte) error {
+
+	log.Warn("[CLIENT] Reloading connection with TLS enabled")
+	if err := c.client.Close(); err != nil { //close current connection
+		return err
+	}
+
+	// Load credentials from in-memory bytes
+	creds, err := encryption.LoadTLSCredentials(caCertPEM, clientKeyPEM, clientCertPEM)
+
+	if err != nil {
+		return fmt.Errorf("failed to load tls credentials %s %v", constants.GrpcURL, err)
+	}
+
+	// Create a new connection with the updated credentials
+	conn, err := grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(creds))
+	if err != nil {
+		return fmt.Errorf("failed to reconnect with new credentials: %v", err)
+	}
+
+	log.Infof("[CLIENT] Connection instance re-created for %s", constants.GrpcURL)
+
+	c.client = conn
+
+	return nil
 }
 
 /*

@@ -59,6 +59,9 @@ services:
       - DB_HOST=dp-database
       - DB_PORT=3306
       - DB_NAME=dp_hashcat
+      - DB_CERT=dp_certs
+      - DB_CERT_USER=certs
+      - DB_CERT_PASSWORD=SUPERSECUREUNCRACKABLEPASSWORD  # This should be changed (remember to change it in database/initialize.sql too
       - ALLOW_REGISTRATIONS=True # Disable if needed
       - DEBUG=True  # This will enable seeds for having handshake, clients, and raspberryPI mocked
       - RESET=True

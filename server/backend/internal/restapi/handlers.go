@@ -17,19 +17,19 @@ type ServiceHandler struct {
 }
 
 // NewServiceHandler main microservice entrypoint; creates repository, seeds database and exposes usecase
-func NewServiceHandler(db *infrastructure.Database) (ServiceHandler, error) {
+func NewServiceHandler(dbUser, dbCerts *infrastructure.Database) (ServiceHandler, error) {
 
-	repo, err := repository.NewRepository(db)
+	repo, err := repository.NewRepository(dbUser, dbCerts)
 	if err != nil {
 		e := fmt.Errorf("fail NewRepository: %s", err.Error())
 		log.Println(e)
 		return ServiceHandler{}, e
 	}
 
-	if constants.WipeTables != "" {
+	if constants.WipeTables {
 
 		// Delete data from DB
-		err = db.CleanDB([]string{entities.UserTableName})
+		err = dbUser.CleanDB([]string{entities.UserTableName})
 
 		if err != nil {
 			return ServiceHandler{}, err
