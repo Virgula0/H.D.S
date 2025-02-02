@@ -19,6 +19,7 @@ message GetClientInfoResponse {
   string creation_time = 6;
   string last_connection_time = 7;
   string machine_id = 8;
+  bool enabled_encryption =9;
 }
 
 message ClientTaskMessageFromServer {

@@ -54,7 +54,6 @@ func updateClientConfigRuntime(service *handlers.ServiceHandler, storage *encryp
 
 		for _, client := range clients {
 			storage.UpdateClientConfig(client.ClientUUID, &encryption.ClientConfig{
-				ID:                client.ClientUUID,
 				EncryptionEnabled: client.EnabledEncryption,
 			})
 		}
@@ -73,22 +72,25 @@ func startGRPC(service *handlers.ServiceHandler) error {
 		return constants.GrpcTimeoutParseError
 	}
 
-	caCert, caKey, serverCert, serverKey, err := service.Usecase.GetServerCerts()
+	caCert, caKey, serverCert, serverKey, certErr := service.Usecase.GetServerCerts()
 
-	if err != nil {
-		return err
+	if certErr != nil {
+		return certErr
 	}
 
 	storage := encryption.NewClientCertStore()
 
 	// for each client update client config already existing from db
 	// this is needed since we need to update client certs with new generated server keys
-	clients, _, err := service.Usecase.GetClientsInstalled()
+	clients, _, errInstalled := service.Usecase.GetClientsInstalled()
+	if errInstalled != nil {
+		return errInstalled
+	}
 
 	for _, client := range clients {
 		// update in db, but only if the encryption was enabled
 		if client.EnabledEncryption {
-			if err = service.Usecase.UpdateCerts(client); err != nil {
+			if err := service.Usecase.UpdateCerts(client); err != nil {
 				return err
 			}
 		}
@@ -96,7 +98,7 @@ func startGRPC(service *handlers.ServiceHandler) error {
 
 	go updateClientConfigRuntime(service, storage)
 
-	err = grpc.Run(context.Background(), &grpcserver.Option{
+	return grpc.Run(context.Background(), &grpcserver.Option{
 		Debug:               constants.DebugEnabled,
 		GrpcURL:             constants.GrpcURL,
 		GrpcConnTimeout:     timeout,
@@ -106,7 +108,6 @@ func startGRPC(service *handlers.ServiceHandler) error {
 		ServerKey:           serverKey,
 		ClientConfigStorage: storage,
 	})
-	return err
 }
 
 // tcpServerInstance initialize tcp server

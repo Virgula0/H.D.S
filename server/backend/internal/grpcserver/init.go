@@ -48,26 +48,27 @@ func (s *Server) Run(ctx context.Context, opt *Option) error {
 		Certificates: []tls.Certificate{serverCert},
 		ClientCAs:    certPool,
 		ClientAuth:   tls.RequireAnyClientCert,
+		MinVersion:   tls.VersionTLS13,
 		GetConfigForClient: func(info *tls.ClientHelloInfo) (*tls.Config, error) {
 			// Get the client configuration
 			clientConfig, exists := opt.ClientConfigStorage.GetClientConfig(info.ServerName)
+
+			nocert := &tls.Config{
+				Certificates: []tls.Certificate{serverCert},
+				ClientCAs:    certPool,
+				MinVersion:   tls.VersionTLS13,
+				ClientAuth:   tls.NoClientCert, // Allows clients to connect without certificates
+			}
+
 			if !exists {
 				log.Warnf("No config found for client: %s", info.ServerName)
-				return &tls.Config{
-					Certificates: []tls.Certificate{serverCert},
-					ClientCAs:    certPool,
-					ClientAuth:   tls.NoClientCert, // Allows clients to connect without certificates
-				}, nil // Allow plaintext by default if no config is found
+				return nocert, nil // Allow plaintext by default if no config is found
 			}
 
 			if !clientConfig.EncryptionEnabled {
 				log.Warnf("Encryption disabled for client: %s; allowing plaintext connection", clientConfig.ID)
 				// Return a nil config to allow plaintext
-				return &tls.Config{
-					Certificates: []tls.Certificate{serverCert},
-					ClientCAs:    certPool,
-					ClientAuth:   tls.NoClientCert, // Allows clients to connect without certificates
-				}, nil
+				return nocert, nil
 			}
 
 			// If encryption is enabled, create a new TLS config that requires mutual authentication
@@ -76,6 +77,7 @@ func (s *Server) Run(ctx context.Context, opt *Option) error {
 				ClientCAs:          certPool,
 				ClientAuth:         tls.RequireAndVerifyClientCert,
 				InsecureSkipVerify: false,
+				MinVersion:         tls.VersionTLS13,
 			}, nil
 		},
 	}

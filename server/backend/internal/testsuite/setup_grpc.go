@@ -118,7 +118,7 @@ func (s *GRPCTestSuite) startClient(errCh chan error) {
 		select {
 		case <-time.After(time.Second):
 			creds := credentials.NewTLS(&tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: true, //#nosec:G402 // use unsecure connection for first client installation or if security is disabled
 			})
 			conn, err := grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(creds))
 			if err == nil {

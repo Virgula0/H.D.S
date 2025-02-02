@@ -13,11 +13,21 @@ import (
 	"runtime"
 )
 
+func emptyCerts(environment *environment.Environment) bool {
+	if environment.Keys.ClientCert == nil ||
+		environment.Keys.ClientKey == nil ||
+		environment.Keys.CACert == nil {
+		return true
+	}
+	return false
+}
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
+	env, err := environment.InitEnvironment()
 	// Initialize application environment
-	if _, err := environment.InitEnvironment(); err != nil {
+	if err != nil {
 		log.Fatalf("[CLIENT] %v", err.Error())
 	}
 
@@ -28,16 +38,21 @@ func main() {
 		log.Fatalf("[CLIENT] %v", err.Error())
 	}
 
+	// ping server with test method
+	if _, err := client.Test(); err != nil {
+		log.Fatalf("[CLIENT] server seems to be down or unreachable, %v", err)
+	}
+
 	// Initialize GUI login window; if exit is true, terminate the application
 	if exit := gui.InitLoginWindow(client); exit {
-		log.Warn("User exited")
+		log.Warn("[CLIENT] User exited")
 		os.Exit(0)
 	}
 
 	// Main process window
 	go func() {
 		if closed := gui.RunGUI(gui.StateUpdateCh); closed {
-			log.Warn("User exited")
+			log.Warn("[CLIENT] User exited")
 			os.Exit(0)
 		}
 	}()
@@ -64,6 +79,20 @@ func main() {
 		log.Fatalf("[CLIENT] %v", err.Error())
 	}
 
+	log.Println(info.GetEnabledEncryption())
+
+	// check encryption enabled
+	if info.GetEnabledEncryption() {
+		if emptyCerts(env) {
+			log.Fatalf("[CLIENT] %v", "encryption enabled but certs seems to be not well configured ")
+		} else {
+			err := client.ReloadConnectionWithCred(env.Keys.CACert, env.Keys.ClientKey, env.Keys.ClientCert)
+			if err != nil {
+				log.Fatalf("[CLIENT] %v", err)
+			}
+		}
+	}
+
 	// Fill up client info struct received from server
 	client.EntityClient = &entities.Client{
 		UserUUID:             info.GetUserUuid(),
@@ -73,6 +102,7 @@ func main() {
 		CreationTime:         info.GetCreationTime(),
 		LatestConnectionTime: info.GetLastConnectionTime(),
 		MachineID:            info.GetMachineId(),
+		EnabledEncryption:    info.GetEnabledEncryption(),
 	}
 
 	// Open the HashcatChat stream
