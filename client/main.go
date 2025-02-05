@@ -13,15 +13,6 @@ import (
 	"runtime"
 )
 
-func emptyCerts(environment *environment.Environment) bool {
-	if environment.Keys.ClientCert == nil ||
-		environment.Keys.ClientKey == nil ||
-		environment.Keys.CACert == nil {
-		return true
-	}
-	return false
-}
-
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -32,16 +23,18 @@ func main() {
 	}
 
 	// Initialize gRPC client
-	client, err := grpcclient.InitClient()
+	client, err := grpcclient.InitClient(env)
 
 	if err != nil {
 		log.Fatalf("[CLIENT] %v", err.Error())
 	}
 
+	log.Warn("[CLIENT] Invoking healthcheck this can take a while... ")
 	// ping server with test method
 	if _, err := client.Test(); err != nil {
 		log.Fatalf("[CLIENT] server seems to be down or unreachable, %v", err)
 	}
+	log.Info("[CLIENT] Healthcheck done. ")
 
 	// Initialize GUI login window; if exit is true, terminate the application
 	if exit := gui.InitLoginWindow(client); exit {
@@ -79,18 +72,10 @@ func main() {
 		log.Fatalf("[CLIENT] %v", err.Error())
 	}
 
-	log.Println(info.GetEnabledEncryption())
+	log.Infof("[CLIENT] Enabled encryption? (%v)", info.GetEnabledEncryption())
 
-	// check encryption enabled
-	if info.GetEnabledEncryption() {
-		if emptyCerts(env) {
-			log.Fatalf("[CLIENT] %v", "encryption enabled but certs seems to be not well configured ")
-		} else {
-			err := client.ReloadConnectionWithCred(env.Keys.CACert, env.Keys.ClientKey, env.Keys.ClientCert)
-			if err != nil {
-				log.Fatalf("[CLIENT] %v", err)
-			}
-		}
+	if info.GetEnabledEncryption() && env.EmptyCerts() {
+		log.Fatal("[CLIENT] Encryption is enabled but certs are missing")
 	}
 
 	// Fill up client info struct received from server

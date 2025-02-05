@@ -55,6 +55,7 @@ func updateClientConfigRuntime(service *handlers.ServiceHandler, storage *encryp
 		for _, client := range clients {
 			storage.UpdateClientConfig(client.ClientUUID, &encryption.ClientConfig{
 				EncryptionEnabled: client.EnabledEncryption,
+				ID:                client.ClientUUID,
 			})
 		}
 
@@ -89,10 +90,8 @@ func startGRPC(service *handlers.ServiceHandler) error {
 
 	for _, client := range clients {
 		// update in db, but only if the encryption was enabled
-		if client.EnabledEncryption {
-			if err := service.Usecase.UpdateCerts(client); err != nil {
-				return err
-			}
+		if err := service.Usecase.UpdateCerts(client); err != nil {
+			return err
 		}
 	}
 

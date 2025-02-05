@@ -24,7 +24,7 @@ const Limit = 5
 const DateTimeExample = "2006-01-02 15:04:05"
 
 var OrganizationCertName = "githubCert"
-var CertCommonName = "name"
+var CertCommonName = "HDS"
 
 // DatabaseUser variables + Config variables
 var (

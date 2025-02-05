@@ -46,3 +46,13 @@ func InitEnvironment() (*Environment, error) {
 		Keys:               keys,
 	}, nil
 }
+
+// EmptyCerts check if certs have been imported
+func (e *Environment) EmptyCerts() bool {
+	if e.Keys.ClientCert == nil ||
+		e.Keys.ClientKey == nil ||
+		e.Keys.CACert == nil {
+		return true
+	}
+	return false
+}

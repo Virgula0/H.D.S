@@ -130,13 +130,17 @@ func (uc *Usecase) SignCert(caCertPEM, caKeyPEM []byte, commonNameClientUUID str
 		SerialNumber: big.NewInt(time.Now().UnixNano()),
 		Subject: pkix.Name{
 			Organization: []string{constants.OrganizationCertName},
-			CommonName:   commonNameClientUUID,
+			CommonName:   constants.CertCommonName,
+			SerialNumber: commonNameClientUUID,
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour), // 10 year
 		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 		BasicConstraintsValid: true,
+		DNSNames: []string{
+			constants.CertCommonName, // SAN entry for the domain
+		},
 	}
 
 	// Sign the certificate with the CA

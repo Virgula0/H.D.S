@@ -45,12 +45,14 @@ func (s *Server) Run(ctx context.Context, opt *Option) error {
 	}
 
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{serverCert},
-		ClientCAs:    certPool,
-		ClientAuth:   tls.RequireAnyClientCert,
-		MinVersion:   tls.VersionTLS13,
+		Certificates:       []tls.Certificate{serverCert},
+		ClientCAs:          certPool, // verify client cert from server
+		ClientAuth:         tls.RequireAnyClientCert,
+		MinVersion:         tls.VersionTLS13,
+		InsecureSkipVerify: false,
 		GetConfigForClient: func(info *tls.ClientHelloInfo) (*tls.Config, error) {
 			// Get the client configuration
+			log.Infof("[gRPC] Client Name (ID) %s", info.ServerName)
 			clientConfig, exists := opt.ClientConfigStorage.GetClientConfig(info.ServerName)
 
 			nocert := &tls.Config{
@@ -71,13 +73,14 @@ func (s *Server) Run(ctx context.Context, opt *Option) error {
 				return nocert, nil
 			}
 
+			log.Infof("[gRPC] Encryption enabled for %s", info.ServerName)
+
 			// If encryption is enabled, create a new TLS config that requires mutual authentication
 			return &tls.Config{
-				Certificates:       []tls.Certificate{serverCert},
-				ClientCAs:          certPool,
-				ClientAuth:         tls.RequireAndVerifyClientCert,
-				InsecureSkipVerify: false,
-				MinVersion:         tls.VersionTLS13,
+				Certificates: []tls.Certificate{serverCert},
+				ClientCAs:    certPool,
+				ClientAuth:   tls.RequireAndVerifyClientCert,
+				MinVersion:   tls.VersionTLS13,
 			}, nil
 		},
 	}
