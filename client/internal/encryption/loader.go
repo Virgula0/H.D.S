@@ -36,12 +36,13 @@ func LoadTLSCredentials(caCertPEM, clientKeyPEM, clientCertPEM []byte, addTLS bo
 		ServerName:         utils.GenerateToken(32),
 	}
 
-	clientUUID, err := extractSerialNumber(clientCertPEM)
-	if err != nil {
-		return nil, err
-	}
-
 	if addTLS {
+
+		clientUUID, err := extractSerialNumber(clientCertPEM)
+		if err != nil {
+			return nil, err
+		}
+
 		log.Warn("[CLIENT] Setting up a TLS connection")
 
 		// Load the CA certificate
