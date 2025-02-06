@@ -23,7 +23,10 @@ const Limit = 5
 
 const DateTimeExample = "2006-01-02 15:04:05"
 
-// Database variables + Config variables
+var OrganizationCertName = "githubCert"
+var CertCommonName = "HDS"
+
+// DatabaseUser variables + Config variables
 var (
 	ServerHost = os.Getenv("BACKEND_HOST")
 	ServerPort = os.Getenv("BACKEND_PORT")
@@ -34,22 +37,29 @@ var (
 	DBHost     = os.Getenv("DB_HOST")
 	DBName     = os.Getenv("DB_NAME")
 
+	//  db for certs
+	DBCert     = os.Getenv("DB_CERT")
+	DBCertUser = os.Getenv("DB_CERT_USER")
+	DBCertPass = os.Getenv("DB_CERT_PASSWORD")
+
 	AllowRegistrations = os.Getenv("ALLOW_REGISTRATIONS")
 	DebugEnabled       = strings.ToLower(os.Getenv("DEBUG")) == "true"
-	WipeTables         = os.Getenv("RESET")
+	WipeTables         = strings.ToLower(os.Getenv("RESET")) == "true"
 
 	// GRPC
+
 	GrpcURL                            = os.Getenv("GRPC_URL")
 	GrpcTimeout, GrpcTimeoutParseError = time.ParseDuration(os.Getenv("GRPC_TIMEOUT"))
 
 	// TCP
+
 	TCPAddress = os.Getenv("TCP_ADDRESS")
 	TCPPort    = os.Getenv("TCP_PORT")
 )
 
 var HashCost = 12
 
-// ROLES Constants
+// Role Constants
 type Role string
 
 const RoleString = "role" // still not implemented

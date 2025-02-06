@@ -85,9 +85,13 @@ proto: ## Builds proto files
 	@../proto.sh
 .PHONY: proto
 
+run:
+	go run main.go
+.PHONY: run
+
 test: ## Starts tests locally
 	go test ./... --count=1 -p 1 # -p 1 do not run tests parallel. Avoid race conditions when starting/tearing down tests
 .PHONY: test
 
 build: proto links-build build-hcxtools build-client
-run: build run-compiled
+run-build: build run-compiled

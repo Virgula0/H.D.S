@@ -41,7 +41,7 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	clientsInstalled, counted, err := u.Usecase.GetClientsInstalled(userID.String(), request.Page)
+	clientsInstalled, counted, err := u.Usecase.GetClientsInstalledByUserID(userID.String(), request.Page)
 
 	if counted == 0 {
 		c.JSON(http.StatusNotFound, entities.UniformResponse{

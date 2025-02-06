@@ -29,6 +29,9 @@ jobs:
       DB_HOST: localhost
       DB_PORT: 3306
       DB_NAME: dp_hashcat
+      DB_CERT: dp_certs
+      DB_CERT_USER: certs
+      DB_CERT_PASSWORD: SUPERSECUREUNCRACKABLEPASSWORD
       ALLOW_REGISTRATIONS: true
       DEBUG: true
       RESET: true

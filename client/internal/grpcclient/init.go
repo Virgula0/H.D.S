@@ -3,11 +3,12 @@ package grpcclient
 import (
 	"context"
 	"github.com/Virgula0/progetto-dp/client/internal/constants"
+	"github.com/Virgula0/progetto-dp/client/internal/encryption"
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
+	"github.com/Virgula0/progetto-dp/client/internal/environment"
 	pb "github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"time"
 )
 
@@ -31,21 +32,23 @@ InitClient
 
 Initialize gRPC client
 */
-func InitClient() (*Client, error) {
-	ticker := time.NewTicker(time.Second * 5)
+func InitClient(env *environment.Environment) (*Client, error) {
 	var conn *grpc.ClientConn
 	var err error
-	for {
-		conn, err = grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
-		if err == nil {
-			log.Infof("[CLIENT] Connected with: %s", constants.GrpcURL)
-			break
-		}
-
-		log.Errorf("[CLIENT] Error while attempting to connect to grpc server. Re-attempting in 5 seconds.")
-		<-ticker.C
+	// use mTLS or not
+	creds, err := encryption.LoadTLSCredentials(env.Keys.CACert, env.Keys.ClientKey, env.Keys.ClientCert, !env.EmptyCerts())
+	if err != nil {
+		return nil, err
 	}
+
+	conn, err = grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(creds))
+
+	if err != nil {
+		log.Fatalf("[CLIENT] Cannot enstablish a connection with server %s %v", constants.GrpcURL, err)
+	}
+
+	log.Infof("[CLIENT] Connection instance created for %s", constants.GrpcURL)
 
 	duration, err := time.ParseDuration(constants.GrpcTimeout)
 	if err != nil {

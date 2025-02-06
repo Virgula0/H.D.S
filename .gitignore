@@ -44,3 +44,4 @@ client/*.so
 client/hashcat.outfiles
 
 externals/hcxtools
+client/certs

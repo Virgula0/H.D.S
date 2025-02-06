@@ -2,27 +2,28 @@ package testsuite
 
 import (
 	"context"
+	"crypto/tls"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/grpcserver/encryption"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/credentials"
 	"net/http"
 	"time"
-
-	pb "github.com/Virgula0/progetto-dp/server/protobuf/hds"
-	"github.com/stretchr/testify/suite"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/constants"
 	server "github.com/Virgula0/progetto-dp/server/backend/internal/grpcserver"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
-	usecaseHandler "github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
+	pb "github.com/Virgula0/progetto-dp/server/protobuf/hds"
+	"github.com/stretchr/testify/suite"
+	"google.golang.org/grpc"
 )
 
 type GRPCTestSuite struct {
 	suite.Suite
-	Service  *restapi.ServiceHandler // contains Usecase as well
-	Database *infrastructure.Database
+	Service      *restapi.ServiceHandler // contains Usecase as well
+	DatabaseUser *infrastructure.Database
+	DatabaseCert *infrastructure.Database
 
 	server        server.Server
 	serverContext context.Context
@@ -35,12 +36,16 @@ type GRPCTestSuite struct {
 }
 
 func (s *GRPCTestSuite) SetupSuite() {
-	dbConn, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
+	dbConnUser, err := infrastructure.NewDatabaseConnection(constants.DBUser, constants.DBPassword, constants.DBHost, constants.DBPort, constants.DBName)
 	s.Require().NoError(err)
-	s.Database = dbConn
+	s.DatabaseUser = dbConnUser
+
+	dbConnCerts, err := infrastructure.NewDatabaseConnection(constants.DBCertUser, constants.DBCertPass, constants.DBHost, constants.DBPort, constants.DBCert)
+	s.Require().NoError(err)
+	s.DatabaseCert = dbConnCerts
 
 	// Run rest api too
-	service, err := restapi.NewServiceHandler(dbConn) // run seeds internally
+	service, err := restapi.NewServiceHandler(dbConnUser, dbConnCerts) // run seeds internally
 	s.Require().NoError(err)
 	s.Service = &service
 
@@ -62,29 +67,41 @@ func (s *GRPCTestSuite) SetupSuite() {
 		s.Require().NoError(restErr)
 	}()
 
+	// create server certs, TODO: tests
+	err = s.Service.Usecase.CreateServerCerts()
+	s.Require().NoError(err)
+
 	// server context
 	srvCtx, srvCtxCancel := context.WithCancel(context.Background())
 	s.Require().NotNil(srvCtx)
 	s.Require().NotNil(srvCtxCancel)
 	s.serverContext = srvCtx
 
-	s.startServer(s.Service.Usecase)
+	s.startServer()
 }
 
-func (s *GRPCTestSuite) startServer(usecase *usecaseHandler.Usecase) {
+func (s *GRPCTestSuite) startServer() {
 
 	// create server
-	g := server.New(server.NewServerContext(usecase))
+	g := server.New(server.NewServerContext(s.Service.Usecase))
 	s.server = *g
 
 	errCh := make(chan error, 1)
 
+	caCert, caKey, serverCert, serverKey, err := s.Service.Usecase.GetServerCerts()
+	s.Require().NoError(err)
+
 	// run server in separate goroutine
 	go func() {
 		errCh <- g.Run(s.serverContext, &server.Option{
-			GrpcURL:         constants.GrpcURL,
-			GrpcConnTimeout: constants.GrpcTimeout,
-			Debug:           false,
+			Debug:               true,
+			GrpcURL:             constants.GrpcURL,
+			GrpcConnTimeout:     constants.GrpcTimeout,
+			CACert:              caCert,
+			CAKey:               caKey,
+			ServerCert:          serverCert,
+			ServerKey:           serverKey,
+			ClientConfigStorage: encryption.NewClientCertStore(),
 		})
 	}()
 
@@ -100,7 +117,10 @@ func (s *GRPCTestSuite) startClient(errCh chan error) {
 	for {
 		select {
 		case <-time.After(time.Second):
-			conn, err := grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			creds := credentials.NewTLS(&tls.Config{
+				InsecureSkipVerify: true, //#nosec:G402 // use unsecure connection for first client installation or if security is disabled
+			})
+			conn, err := grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(creds))
 			if err == nil {
 				// Connection established
 				s.clientConn = conn
