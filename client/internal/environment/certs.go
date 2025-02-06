@@ -31,11 +31,12 @@ func ClassifyFile(fileName string, data []byte) (enums.FileType, error) {
 			return enums.Unknown, fmt.Errorf("failed to parse certificate in file %s: %v", fileName, err)
 		}
 
-		if cert.IsCA {
+		switch {
+		case cert.IsCA:
 			return enums.CaCert, nil
-		} else if containsClientAuth(cert.ExtKeyUsage) {
+		case containsClientAuth(cert.ExtKeyUsage):
 			return enums.ClientCert, nil
-		} else {
+		default:
 			return enums.Unknown, nil
 		}
 

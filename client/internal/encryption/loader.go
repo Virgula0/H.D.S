@@ -42,7 +42,6 @@ func LoadTLSCredentials(caCertPEM, clientKeyPEM, clientCertPEM []byte, addTLS bo
 	}
 
 	if addTLS {
-
 		log.Warn("[CLIENT] Setting up a TLS connection")
 
 		// Load the CA certificate
@@ -59,9 +58,10 @@ func LoadTLSCredentials(caCertPEM, clientKeyPEM, clientCertPEM []byte, addTLS bo
 
 		// Create TransportCredentials using the CA cert and client certificate
 		creds = &tls.Config{
-			// Ignore verification from the server of CN and SIN otherwise we cannot send clientUUID as ServerName.
+			// Ignore verification from the server of CN and SAN otherwise we cannot send clientUUID as ServerName.
 			// We need to sent it before the handshake, this skips the verification just client side
-			InsecureSkipVerify: true,
+			// This should be robust using mTLS anyway: https://security.stackexchange.com/questions/88805/does-mutual-authentication-have-any-impact-on-mitm-possibilities
+			InsecureSkipVerify: true, //#nosec:G402 // skip client server cert verification
 			RootCAs:            caCertPool,
 			Certificates:       []tls.Certificate{cert},
 			ServerName:         clientUUID,
