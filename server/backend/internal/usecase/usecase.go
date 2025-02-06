@@ -57,7 +57,7 @@ func (uc *Usecase) GetServerCerts() (caCert, caKey, serverCert, serverKey []byte
 	return uc.repo.GetCerts()
 }
 
-func (uc *Usecase) createCA() ([]byte, []byte, error) {
+func (uc *Usecase) createCA() (caCertPEM, caKeyPEM []byte, err error) {
 	// Generate a private key for the CA
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -90,13 +90,13 @@ func (uc *Usecase) createCA() ([]byte, []byte, error) {
 	}
 
 	// Encode the CA certificate and private key to PEM
-	caCertPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caCertDER})
-	caKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: marshalPrivateKey})
+	caCertPEM = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caCertDER})
+	caKeyPEM = pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: marshalPrivateKey})
 
 	return caCertPEM, caKeyPEM, nil
 }
 
-func (uc *Usecase) SignCert(caCertPEM, caKeyPEM []byte, commonNameClientUUID string) ([]byte, []byte, error) {
+func (uc *Usecase) SignCert(caCertPEM, caKeyPEM []byte, commonNameClientUUID string) (certPEM, keyPEM []byte, err error) {
 	// Decode CA certificate
 	certBlock, _ := pem.Decode(caCertPEM)
 	if certBlock == nil {
@@ -155,8 +155,8 @@ func (uc *Usecase) SignCert(caCertPEM, caKeyPEM []byte, commonNameClientUUID str
 	}
 
 	// Encode the certificate and private key to PEM
-	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
-	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: marshalPrivateKey})
+	certPEM = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+	keyPEM = pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: marshalPrivateKey})
 
 	return certPEM, keyPEM, nil
 }

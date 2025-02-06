@@ -69,7 +69,7 @@ func (s *Server) Run(ctx context.Context, opt *Option) error {
 
 			if !exists && clientConfig.EncryptionEnabled {
 				log.Errorf("No config found for client: %s but the encryption is enabled, delete certs from client directory and retry", info.ServerName)
-				return nocert, fmt.Errorf("no config found for client: %s but the encryption is enabled, delete certs from client directory and retry") // Allow plaintext by default if no config is found
+				return nocert, fmt.Errorf("no config found for client: %s but the encryption is enabled, delete certs from client directory and retry", info.ServerName) // Allow plaintext by default if no config is found
 			}
 
 			if !clientConfig.EncryptionEnabled {
