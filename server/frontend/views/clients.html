@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>H.D.S Clients Dashboard</title>
     <!-- Bootstrap & Font Awesome -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/styles/bootstrap-4.3.1.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 
     <!-- Same main.css as handshake.html -->
@@ -130,6 +130,8 @@
                                         <th>Creation Time</th>
                                         <th>Latest Connection</th>
                                         <th>MachineID</th>
+                                        <th>EnableEncryption</th>
+                                        <th>Show Certs</th>
                                         <th>Delete</th>
                                     </tr>
                                     </thead>
@@ -142,6 +144,34 @@
                                         <td>{{ .CreationTime }}</td>
                                         <td>{{ .LatestConnectionTime }}</td>
                                         <td>{{ .MachineID }}</td>
+                                        <td>
+                                            <form action="/update-encryption" method="POST" class="encryption-form">
+                                                <input type="hidden" name="uuid" value="{{ .ClientUUID }}">
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input encryption-toggle"
+                                                           id="encryptionToggle-{{ .ClientUUID }}"
+                                                           name="enabled"
+                                                           {{if .EnabledEncryption}}checked{{end}}
+                                                           onchange="this.form.submit()">
+                                                    <label class="custom-control-label" for="encryptionToggle-{{ .ClientUUID }}"></label>
+                                                </div>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            {{ $clientUUID := .ClientUUID }}  <!-- Store the outer ClientUUID -->
+                                            {{ range $.Certs }}  <!-- Inner loop iterating over Certs -->
+                                            {{ if eqStr $clientUUID .ClientUUID }}  <!-- Compare outer and inner ClientUUID -->
+                                            <button class="btn btn-sm btn-primary show-certs-btn"
+                                                    data-uuid="{{ .ClientUUID }}"
+                                                    data-ca-cert="{{ .CACert }}"
+                                                    data-client-cert="{{ .ClientCert }}"
+                                                    data-client-key="{{ .ClientKey }}"
+                                                    {{ if not $.EnabledEncryption }}disabled{{ end }}>
+                                                Show Certs
+                                            </button>
+                                            {{ end }}
+                                            {{ end }}
+                                        </td>
                                         <td>
                                             <button class="btn btn-sm btn-danger delete-btn"
                                                     data-uuid="{{ .ClientUUID }}">
@@ -218,6 +248,37 @@
     </form>
 </div>
 
+<!-- Modal for encryption details -->
+<div class="modal fade" id="encryptionDetailsModal" tabindex="-1" role="dialog" aria-labelledby="encryptionDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="encryptionDetailsModalLabel">Encryption Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="caCert">CA Certificate</label>
+                    <textarea class="form-control" id="caCert" rows="5" readonly></textarea>
+                    <button class="btn btn-warning btn-sm mt-2 copy-btn" data-target="caCert">Copy</button>
+                </div>
+                <div class="form-group">
+                    <label for="clientCert">Client Certificate</label>
+                    <textarea class="form-control" id="clientCert" rows="5" readonly></textarea>
+                    <button class="btn btn-warning btn-sm mt-2 copy-btn" data-target="clientCert">Copy</button>
+                </div>
+                <div class="form-group">
+                    <label for="clientKey">Client Key</label>
+                    <textarea class="form-control" id="clientKey" rows="5" readonly></textarea>
+                    <button class="btn btn-warning btn-sm mt-2 copy-btn" data-target="clientKey">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="loadingOverlay" class="loading-overlay">
     <!-- Use Bootstrap's spinner -->
     <div class="spinner-border text-light" role="status">
@@ -232,3 +293,4 @@
 <script src="/scripts/dashboard.js"></script>
 </body>
 </html>
+

@@ -54,7 +54,7 @@ func (uc *Usecase) CreateServerCerts() error {
 
 // GetServerCerts if CreateServerCerts has been called before this, no error will be returned
 func (uc *Usecase) GetServerCerts() (caCert, caKey, serverCert, serverKey []byte, err error) {
-	return uc.repo.GetCerts()
+	return uc.repo.GetServerCerts()
 }
 
 func (uc *Usecase) createCA() (caCertPEM, caKeyPEM []byte, err error) {
@@ -257,12 +257,16 @@ func (uc *Usecase) UpdateCerts(client *entities.Client) error {
 	return uc.repo.UpdateCerts(client, caCert, clientCert, clientKey)
 }
 
+func (uc *Usecase) GetClientCertsByUserID(userUUID string) (certs []*entities.Cert, length int, e error) {
+	return uc.repo.GetClientCertsByUserID(userUUID)
+}
+
 func (uc *Usecase) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
 	return uc.repo.CreateClient(userUUID, machineID, latestIP, name)
 }
 
-func (uc *Usecase) CreateCertForClient(clientUUID string, clientCert, clientKey []byte) (string, error) {
-	return uc.repo.CreateCertForClient(clientUUID, clientCert, clientKey)
+func (uc *Usecase) CreateCertForClient(userUUID, clientUUID string, clientCert, clientKey []byte) (string, error) {
+	return uc.repo.CreateCertForClient(userUUID, clientUUID, clientCert, clientKey)
 }
 
 func (uc *Usecase) CreateHandshake(userUUID, ssid, bssid, status, handshakePcap string) (string, error) {

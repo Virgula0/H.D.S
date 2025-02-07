@@ -59,9 +59,21 @@ func (u Handler) ReturnClientsInstalled(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// get all certs by userID
+	certsInstalled, _, err := u.Usecase.GetClientCertsByUserID(userID.String())
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
+			StatusCode: http.StatusInternalServerError,
+			Details:    err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, entities.ReturnClientsInstalledResponse{
 		Length:  counted,
 		Clients: clientsInstalled,
+		Certs:   certsInstalled,
 	})
 }
 

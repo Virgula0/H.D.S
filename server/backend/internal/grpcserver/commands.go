@@ -96,7 +96,7 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 				return nil, err
 			}
 
-			_, err = s.Usecase.CreateCertForClient(newID, clientCert, clientKey)
+			_, err = s.Usecase.CreateCertForClient(userID, newID, clientCert, clientKey)
 			if err != nil {
 				return nil, err
 			}

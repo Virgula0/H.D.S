@@ -62,6 +62,7 @@ func (u Page) ListClients(w http.ResponseWriter, r *http.Request) {
 	// RenderTemplate the login template
 	u.Usecase.RenderTemplate(w, constants.ClientView, map[string]any{
 		"Clients":     clients.Clients,
+		"Certs":       clients.Certs,
 		"CurrentPage": page,
 		"TotalPages":  totalPages,
 		"Error":       errorMessage,

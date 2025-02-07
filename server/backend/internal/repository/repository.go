@@ -24,6 +24,10 @@ type generatedServerCerts struct {
 	serverKey  []byte
 }
 
+type queryHandler struct {
+	*sql.DB
+}
+
 type Repository struct {
 	dbUser  *sql.DB
 	dbCerts *sql.DB
@@ -47,14 +51,57 @@ func (repo *Repository) InjectCerts(caCert, caKey, serverCert, serverKey []byte)
 	repo.certs.serverKey = serverKey
 }
 
-// GetCerts return certs
-func (repo *Repository) GetCerts() (caCert, caKey, serverCert, serverKey []byte, err error) {
+// GetServerCerts return certs
+func (repo *Repository) GetServerCerts() (caCert, caKey, serverCert, serverKey []byte, err error) {
 	if repo.certs.caCert == nil || repo.certs.caKey == nil ||
 		repo.certs.serverCert == nil || repo.certs.serverKey == nil {
 		return nil, nil, nil, nil, customErrors.ErrCertsNotInitialized
 	}
 
 	return repo.certs.caCert, repo.certs.caKey, repo.certs.serverCert, repo.certs.serverKey, nil
+}
+
+// countQueryResults function to count results
+func (q *queryHandler) countQueryResults(query string, args ...any) (int, error) {
+
+	var count int
+	// Query for a value based on a single row.
+	if err := q.QueryRow(query, args...).Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// queryEntities generic function for abstracting select statements in tables
+func (q *queryHandler) queryEntities(query string, columnsFunc func() (any, []any), args ...any) ([]any, error) {
+	var ent []any
+
+	rows, err := q.Query(query, args...)
+
+	if err != nil {
+		log.Error(err.Error())
+		return nil, customErrors.ErrInternalServerError
+	}
+
+	defer rows.Close()
+
+	// Loop through the rows and scan into the provided entity
+	for rows.Next() {
+		rowEntity, rowColumns := columnsFunc()
+
+		if err := rows.Scan(rowColumns...); err != nil {
+			log.Error(err.Error())
+			return nil, customErrors.ErrInternalServerError
+		}
+		ent = append(ent, rowEntity)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Error(err.Error())
+		return nil, customErrors.ErrInternalServerError
+	}
+
+	return ent, nil
 }
 
 // CreateUser creates a new record in the user and role tables
@@ -116,53 +163,9 @@ func (repo *Repository) GetUserByUsername(username string) (*entities.User, *ent
 	return &user, &role, nil
 }
 
-// countQueryResults function to count results
-func (repo *Repository) countQueryResults(query string, args ...any) (int, error) {
-
-	var count int
-	// Query for a value based on a single row.
-	if err := repo.dbUser.QueryRow(query, args...).Scan(&count); err != nil {
-		return 0, err
-	}
-	return count, nil
-
-}
-
-// queryEntities generic function for abstracting select statements in tables
-func (repo *Repository) queryEntities(query string, columnsFunc func() (any, []any), args ...any) ([]any, error) {
-	var ent []any
-
-	rows, err := repo.dbUser.Query(query, args...)
-
-	if err != nil {
-		log.Error(err.Error())
-		return nil, customErrors.ErrInternalServerError
-	}
-	defer rows.Close()
-
-	// Loop through the rows and scan into the provided entity
-	for rows.Next() {
-		rowEntity, rowColumns := columnsFunc()
-
-		if err := rows.Scan(rowColumns...); err != nil {
-			log.Error(err.Error())
-			return nil, customErrors.ErrInternalServerError
-		}
-		ent = append(ent, rowEntity)
-	}
-
-	if err := rows.Err(); err != nil {
-		log.Error(err.Error())
-		return nil, customErrors.ErrInternalServerError
-	}
-
-	return ent, nil
-}
-
-// GetClientsInstalledByUserID Needed in main.go for updating certs on existing clients every time the server restart
+// GetClientsInstalled Needed in main.go for updating certs on existing clients every time the server restart
 func (repo *Repository) GetClientsInstalled() (clients []*entities.Client, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s", entities.ClientTableName)
-	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s", entities.ClientTableName)
 
 	columnsFunc := func() (any, []any) {
 		// Each time called, we make a fresh instance
@@ -182,7 +185,8 @@ func (repo *Repository) GetClientsInstalled() (clients []*entities.Client, lengt
 		return c, cols
 	}
 
-	results, err := repo.queryEntities(query, columnsFunc)
+	qq := queryHandler{repo.dbUser}
+	results, err := qq.queryEntities(query, columnsFunc)
 
 	if err != nil {
 		return nil, -1, err
@@ -196,15 +200,51 @@ func (repo *Repository) GetClientsInstalled() (clients []*entities.Client, lengt
 		clients = append(clients, client)
 	}
 
-	count, err := repo.countQueryResults(queryCount)
+	return clients, len(clients), err
+}
 
-	return clients, count, err
+// GetClientCertsByUserID REST-API GetClientCertsByUserID
+func (repo *Repository) GetClientCertsByUserID(userUUID string) (certs []*entities.Cert, length int, e error) {
+	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ?", entities.CertTableName)
+
+	columnsFunc := func() (any, []any) {
+		// Each time called, we make a fresh instance
+		c := &entities.Cert{}
+
+		// Return the entity plus the columns slice
+		cols := []any{
+			&c.CertUUID,
+			&c.UserUUID,
+			&c.ClientUUID,
+			&c.CACert,
+			&c.ClientCert,
+			&c.ClientKey,
+		}
+		return c, cols
+	}
+
+	qq := queryHandler{repo.dbCerts}
+	results, err := qq.queryEntities(query, columnsFunc, userUUID)
+
+	if err != nil {
+		return nil, -1, err
+	}
+
+	for _, item := range results {
+		cert, ok := item.(*entities.Cert)
+		if !ok {
+			return nil, 0, fmt.Errorf("%w *entities.Cert", customErrors.ErrInvalidType)
+		}
+		certs = append(certs, cert)
+	}
+
+	return certs, len(certs), err
 }
 
 // GetClientsInstalledByUserID REST-API GetClientsInstalledByUserID
 func (repo *Repository) GetClientsInstalledByUserID(userUUID string, offset uint) (clients []*entities.Client, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? LIMIT %v OFFSET ?", entities.ClientTableName, constants.Limit) // TODO: remove WHERE conditions for admin roles
-	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? ", entities.ClientTableName)
+	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ?", entities.ClientTableName)
 
 	columnsFunc := func() (any, []any) {
 		// Each time called, we make a fresh instance
@@ -224,7 +264,8 @@ func (repo *Repository) GetClientsInstalledByUserID(userUUID string, offset uint
 		return c, cols
 	}
 
-	results, err := repo.queryEntities(query, columnsFunc, userUUID, (offset-1)*constants.Limit)
+	qq := queryHandler{repo.dbUser}
+	results, err := qq.queryEntities(query, columnsFunc, userUUID, (offset-1)*constants.Limit)
 
 	if err != nil {
 		return nil, -1, err
@@ -238,7 +279,7 @@ func (repo *Repository) GetClientsInstalledByUserID(userUUID string, offset uint
 		clients = append(clients, client)
 	}
 
-	count, err := repo.countQueryResults(queryCount, userUUID)
+	count, err := qq.countQueryResults(queryCount, userUUID)
 
 	return clients, count, err
 }
@@ -262,7 +303,8 @@ func (repo *Repository) GetRaspberryPiByUserID(userUUID string, offset uint) (rs
 		return rsp, cols
 	}
 
-	results, err := repo.queryEntities(query, columnsFunc, userUUID, (offset-1)*constants.Limit)
+	qq := queryHandler{repo.dbUser}
+	results, err := qq.queryEntities(query, columnsFunc, userUUID, (offset-1)*constants.Limit)
 
 	if err != nil {
 		return nil, -1, err
@@ -276,7 +318,7 @@ func (repo *Repository) GetRaspberryPiByUserID(userUUID string, offset uint) (rs
 		rsps = append(rsps, rsp)
 	}
 
-	count, err := repo.countQueryResults(queryCount, userUUID)
+	count, err := qq.countQueryResults(queryCount, userUUID)
 
 	return rsps, count, err
 }
@@ -308,7 +350,8 @@ func (repo *Repository) GetHandshakesByUserID(userUUID string, offset uint) (han
 		return handshake, cols
 	}
 
-	results, err := repo.queryEntities(query, columnsFunc, userUUID, (offset-1)*constants.Limit)
+	qq := queryHandler{repo.dbUser}
+	results, err := qq.queryEntities(query, columnsFunc, userUUID, (offset-1)*constants.Limit)
 
 	if err != nil {
 		return nil, -1, err
@@ -322,7 +365,7 @@ func (repo *Repository) GetHandshakesByUserID(userUUID string, offset uint) (han
 		handshakes = append(handshakes, hdk)
 	}
 
-	count, err := repo.countQueryResults(queryCount, userUUID)
+	count, err := qq.countQueryResults(queryCount, userUUID)
 
 	return handshakes, count, err
 }
@@ -330,7 +373,6 @@ func (repo *Repository) GetHandshakesByUserID(userUUID string, offset uint) (han
 // GetHandshakesByStatus GRPC - Status of all handshake by a given filter status
 func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes []*entities.Handshake, length int, e error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE status = ?", entities.HandshakeTableName)
-	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE status = ? ", entities.HandshakeTableName)
 
 	columnsFunc := func() (any, []any) {
 		// Each time called, we make a fresh instance
@@ -353,8 +395,8 @@ func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes [
 		}
 		return handshake, cols
 	}
-
-	results, err := repo.queryEntities(query, columnsFunc, filterStatus)
+	qq := queryHandler{repo.dbUser}
+	results, err := qq.queryEntities(query, columnsFunc, filterStatus)
 
 	if err != nil {
 		return nil, -1, err
@@ -368,16 +410,13 @@ func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes [
 		handshakes = append(handshakes, hdk)
 	}
 
-	count, err := repo.countQueryResults(queryCount, filterStatus)
-
-	return handshakes, count, err
+	return handshakes, len(results), err
 }
 
 // GetHandshakesByBSSIDAndSSID TCP/IP - Check if a handshake is already registered
 func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string) (handshakes []*entities.Handshake, length int, e error) {
 
 	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND bssid = ? AND ssid = ?", entities.HandshakeTableName)
-	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM %s  WHERE uuid_user = ? AND bssid = ? AND ssid = ?", entities.HandshakeTableName)
 
 	columnsFunc := func() (any, []any) {
 		// Each time called, we make a fresh instance
@@ -400,7 +439,9 @@ func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string
 		}
 		return handshake, cols
 	}
-	results, err := repo.queryEntities(query, columnsFunc, userUUID, bssid, ssid)
+
+	qq := queryHandler{repo.dbUser}
+	results, err := qq.queryEntities(query, columnsFunc, userUUID, bssid, ssid)
 
 	if err != nil {
 		return nil, -1, err
@@ -414,21 +455,19 @@ func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string
 		handshakes = append(handshakes, hdk)
 	}
 
-	count, err := repo.countQueryResults(queryCount, userUUID, bssid, ssid)
-
-	return handshakes, count, err
+	return handshakes, len(results), err
 }
 
 // CreateCertForClient GRPC - Called only once when a client does not exist
-func (repo *Repository) CreateCertForClient(clientUUID string, clientCert, clientKey []byte) (string, error) {
+func (repo *Repository) CreateCertForClient(userUUID, clientUUID string, clientCert, clientKey []byte) (string, error) {
 
 	if repo.certs.caCert == nil || repo.certs.caKey == nil {
 		return "", customErrors.ErrCertsNotInitialized
 	}
 
 	certID := uuid.New().String()
-	query := fmt.Sprintf("INSERT INTO %s(uuid, client_uuid, ca_cert, client_cert, client_key) VALUES(?,?,?,?,?)", entities.CertTableName)
-	_, err := repo.dbCerts.Exec(query, certID, clientUUID, repo.certs.caCert, clientCert, clientKey)
+	query := fmt.Sprintf("INSERT INTO %s(uuid, uuid_user, client_uuid, ca_cert, client_cert, client_key) VALUES(?,?,?,?,?,?)", entities.CertTableName)
+	_, err := repo.dbCerts.Exec(query, certID, userUUID, clientUUID, repo.certs.caCert, clientCert, clientKey)
 	if err != nil {
 		return "", err
 	}
@@ -562,7 +601,8 @@ func (repo *Repository) updateClientTaskCommon(userUUID, handshakeUUID, assigned
 		return handshake, cols
 	}
 
-	handshakes, err := repo.queryEntities(selectQuery, columnsFunc, userUUID, handshakeUUID)
+	qq := queryHandler{repo.dbUser}
+	handshakes, err := qq.queryEntities(selectQuery, columnsFunc, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -594,7 +634,7 @@ func (repo *Repository) updateClientTaskCommon(userUUID, handshakeUUID, assigned
 	}
 
 	// Fetch updated handshake
-	handshakes, err = repo.queryEntities(selectQuery, columnsFunc, userUUID, handshakeUUID)
+	handshakes, err = qq.queryEntities(selectQuery, columnsFunc, userUUID, handshakeUUID)
 	if err != nil {
 		return nil, err
 	}

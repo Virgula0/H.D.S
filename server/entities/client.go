@@ -16,6 +16,7 @@ type Client struct {
 type ReturnClientsInstalledResponse struct {
 	Length  int       `json:"length"`
 	Clients []*Client `json:"clients"`
+	Certs   []*Cert   `json:"certs"`
 }
 
 type DeleteClientRequest struct {

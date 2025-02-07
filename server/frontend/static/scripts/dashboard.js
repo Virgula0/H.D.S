@@ -1,81 +1,84 @@
-$(document).ready(function() {
-    // LOADING OVERLAY (spinner) - optional
-    setTimeout(() => {
-        $("#loadingOverlay").fadeOut(400);
-    }, 500);
+$(function () {
+    // ------------------------------------------------
+    // LOADING OVERLAY
+    // ------------------------------------------------
+    const $loadingOverlay = $("#loadingOverlay");
+    setTimeout(() => $loadingOverlay.fadeOut(400), 500);
 
-    function showLoading() {
-        $("#loadingOverlay").show();
-    }
-    function hideLoading() {
-        $("#loadingOverlay").fadeOut(300);
-    }
+    const showLoading = () => $loadingOverlay.show();
+    const hideLoading = () => $loadingOverlay.fadeOut(300);
 
-    // ==================================
+    // ------------------------------------------------
     // DARK MODE
-    // ==================================
-    function setDarkMode(isDark) {
+    // ------------------------------------------------
+    const setDarkMode = (isDark) => {
         document.documentElement.classList.toggle("dark-mode", isDark);
         document.body.classList.toggle("dark-mode", isDark);
         localStorage.setItem("darkMode", isDark);
 
-        // Update theme toggle button icon
         const $themeToggle = $("#theme-toggle i");
         if (isDark) {
             $themeToggle.removeClass("fa-moon").addClass("fa-sun");
         } else {
             $themeToggle.removeClass("fa-sun").addClass("fa-moon");
         }
-    }
+    };
 
-    function isDarkMode() {
-        return localStorage.getItem("darkMode") === "true";
-    }
+    const isDarkMode = () => localStorage.getItem("darkMode") === "true";
 
-    function applyDarkModeWithoutTransition(isDark) {
+    // Apply dark mode without transition to avoid flicker on page load
+    const applyDarkModeWithoutTransition = (isDark) => {
         document.documentElement.style.transition = "none";
         document.body.style.transition = "none";
         setDarkMode(isDark);
-        document.documentElement.offsetHeight; // Force reflow
+        // Force reflow to apply changes immediately
+        document.documentElement.offsetHeight;
         document.documentElement.style.transition = "";
         document.body.style.transition = "";
-    }
+    };
 
-    // Apply dark mode on page load if it was previously set
     applyDarkModeWithoutTransition(isDarkMode());
 
-    // Fade in the main content
+    // Fade in main content
     $("#page-content-wrapper").addClass("loaded");
 
-    // Update the theme toggle button icon initially
-    const $themeToggleIcon = $("#theme-toggle i");
-    $themeToggleIcon.toggleClass("fa-sun", isDarkMode());
-    $themeToggleIcon.toggleClass("fa-moon", !isDarkMode());
-
-    // Sidebar toggle
-    $(document).on("click", "#menu-toggle", function(e) {
+    // ------------------------------------------------
+    // SIDEBAR & THEME TOGGLES
+    // ------------------------------------------------
+    $(document).on("click", "#menu-toggle", (e) => {
         e.preventDefault();
         $("#wrapper").toggleClass("toggled");
         $("body").toggleClass("sidebar-open");
     });
 
-    // Toggle dark mode
-    $(document).on("click", "#theme-toggle", function() {
-        const newDarkMode = !isDarkMode();
-        setDarkMode(newDarkMode);
+    $(document).on("click", "#theme-toggle", () => {
+        setDarkMode(!isDarkMode());
     });
 
-    // ==================================
-    // HANDSHAKE-RELATED (if present)
-    // ==================================
+    // ------------------------------------------------
+    // SELECT POPULATION (HANDSHAKE-RELATED)
+    // ------------------------------------------------
+    const populateSelect = (selector, options, placeholder = "") => {
+        const $select = $(selector);
+        if ($select.length) {
+            $select.empty();
+            if (placeholder) {
+                $select.append(`<option value="">${placeholder}</option>`);
+            }
+            options.forEach((opt) =>
+                $select.append(`<option value="${opt.value}">${opt.label}</option>`)
+            );
+        }
+    };
+
     const attackModes = [
         { value: 0, label: "Straight" },
         { value: 1, label: "Combination" },
         { value: 3, label: "Brute-force" },
         { value: 6, label: "Hybrid Wordlist + Mask" },
-        { value: 7, label: "Hybrid Mask + Wordlist" }
+        { value: 7, label: "Hybrid Mask + Wordlist" },
     ];
-    // Hash mode options (UPDATED)
+
     const hashModes = [
         { value: 900,  label: "MD4 | Raw Hash" },
         { value: 0,    label: "MD5 | Raw Hash" },
@@ -439,114 +442,88 @@ $(document).ready(function() {
         { value: 124,   label: "Django (SHA-1)" },
     ];
 
-    // Populate Attack/Hash modes if the handshake form is present
-    if ($("#attackMode").length > 0) {
-        attackModes.forEach(mode => {
-            $("#attackMode").append(`<option value="${mode.value}">${mode.label}</option>`);
-        });
-    }
-    if ($("#hashMode").length > 0) {
-        hashModes.forEach(mode => {
-            $("#hashMode").append(`<option value="${mode.value}">${mode.label}</option>`);
-        });
-    }
+    populateSelect("#attackMode", attackModes, "Select Attack Mode");
+    populateSelect("#hashMode", hashModes, "Select Hash Mode");
 
     // Enable/disable wordlist based on selected attack mode
-    $("#attackMode").change(function() {
-        if ($(this).length > 0) {
-            const selectedMode = parseInt($(this).val());
-            $("#wordlist").prop("disabled", ![0, 1, 6, 7].includes(selectedMode));
-        }
+    $("#attackMode").change(function () {
+        const selectedMode = parseInt($(this).val(), 10);
+        $("#wordlist").prop("disabled", ![0, 1, 6, 7].includes(selectedMode));
     });
 
-    // If there's a global "clientUUIDs" string (for handshake page) & a #clientUUID select
-    if (typeof clientUUIDs === "string" && $("#clientUUID").length > 0) {
-        const $clientSelect = $("#clientUUID");
-        $clientSelect.empty();
-        $clientSelect.append('<option value="">-- Select a client --</option>');
-        const uuidArray = clientUUIDs.split(";");
-        uuidArray.forEach(uuid => {
-            const splitted = uuid.split(":");
-            const name = splitted[0];
-            const realUUID = splitted[1];
-            const trimmed = realUUID.trim();
-            if (trimmed) {
-                $clientSelect.append(`<option value="${trimmed}">${name.trim()}</option>`);
+    // Populate the client select if global clientUUIDs exists
+    if (typeof clientUUIDs === "string" && $("#clientUUID").length) {
+        const $clientSelect = $("#clientUUID").empty().append(
+            '<option value="">-- Select a client --</option>'
+        );
+        clientUUIDs.split(";").forEach((uuid) => {
+            const [name, realUUID] = uuid.split(":");
+            if (realUUID && realUUID.trim()) {
+                $clientSelect.append(
+                    `<option value="${realUUID.trim()}">${name.trim()}</option>`
+                );
             }
         });
     }
 
-    // "Crack" button (Handshakes)
-    $(document).on("click", ".crack-btn", function() {
+    // ------------------------------------------------
+    // MODAL & ACTION BUTTONS (HANDSHAKE)
+    // ------------------------------------------------
+    $(document).on("click", ".crack-btn", function () {
         const uuid = $(this).data("uuid");
         $("#crackUUID").val(uuid);
         $("#crackModal").modal("show");
     });
 
-    // DELETE HANDSHAKE (still done via JS + $.post)
-    $(document).on("click", ".delete-btn", function() {
+    $(document).on("click", ".delete-btn", function () {
         const uuid = $(this).data("uuid");
         $("#deleteUUID").val(uuid);
         $("#deleteConfirmModal").modal("show");
     });
 
-    // Hashcat options / logs
-    $(document).on("click", ".hashcat-options-btn", function() {
+    $(document).on("click", ".hashcat-options-btn", function () {
         const options = $(this).data("options");
         $("#hashcatOptionsContent").text(options !== "<nil>" ? options : "No scan run");
         $("#hashcatOptionsModal").modal("show");
     });
-    $(document).on("click", ".hashcat-logs-btn", function() {
+
+    $(document).on("click", ".hashcat-logs-btn", function () {
         const logs = $(this).data("logs");
-        //TODO: this .html can be exploited, change
-        $("#hashcatLogsContent").html(logs.replace(/\n/g, '<br>') || "No scan run");
+        // Note: using .html here; ensure logs are sanitized to avoid XSS
+        $("#hashcatLogsContent").html(logs.replace(/\n/g, "<br>") || "No scan run");
         $("#hashcatLogsModal").modal("show");
     });
 
-    // ==================================
-    // SEARCH in each page's table
-    // ==================================
-    $("#searchInput").on("keyup", function() {
+    // ------------------------------------------------
+    // TABLE SEARCH
+    // ------------------------------------------------
+    $("#searchInput").on("keyup", function () {
         const searchTerm = $(this).val().toLowerCase();
-
-        // 1) Handshakes (#handshakeTableBody)
-        if ($("#handshakeTableBody").length > 0) {
-            $("#handshakeTableBody tr").each(function() {
-                const rowText = $(this).text().toLowerCase();
-                $(this).toggle(rowText.indexOf(searchTerm) > -1);
-            });
-        }
-
-        // 2) Clients (#clientTableBody)
-        if ($("#clientTableBody").length > 0) {
-            $("#clientTableBody tr").each(function() {
-                const rowText = $(this).text().toLowerCase();
-                $(this).toggle(rowText.indexOf(searchTerm) > -1);
-            });
-        }
-
-        // 3) RaspberryPi (#raspberrypiTableBody)
-        if ($("#raspberrypiTableBody").length > 0) {
-            $("#raspberrypiTableBody tr").each(function() {
-                const rowText = $(this).text().toLowerCase();
-                $(this).toggle(rowText.indexOf(searchTerm) > -1);
-            });
-        }
+        ["#handshakeTableBody", "#clientTableBody", "#raspberrypiTableBody"].forEach(
+            (selector) => {
+                $(selector)
+                    .find("tr")
+                    .each(function () {
+                        $(this).toggle($(this).text().toLowerCase().includes(searchTerm));
+                    });
+            }
+        );
     });
 
-    // Initialize tooltips
+    // ------------------------------------------------
+    // TOOLTIP INITIALIZATION
+    // ------------------------------------------------
     $('[data-toggle="tooltip"]').tooltip();
 
-    // If wordlist exists, enable by default for Straight mode (0)
-    if ($("#wordlist").length > 0) {
+    // Enable the wordlist by default (Straight mode)
+    if ($("#wordlist").length) {
         $("#wordlist").prop("disabled", false);
     }
 
-
-    // =========================
-    // PAGINATION W/ AJAX (handshake)
-    // =========================
-    $(document).on("click", ".pagination .page-link", function(e) {
+    // ------------------------------------------------
+    // PAGINATION WITH AJAX (HANDSHAKE)
+    // ------------------------------------------------
+    $(document).on("click", ".pagination .page-link", function (e) {
         e.preventDefault();
         const href = $(this).attr("href");
         if (href) {
@@ -556,7 +533,7 @@ $(document).ready(function() {
 
             $.ajax({
                 url: href,
-                success: function(data) {
+                success: function (data) {
                     const $newContent = $(data).find("#page-content-wrapper").html();
                     $("#page-content-wrapper").html($newContent);
                     setDarkMode(currentDarkMode);
@@ -565,18 +542,59 @@ $(document).ready(function() {
                         hideLoading();
                     }, 100);
                 },
-                error: function() {
+                error: function () {
                     hideLoading();
                     alert("Failed to load page.");
-                }
+                },
             });
         }
     });
 
-    // Check for ?darkMode=true|false in URL
+    // ------------------------------------------------
+    // URL PARAMETER: DARK MODE
+    // ------------------------------------------------
     const urlParams = new URLSearchParams(window.location.search);
     const darkModeParam = urlParams.get("darkMode");
     if (darkModeParam !== null) {
         setDarkMode(darkModeParam === "true");
     }
+
+    // ------------------------------------------------
+    // ENCRYPTION DETAILS & COPY BUTTONS
+    // ------------------------------------------------
+    const showEncryptionDetails = (caCert, clientCert, clientKey) => {
+        $("#caCert").val(caCert);
+        $("#clientCert").val(clientCert);
+        $("#clientKey").val(clientKey);
+        $("#encryptionDetailsModal").modal("show");
+    };
+
+    $(document).on("click", ".copy-btn", function () {
+        const targetId = $(this).data("target");
+        const textArea = document.getElementById(targetId);
+        textArea.select();
+        document.execCommand("copy");
+
+        const $btn = $(this);
+        const originalText = $btn.text();
+        $btn.text("Copied!");
+        setTimeout(() => $btn.text(originalText), 1500);
+    });
+
+    $(document).on("click", ".show-certs-btn", function () {
+        const caCert = $(this).data("ca-cert");
+        const clientCert = $(this).data("client-cert");
+        const clientKey = $(this).data("client-key");
+        showEncryptionDetails(caCert, clientCert, clientKey);
+    });
+
+    // Toggle encryption state and update associated form field
+    $(document).on("change", ".encryption-toggle", function () {
+        const isEnabled = this.checked;
+        $(this).closest("tr").find(".show-certs-btn").prop("disabled", !isEnabled);
+        $(this)
+            .closest("form")
+            .find('input[name="enabled"]')
+            .val(isEnabled ? "TRUE" : "FALSE");
+    });
 });

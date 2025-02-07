@@ -76,7 +76,7 @@ func (s *GRPCServerTestSuite) SetupSuite() {
 	clientCert, clientKey, err := s.Service.Usecase.SignCert(caCert, caKey, clientID)
 	s.Require().NoError(err)
 
-	_, err = s.Service.Usecase.CreateCertForClient(clientID, clientCert, clientKey)
+	_, err = s.Service.Usecase.CreateCertForClient(s.UserFixture.UserUUID, clientID, clientCert, clientKey)
 	s.Require().NoError(err)
 
 	s.UserClientRegistered.clientCert = clientCert
