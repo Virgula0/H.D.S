@@ -208,7 +208,7 @@ While security auditing and privacy were not primary objectives for this project
     - ~~Credentials are sent via command-line arguments, which could be stolen easily if a malicious actor have access remotely to the machine.~~ Fixed with https://github.com/Virgula0/H.D.S/pull/39
 
 3. **gRPC Security:**
-    - gRPC communication currently lacks **SSL/TLS certificates** for encryption.
+    - ~~gRPC communication currently lacks **SSL/TLS certificates** for encryption.~~ Fixed with https://github.com/Virgula0/H.D.S/pull/50
 
 ### Security Measures Implemented:
 
