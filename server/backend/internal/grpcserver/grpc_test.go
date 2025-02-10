@@ -119,7 +119,7 @@ func (s *GRPCServerTestSuite) Test_GetClientInfo_Method() {
 		{
 			testname: "Non Registered Client",
 			request: &pb.GetClientInfoRequest{
-				Jwt:       s.TokenFixture,
+				Jwt:       s.UserTokenFixture,
 				MachineId: s.UserClientUnregistered.MachineID,
 				Name:      s.UserClientUnregistered.Name,
 			},
@@ -132,7 +132,7 @@ func (s *GRPCServerTestSuite) Test_GetClientInfo_Method() {
 		{
 			testname: "IsRegistered true on a client with MACHINE_ID already present in the table",
 			request: &pb.GetClientInfoRequest{
-				Jwt:       s.TokenFixture,
+				Jwt:       s.UserTokenFixture,
 				Name:      s.UserClientRegistered.Name,
 				MachineId: s.UserClientRegistered.MachineID,
 			},
@@ -151,6 +151,8 @@ func (s *GRPCServerTestSuite) Test_GetClientInfo_Method() {
 			defer cancel()
 
 			resp, err := client.GetClientInfo(ctx, tt.request)
+
+			log.Error(resp)
 
 			// Use require to assert no errors in the RPC call
 			s.Require().NoError(err, "Test RPC failed")
@@ -177,7 +179,7 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_Method() {
 		{
 			testname: "Expect input task from server",
 			request: &pb.ClientTaskMessageFromClient{
-				Jwt: s.TokenFixture,
+				Jwt: s.UserTokenFixture,
 			},
 			expectedOutput: &pb.ClientTaskMessageFromServer{
 				Tasks: []*pb.ClientTask{
@@ -323,7 +325,7 @@ func (s *GRPCServerTestSuite) Test_HashcatMessageService_UpdateClientTaskSuccess
 
 	testName := "Client should be able to update its own info about its handshakes"
 	request := &pb.ClientTaskMessageFromClient{
-		Jwt:            s.TokenFixture,
+		Jwt:            s.UserTokenFixture,
 		HandshakeUuid:  s.HandshakeValidID,
 		ClientUuid:     s.UserClientRegistered.ClientUUID,
 		HashcatOptions: "updated",

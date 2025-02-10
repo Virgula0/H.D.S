@@ -62,6 +62,7 @@ func (u Page) ListClients(w http.ResponseWriter, r *http.Request) {
 	// RenderTemplate the login template
 	u.Usecase.RenderTemplate(w, constants.ClientView, map[string]any{
 		"Clients":     clients.Clients,
+		"Certs":       clients.Certs,
 		"CurrentPage": page,
 		"TotalPages":  totalPages,
 		"Error":       errorMessage,
@@ -90,6 +91,40 @@ func (u Page) DeleteClient(w http.ResponseWriter, r *http.Request) {
 
 	result, err := u.Usecase.DeleteClientRequest(token.(string), &entities.DeleteClientRequest{
 		ClientUUID: request.UUID,
+	})
+
+	if err != nil && result != nil && !result.Status {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.ClientPage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.ClientPage), http.StatusFound)
+}
+
+type UpdateClientEncryptionStatusRequest struct {
+	ClientUUID string `form:"clientUUID" validate:"required"`
+	Encryption *bool  `form:"enabled" validate:"required"`
+}
+
+// UpdateClientEncryptionStatus Accept post request for deleting a cliemt
+func (u Page) UpdateClientEncryptionStatus(w http.ResponseWriter, r *http.Request) {
+	var request UpdateClientEncryptionStatusRequest
+	token := r.Context().Value(constants.AuthToken)
+
+	// Check if the token exists
+	if token == nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.Login, url.QueryEscape(customErrors.ErrNotAuthenticated.Error())), http.StatusFound)
+		return
+	}
+
+	if err := utils.ValidatePOSTFormRequest(&request, r); err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.ClientPage, url.QueryEscape(err.Error())), http.StatusFound)
+		return
+	}
+
+	result, err := u.Usecase.UpdateClientEncryptionStatus(token.(string), &entities.UpdateEncryptionClientStatusRequest{
+		ClientUUID: request.ClientUUID,
+		Status:     request.Encryption,
 	})
 
 	if err != nil && result != nil && !result.Status {

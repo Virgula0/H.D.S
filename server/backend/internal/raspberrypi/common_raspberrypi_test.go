@@ -82,17 +82,22 @@ func (s *ServerTCPIPSuite) SetupSuite() {
 // TearDownAllSuite implements suite.SetupTestSuite and is called after each suite
 func (s *ServerTCPIPSuite) TearDownSuite() {
 	// restore DB as its original state
+	err := s.DatabaseUser.CleanDB([]string{entities.UserTableName})
+	s.Require().NoError(err)
 
-	err := s.Database.CleanDB([]string{entities.UserTableName})
+	err = s.DatabaseCert.CleanDB([]string{entities.CertTableName})
 	s.Require().NoError(err)
 
 	// this can be improved, creating a repository wrapper just for passing db instance is not the best
-	rr, err := repository.NewRepository(s.Database)
+	rr, err := repository.NewRepository(s.DatabaseUser, s.DatabaseCert)
 	s.Require().NoError(err)
 
 	err = seed.LoadUsers(rr)
 	s.Require().NoError(err)
 
-	err = s.Database.CloseDatabase()
+	err = s.DatabaseUser.CloseDatabase()
+	s.Require().NoError(err)
+
+	err = s.DatabaseCert.CloseDatabase()
 	s.Require().NoError(err)
 }

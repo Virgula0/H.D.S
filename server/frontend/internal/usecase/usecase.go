@@ -135,6 +135,10 @@ func (uc Usecase) GetUserDevices(token string, page int) (*entities.ReturnRaspbe
 	return uc.repo.GetUserDevices(token, page)
 }
 
+func (uc Usecase) UpdateClientEncryptionStatus(token string, request *entities.UpdateEncryptionClientStatusRequest) (*entities.UpdateEncryptionClientStatusResponse, error) {
+	return uc.repo.UpdateClientEncryptionStatus(token, request)
+}
+
 func (uc Usecase) SendCrackingRequest(token string, request *entities.UpdateHandshakeTaskViaAPIRequest) (*entities.UpdateHandshakeTaskViaAPIResponse, error) {
 	return uc.repo.SendCrackingRequest(token, request)
 }

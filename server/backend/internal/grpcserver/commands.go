@@ -84,6 +84,23 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 				return nil, errClientCreation
 			}
 
+			caCert, caKey, _, _, err := s.Usecase.GetServerCerts()
+
+			if err != nil {
+				return nil, err
+			}
+
+			// sign certs
+			clientCert, clientKey, err := s.Usecase.SignCert(caCert, caKey, newID)
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = s.Usecase.CreateCertForClient(userID, newID, clientCert, clientKey)
+			if err != nil {
+				return nil, err
+			}
+
 			// client created
 			return &pb.GetClientInfoResponse{
 				IsRegistered:       false,
@@ -94,6 +111,7 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 				CreationTime:       time.Now().Format(constants.DateTimeExample),
 				LastConnectionTime: time.Now().Format(constants.DateTimeExample),
 				MachineId:          machineUUID,
+				EnabledEncryption:  false, // on creation this cannot be true
 			}, nil
 		}
 		// otherwise return the error
@@ -110,6 +128,7 @@ func (s *ServerContext) GetClientInfo(ctx context.Context, request *pb.GetClient
 		CreationTime:       client.CreationTime,
 		LastConnectionTime: client.LatestConnectionTime,
 		MachineId:          client.MachineID,
+		EnabledEncryption:  client.EnabledEncryption,
 	}, nil
 }
 

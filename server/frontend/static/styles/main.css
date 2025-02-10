@@ -1,17 +1,6 @@
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.5); /* semi-transparent overlay */
-    z-index: 9999; /* on top of everything */
-}
-
+/* Global Variables */
 :root {
+    --transition-speed: 0.3s;
     --primary-color: #007bff;
     --primary-hover-color: #0056b3;
     --bg-light: #f8f9fa;
@@ -31,109 +20,122 @@
     --grey: #6c757d;
 }
 
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+}
+
+/* Base Styles */
 body {
     font-family: 'Poppins', sans-serif;
     background-color: var(--bg-light);
     color: var(--text-light);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color var(--transition-speed) ease,
+    color var(--transition-speed) ease;
     overflow-x: hidden;
 }
-
 body.dark-mode {
     background-color: var(--bg-dark);
     color: var(--text-dark);
 }
 
+/* Cards */
 .card {
     background-color: var(--card-bg);
     color: var(--card-text);
 }
 
+/* Form Controls */
 .form-control {
     background-color: var(--input-bg-light);
     border-color: var(--input-border-light);
     color: var(--text-light);
-    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    transition: background-color var(--transition-speed),
+    border-color var(--transition-speed),
+    color var(--transition-speed);
 }
-
 body.dark-mode .form-control {
     background-color: var(--input-bg-dark);
     border-color: var(--input-border-dark);
     color: var(--text-dark);
 }
 
+/* Muted Text */
 .text-muted {
     color: var(--muted-light) !important;
-    transition: color 0.3s;
+    transition: color var(--transition-speed);
 }
-
 body.dark-mode .text-muted {
     color: var(--muted-dark) !important;
 }
 
+/* Buttons */
 .btn-primary {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
-    transition: background-color 0.3s, border-color 0.3s;
+    transition: background-color var(--transition-speed),
+    border-color var(--transition-speed);
 }
-
 .btn-primary:hover {
     background-color: var(--primary-hover-color);
     border-color: var(--primary-hover-color);
 }
 
+/* Links */
 a {
     color: var(--primary-color);
-    transition: color 0.3s;
+    transition: color var(--transition-speed);
 }
-
 a:hover {
     color: var(--primary-hover-color);
 }
-
 body.dark-mode a {
     color: var(--primary-hover-color);
 }
-
 body.dark-mode a:hover {
     color: var(--primary-color);
 }
 
+/* Navbar */
 .navbar {
     background-color: var(--bg-light);
-    transition: background-color 0.3s ease;
+    transition: background-color var(--transition-speed) ease;
 }
-
 body.dark-mode .navbar {
     background-color: var(--bg-dark);
     color: var(--text-dark);
 }
-
 body.dark-mode .navbar-light .navbar-nav .nav-link {
     color: var(--text-dark);
 }
 
+/* Pagination */
 .pagination {
     background-color: transparent;
 }
-
 .page-link {
     background-color: var(--bg-light);
     color: var(--text-light);
     border-color: var(--input-border-light);
 }
-
 body.dark-mode .page-link {
     background-color: var(--bg-dark);
     color: var(--text-dark);
     border-color: var(--input-border-dark);
 }
-
 .page-item.active .page-link {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
 }
-
 body.dark-mode .page-item.disabled .page-link {
     background-color: var(--bg-dark);
     color: var(--muted-dark);
@@ -143,45 +145,39 @@ body.dark-mode .page-item.disabled .page-link {
 .modal-content {
     background-color: var(--bg-light);
     color: var(--text-light);
-    opacity: 1; /* Default visible; remove or change if you want fade */
-    transition: opacity 0.3s ease;
+    opacity: 1;
+    transition: opacity var(--transition-speed) ease;
 }
-
 .modal.show .modal-content {
     opacity: 1;
 }
-
 body.dark-mode .modal-content {
     background-color: var(--bg-dark);
     color: var(--text-dark);
 }
-
 body.dark-mode .close {
     color: var(--text-dark);
 }
-
 body.dark-mode .modal-content .form-control {
     background-color: var(--input-bg-dark);
     color: var(--text-dark);
     border-color: var(--input-border-dark);
 }
-
 body.dark-mode .modal-content select.form-control option {
     background-color: var(--bg-dark);
     color: var(--text-dark);
 }
 
-/* Table styling */
+/* Tables */
 .table {
     color: inherit;
     font-size: 0.875rem;
 }
-
 .sidebar-open .table {
     font-size: 0.8rem;
 }
 
-/* Status indicators */
+/* Status Indicators */
 .status-dot {
     display: inline-block;
     width: 8px;
@@ -189,175 +185,140 @@ body.dark-mode .modal-content select.form-control option {
     border-radius: 50%;
     margin-right: 5px;
 }
-
 .status-cracked { background-color: #28a745; }
 .status-error   { background-color: #dc3545; }
 .status-pending { background-color: #ffc107; }
 .status-working { background-color: #6f42c1; }
 .status-nothing { background-color: #6c757d; }
-.status-exhausted   { background-color: #17a2b8; }
+.status-exhausted { background-color: #17a2b8; }
 
-/* Colored cards */
+/* Colored Cards */
 .card-blue {
     background-color: var(--blue);
     color: var(--text-light);
 }
-
 .card-orange {
     background-color: var(--orange);
     color: var(--text-light);
 }
-
 .card-grey {
     background-color: var(--grey);
     color: var(--text-light);
 }
 
-/* Sidebar toggling */
+/* Sidebar Toggling */
 #wrapper.toggled #sidebar-wrapper {
     margin-left: 0;
 }
-
 #sidebar-wrapper {
     min-height: 100vh;
     margin-left: -15rem;
     transition: margin 0.25s ease-out;
 }
-
 #sidebar-wrapper .sidebar-heading {
     padding: 0.875rem 1.25rem;
     font-size: 1.2rem;
 }
-
 #sidebar-wrapper .list-group {
     width: 15rem;
 }
 
-/* Page content */
+/* Page Content */
 #page-content-wrapper {
     min-width: 100vw;
-    /* Default visible so page doesn’t stay blank if JS fails */
     opacity: 1;
-    transition: opacity 0.3s ease;
+    transition: opacity var(--transition-speed) ease;
 }
-
-/* If you want to fade in once loaded, you can apply .loaded => no real difference
-   except if you set default to 0. But let's keep it 1 so it's always visible. */
 #page-content-wrapper.loaded {
     opacity: 1;
 }
 
-/* Media Query for wider screens */
+/* Media Queries */
 @media (min-width: 768px) {
     #sidebar-wrapper {
         margin-left: 0;
     }
-
     #page-content-wrapper {
         min-width: 0;
         width: 100%;
     }
-
     #wrapper.toggled #sidebar-wrapper {
         margin-left: -15rem;
     }
 }
 
-/* Sensitive info blur effect */
+/* Sensitive Info Blur */
 .sensitive-info {
     filter: blur(4px);
-    transition: filter 0.3s ease;
+    transition: filter var(--transition-speed) ease;
 }
-
 .sensitive-info:hover {
     filter: blur(0);
 }
 
-/* Fix for modal + body scrolling issues */
-body.modal-open {
+/* Modal & Body Scrolling Fix */
+body.modal-open,
+.modal {
     overflow: auto !important;
     padding-right: 0 !important;
 }
 
-.modal {
-    padding-right: 0 !important;
-}
-
+/* Hashcat Logs */
 .hashcat-logs-content {
-    max-height: 60vh; /* Limit modal body height */
-    overflow-y: auto; /* Enable vertical scrolling */
-    white-space: pre-wrap; /* Preserve whitespace and wrap long text */
-    word-wrap: break-word; /* Ensure long words break correctly */
-    font-family: monospace; /* Use a monospace font for logs */
+    max-height: 60vh;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: monospace;
     font-size: 0.9rem;
 }
 
-/* Add these styles at the end of the file */
-
-/* Styling for file input */
+/* File Input Styling */
 .form-control-file {
     color: var(--text-light);
-    transition: color 0.3s, background-color 0.3s, border-color 0.3s;
+    background-color: var(--input-bg-light);
     border: 1px solid var(--input-border-light);
     border-radius: 0.25rem;
     padding: 0.375rem 0.75rem;
-    background-color: var(--input-bg-light);
     width: 100%;
     font-size: 1rem;
     line-height: 1.5;
+    transition: color var(--transition-speed),
+    background-color var(--transition-speed),
+    border-color var(--transition-speed);
 }
-
 body.dark-mode .form-control-file {
     color: var(--text-dark);
     background-color: var(--input-bg-dark);
     border-color: var(--input-border-dark);
 }
 
-/* Custom file input button */
-.form-control-file::-webkit-file-upload-button {
+/* Custom File Input Button (Grouped for WebKit & Firefox) */
+.form-control-file::-webkit-file-upload-button,
+.form-control-file::-moz-file-upload-button {
     -webkit-appearance: none;
     background: var(--primary-color);
-    color: white;
+    color: #fff;
     border: 0;
     padding: 0.5rem 1rem;
     margin-right: 0.5rem;
     border-radius: 0.25rem;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color var(--transition-speed);
 }
-
-.form-control-file::-webkit-file-upload-button:hover {
-    background: var(--primary-hover-color);
-}
-
-body.dark-mode .form-control-file::-webkit-file-upload-button {
-    background: var(--primary-hover-color);
-}
-
-body.dark-mode .form-control-file::-webkit-file-upload-button:hover {
-    background: var(--primary-color);
-}
-
-/* For Firefox */
-.form-control-file::-moz-file-upload-button {
-    background: var(--primary-color);
-    color: white;
-    border: 0;
-    padding: 0.5rem 1rem;
-    margin-right: 0.5rem;
-    border-radius: 0.25rem;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
+.form-control-file::-webkit-file-upload-button:hover,
 .form-control-file::-moz-file-upload-button:hover {
     background: var(--primary-hover-color);
 }
-
+body.dark-mode .form-control-file::-webkit-file-upload-button,
 body.dark-mode .form-control-file::-moz-file-upload-button {
     background: var(--primary-hover-color);
 }
-
+body.dark-mode .form-control-file::-webkit-file-upload-button:hover,
 body.dark-mode .form-control-file::-moz-file-upload-button:hover {
     background: var(--primary-color);
+}
+
+.custom-control-label {
+    cursor: pointer;
 }

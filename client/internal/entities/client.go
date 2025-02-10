@@ -8,4 +8,5 @@ type Client struct {
 	CreationTime         string `db:"CREATION_DATETIME"`
 	LatestConnectionTime string `db:"LATEST_CONNECTION"`
 	MachineID            string `db:"MACHINE_ID"`
+	EnabledEncryption    bool   `db:"ENABLED_ENCRYPTION"`
 }

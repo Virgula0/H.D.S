@@ -10,6 +10,7 @@ import (
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	pb "github.com/Virgula0/progetto-dp/server/protobuf/hds"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -19,16 +20,24 @@ import (
 	"github.com/Virgula0/progetto-dp/server/entities"
 )
 
+type userClientRegistered struct {
+	*entities.Client
+	clientCert []byte
+	clientKey  []byte
+}
+
 type GRPCServerTestSuite struct {
 	testsuite.GRPCTestSuite
-	UserFixture            *entities.User
-	UserClientRegistered   *entities.Client
+	UserFixture      *entities.User
+	UserTokenFixture string
+
+	UserClientRegistered   userClientRegistered
 	UserClientUnregistered *entities.Client
-	TokenFixture           string
 
 	NormalUserFixture      *entities.User
 	NormalUserTokenFixture string
-	HandshakeValidID       string
+
+	HandshakeValidID string
 }
 
 // Run All tests
@@ -44,18 +53,34 @@ func (s *GRPCServerTestSuite) SetupSuite() {
 	s.Require().NotNil(seed.NormalUserSeed.User)
 	s.NormalUserFixture = seed.NormalUserSeed.User
 
+	log.Error(s.UserFixture)
+
 	// Create a client known
-	s.UserClientRegistered = &entities.Client{
-		UserUUID:  s.UserFixture.UserUUID,
-		Name:      "TEST",
-		MachineID: fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))),
+	s.UserClientRegistered = userClientRegistered{
+		Client: &entities.Client{
+			UserUUID:  s.UserFixture.UserUUID,
+			Name:      "TEST",
+			MachineID: fmt.Sprintf("%x", md5.Sum([]byte(utils.GenerateToken(10)))),
+		},
 	}
 
 	clientID, err := s.Service.Usecase.CreateClient(s.UserFixture.UserUUID, s.UserClientRegistered.MachineID, s.UserClientRegistered.LatestIP, s.UserClientRegistered.Name)
 	s.Require().NoError(err)
-
 	// assign generated clientID
 	s.UserClientRegistered.ClientUUID = clientID
+
+	caCert, caKey, _, _, err := s.Service.Usecase.GetServerCerts()
+	s.Require().NoError(err)
+
+	// sign certs
+	clientCert, clientKey, err := s.Service.Usecase.SignCert(caCert, caKey, clientID)
+	s.Require().NoError(err)
+
+	_, err = s.Service.Usecase.CreateCertForClient(s.UserFixture.UserUUID, clientID, clientCert, clientKey)
+	s.Require().NoError(err)
+
+	s.UserClientRegistered.clientCert = clientCert
+	s.UserClientRegistered.clientKey = clientKey
 
 	// this instead is a client unregistered for testing purposes
 	s.UserClientUnregistered = &entities.Client{
@@ -83,31 +108,39 @@ func (s *GRPCServerTestSuite) SetupSuite() {
 		Username: s.UserFixture.Username,
 		Password: s.UserFixture.Password,
 	})
+
 	s.Require().NoError(err)
-	s.TokenFixture = temp.Details
+	s.UserTokenFixture = temp.Details
 
 	temp, err = s.Client.Login(context.Background(), &pb.AuthRequest{
 		Username: s.NormalUserFixture.Username,
 		Password: s.NormalUserFixture.Password,
 	})
+
 	s.Require().NoError(err)
 	s.NormalUserTokenFixture = temp.Details
-
 }
 
 // TearDownAllSuite implements suite.SetupTestSuite and is called after each suite
 func (s *GRPCServerTestSuite) TearDownSuite() {
 	// restore DB as its original state
-	err := s.Database.CleanDB([]string{entities.UserTableName})
+	err := s.DatabaseUser.CleanDB([]string{entities.UserTableName})
+	s.Require().NoError(err)
+
+	err = s.DatabaseCert.CleanDB([]string{entities.CertTableName})
 	s.Require().NoError(err)
 
 	// this can be improved, creating a repository wrapper just for passing db instance is not the best
-	rr, err := repository.NewRepository(s.Database)
+	// this needs RESET AND DEBUG ENV VARIABLES SET TO TRUE
+	rr, err := repository.NewRepository(s.DatabaseUser, s.DatabaseCert)
 	s.Require().NoError(err)
 
 	err = seed.LoadUsers(rr)
 	s.Require().NoError(err)
 
-	err = s.Database.CloseDatabase()
+	err = s.DatabaseUser.CloseDatabase()
+	s.Require().NoError(err)
+
+	err = s.DatabaseCert.CloseDatabase()
 	s.Require().NoError(err)
 }

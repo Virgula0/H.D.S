@@ -3,12 +3,11 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/go-playground/validator/v10"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"reflect"
 	"strconv"
-
-	"github.com/go-playground/validator/v10"
-	log "github.com/sirupsen/logrus"
 )
 
 // Validator instance
@@ -97,9 +96,39 @@ func setFieldValue(field reflect.Value, value, tag string) error {
 		return parseAndSetFloat(field, value, tag)
 	case reflect.Bool:
 		return parseAndSetBool(field, value, tag)
+	case reflect.Pointer:
+		return parseAndSetBoolPointer(field, value, tag) // WARNING! pay attention to this as this can cause problem, but it was necessary to handle bool pointers for false values
 	default:
 		log.Errorf("unhandled field type: %v", field.Kind())
 	}
+	return nil
+}
+
+// parseAndSetBoolPointer parses and sets a pointer to a boolean field.
+func parseAndSetBoolPointer(field reflect.Value, value, tag string) error {
+	if field.Kind() != reflect.Ptr {
+		return fmt.Errorf("expected pointer field for '%s'", tag)
+	}
+
+	// If the input value is empty, set the field to nil
+	if value == "" {
+		field.Set(reflect.Zero(field.Type()))
+		return nil
+	}
+
+	// Parse the boolean value
+	boolValue, err := strconv.ParseBool(value)
+	if err != nil {
+		return fmt.Errorf("invalid boolean value for '%s'", tag)
+	}
+
+	// Ensure the pointer is initialized
+	if field.IsNil() {
+		field.Set(reflect.New(field.Type().Elem())) // Allocate new bool pointer
+	}
+
+	// Set the parsed boolean value
+	field.Elem().SetBool(boolValue)
 	return nil
 }
 
