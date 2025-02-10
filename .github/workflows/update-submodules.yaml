@@ -27,7 +27,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-          #ref: main
+          ref: main
 
       - name: Git Submodule Update
         run: |
