@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	"net/http"
 
@@ -113,5 +114,51 @@ func (u Handler) DeleteClient(w http.ResponseWriter, r *http.Request) {
 
 	c.JSON(http.StatusOK, entities.DeleteClientResponse{
 		Status: deleted,
+	})
+}
+
+// UpdateEncryptionClientStatus update encryption client status
+func (u Handler) UpdateEncryptionClientStatus(w http.ResponseWriter, r *http.Request) {
+	c := response.Initializer{ResponseWriter: w}
+
+	userID, err := u.Usecase.GetUserIDFromToken(r)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entities.UniformResponse{
+			StatusCode: http.StatusInternalServerError,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	var request entities.UpdateEncryptionClientStatusRequest
+
+	if err = utils.ValidateJSON(&request, r); err != nil {
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
+			StatusCode: http.StatusBadRequest,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	if request.Status == nil {
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
+			StatusCode: http.StatusBadRequest,
+			Details:    fmt.Sprintf("status must be present"),
+		})
+		return
+	}
+
+	err = u.Usecase.UpdateEncryptionClientStatus(request.ClientUUID, userID.String(), *request.Status)
+	if err != nil {
+		c.JSON(http.StatusNotFound, entities.UniformResponse{
+			StatusCode: http.StatusNotFound,
+			Details:    err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, entities.UpdateEncryptionClientStatusResponse{
+		Status: *request.Status,
 	})
 }

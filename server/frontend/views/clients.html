@@ -146,19 +146,19 @@
                                         <td>{{ .MachineID }}</td>
                                         <td>
                                             <form action="/update-encryption" method="POST" class="encryption-form">
-                                                <input type="hidden" name="uuid" value="{{ .ClientUUID }}">
+                                                <input type="hidden" name="clientUUID" value="{{ .ClientUUID }}">
+                                                <input type="hidden" name="enabled" value="false">
                                                 <div class="custom-control custom-switch">
                                                     <input type="checkbox" class="custom-control-input encryption-toggle"
                                                            id="encryptionToggle-{{ .ClientUUID }}"
-                                                           name="enabled"
-                                                           {{if .EnabledEncryption}}checked{{end}}
-                                                           onchange="this.form.submit()">
+                                                           {{if .EnabledEncryption}}checked{{end}}>
                                                     <label class="custom-control-label" for="encryptionToggle-{{ .ClientUUID }}"></label>
                                                 </div>
                                             </form>
                                         </td>
                                         <td>
                                             {{ $clientUUID := .ClientUUID }}  <!-- Store the outer ClientUUID -->
+                                            {{ $enabledEncryption := .EnabledEncryption }}  <!-- Store the outer ClientUUID -->
                                             {{ range $.Certs }}  <!-- Inner loop iterating over Certs -->
                                             {{ if eqStr $clientUUID .ClientUUID }}  <!-- Compare outer and inner ClientUUID -->
                                             <button class="btn btn-sm btn-primary show-certs-btn"
@@ -166,7 +166,7 @@
                                                     data-ca-cert="{{ .CACert }}"
                                                     data-client-cert="{{ .ClientCert }}"
                                                     data-client-key="{{ .ClientKey }}"
-                                                    {{ if not $.EnabledEncryption }}disabled{{ end }}>
+                                                    {{ if not $enabledEncryption }}disabled{{ end }}>
                                                 Show Certs
                                             </button>
                                             {{ end }}

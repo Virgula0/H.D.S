@@ -27,6 +27,7 @@ const DeleteRaspberryPI = constants.DeleteRaspberry
 const DeleteClient = constants.DeleteClient
 const DeleteHandshake = constants.DeleteHandshake
 const CreateHandshake = constants.CreateHandshake
+const UpdateClientEncryptionStatus = constants.UpdateEncryption
 
 // InitRoutes
 //
@@ -108,6 +109,11 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
 	clientsRouterTemplate.
 		HandleFunc(DeleteClient, clientsInstance.DeleteClient).
+		Methods("POST")
+	clientsRouterTemplate.Use(authenticated.TokenValidation)
+
+	clientsRouterTemplate.
+		HandleFunc(UpdateClientEncryptionStatus, clientsInstance.UpdateClientEncryptionStatus).
 		Methods("POST")
 	clientsRouterTemplate.Use(authenticated.TokenValidation)
 

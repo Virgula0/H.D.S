@@ -490,6 +490,20 @@ func (repo *Repository) UpdateCerts(client *entities.Client, caCert, clientCert,
 	return nil
 }
 
+// UpdateEncryptionClientStatus REST/API - update encryption status for a client
+func (repo *Repository) UpdateEncryptionClientStatus(clientUUID, userUUID string, status bool) error {
+	updateQuery := fmt.Sprintf(
+		"UPDATE %s SET enabled_encryption = ? WHERE uuid_user = ? AND uuid = ?",
+		entities.ClientTableName,
+	)
+	_, err := repo.dbUser.Exec(updateQuery, status, userUUID, clientUUID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // CreateClient GRPC - CreateClient creates a new record in the client table
 func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string) (string, error) {
 	query := fmt.Sprintf("INSERT INTO %s(uuid_user, uuid, name, latest_ip, creation_datetime, latest_connection, machine_id) VALUES(?,?,?,?,?,?,?)",

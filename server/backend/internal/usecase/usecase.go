@@ -257,6 +257,10 @@ func (uc *Usecase) UpdateCerts(client *entities.Client) error {
 	return uc.repo.UpdateCerts(client, caCert, clientCert, clientKey)
 }
 
+func (uc *Usecase) UpdateEncryptionClientStatus(clientUUID, userUUID string, status bool) error {
+	return uc.repo.UpdateEncryptionClientStatus(clientUUID, userUUID, status)
+}
+
 func (uc *Usecase) GetClientCertsByUserID(userUUID string) (certs []*entities.Cert, length int, e error) {
 	return uc.repo.GetClientCertsByUserID(userUUID)
 }

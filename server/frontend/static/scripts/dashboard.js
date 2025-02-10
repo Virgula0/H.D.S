@@ -591,10 +591,11 @@ $(function () {
     // Toggle encryption state and update associated form field
     $(document).on("change", ".encryption-toggle", function () {
         const isEnabled = this.checked;
-        $(this).closest("tr").find(".show-certs-btn").prop("disabled", !isEnabled);
-        $(this)
-            .closest("form")
-            .find('input[name="enabled"]')
-            .val(isEnabled ? "TRUE" : "FALSE");
+
+        // Find the associated hidden input and update its value
+        $(this).closest("form").find('input[name="enabled"]').val(isEnabled ? "true" : "false");
+
+        // Submit the form automatically
+        this.form.submit();
     });
 });

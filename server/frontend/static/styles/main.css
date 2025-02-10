@@ -318,3 +318,7 @@ body.dark-mode .form-control-file::-webkit-file-upload-button:hover,
 body.dark-mode .form-control-file::-moz-file-upload-button:hover {
     background: var(--primary-color);
 }
+
+.custom-control-label {
+    cursor: pointer;
+}

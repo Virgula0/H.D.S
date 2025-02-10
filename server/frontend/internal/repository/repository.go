@@ -320,3 +320,30 @@ func (repo *Repository) CreateHandshake(token string, request *entities.CreateHa
 
 	return dd, nil
 }
+
+func (repo *Repository) UpdateClientEncryptionStatus(token string, request *entities.UpdateEncryptionClientStatusRequest) (*entities.UpdateEncryptionClientStatusResponse, error) {
+
+	var dd *entities.UpdateEncryptionClientStatusResponse
+	headers := map[string]string{
+		"Authorization": fmt.Sprintf("Bearer %s", token),
+	}
+
+	// Marshal the data into JSON
+	jsonData, err := json.Marshal(request)
+
+	if err != nil {
+		return nil, err
+	}
+
+	responseBytes, err := repo.GenericHTTPRequestToBackend(http.MethodPost, constants.UpdateClientEncryption, headers, jsonData)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(responseBytes, &dd); err != nil {
+		return nil, err
+	}
+
+	return dd, nil
+}

@@ -34,18 +34,19 @@ const (
 
 // Endpoints FE
 const (
-	RouteIndex      = "/"
-	Login           = "/login"
-	HandshakePage   = "/handshakes"
-	ClientPage      = "/clients"
-	RaspberryPIPage = "/raspberrypi"
-	Register        = "/register"
-	Logout          = "/logout"
-	SubmitTask      = "/submit-task"
-	DeleteClient    = "/delete-client"
-	DeleteRaspberry = "/delete-raspberrypi"
-	DeleteHandshake = "/delete-handshake"
-	CreateHandshake = "/create-handshake"
+	RouteIndex       = "/"
+	Login            = "/login"
+	HandshakePage    = "/handshakes"
+	ClientPage       = "/clients"
+	RaspberryPIPage  = "/raspberrypi"
+	Register         = "/register"
+	Logout           = "/logout"
+	SubmitTask       = "/submit-task"
+	DeleteClient     = "/delete-client"
+	DeleteRaspberry  = "/delete-raspberrypi"
+	DeleteHandshake  = "/delete-handshake"
+	CreateHandshake  = "/create-handshake"
+	UpdateEncryption = "/update-encryption"
 )
 
 // Endpoints BE
@@ -61,4 +62,5 @@ const (
 	BackendDeleteClient      = "delete/client"
 	BackendHandshake         = "manage/handshake"
 	BackendDeleteRaspberryPI = "delete/raspberrypi"
+	UpdateClientEncryption   = "encryption-status"
 )

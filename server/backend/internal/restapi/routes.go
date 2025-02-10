@@ -24,6 +24,7 @@ const UpdateClientTask = "/assign"
 const DeleteClient = "/delete/client"
 const DeleteRaspberryPI = "/delete/raspberrypi"
 const ManageHandshake = "/manage/handshake"
+const UpdateClientEncryptionStatus = "/encryption-status"
 
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
@@ -66,6 +67,12 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
 	installedClientsRouter.HandleFunc(DeleteClient, installedClientsHandler.DeleteClient).Methods("DELETE")
 	installedClientsRouter.Use(authMiddleware.EnsureTokenIsValid)
+
+	// Update client encryption status
+	updateEncryptionStatusRouter := router.PathPrefix(RouteIndex).Subrouter()
+	updateEncryptionStatusRouter.HandleFunc(UpdateClientEncryptionStatus, installedClientsHandler.UpdateEncryptionClientStatus).
+		Methods("POST")
+	updateEncryptionStatusRouter.Use(authMiddleware.EnsureTokenIsValid)
 
 	// Get raspberry-pi installed by user -- AUTHENTICATED --
 	installedDevicesRouter := router.PathPrefix(RouteIndex).Subrouter()

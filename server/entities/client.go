@@ -26,3 +26,12 @@ type DeleteClientRequest struct {
 type DeleteClientResponse struct {
 	Status bool `json:"status"`
 }
+
+type UpdateEncryptionClientStatusRequest struct {
+	ClientUUID string `json:"clientUUID" validate:"required,uuid4"`
+	Status     *bool  `json:"status" validate:"required"`
+}
+
+type UpdateEncryptionClientStatusResponse struct {
+	Status bool `json:"status"`
+}
