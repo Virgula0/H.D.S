@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	"net/http"
 
@@ -144,7 +143,7 @@ func (u Handler) UpdateEncryptionClientStatus(w http.ResponseWriter, r *http.Req
 	if request.Status == nil {
 		c.JSON(http.StatusBadRequest, entities.UniformResponse{
 			StatusCode: http.StatusBadRequest,
-			Details:    fmt.Sprintf("status must be present"),
+			Details:    "status must be present",
 		})
 		return
 	}
