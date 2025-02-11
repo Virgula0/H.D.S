@@ -61,7 +61,7 @@ func (repo *Repository) GetServerCerts() (caCert, caKey, serverCert, serverKey [
 }
 
 // countQueryResults executes a count query and returns the result
-func (q *queryHandler) countQueryResults(query string, args ...interface{}) (int, error) {
+func (q *queryHandler) countQueryResults(query string, args ...any) (int, error) {
 	var count int
 	if err := q.QueryRow(query, args...).Scan(&count); err != nil {
 		return 0, fmt.Errorf("count query failed: %w", err)
@@ -70,7 +70,7 @@ func (q *queryHandler) countQueryResults(query string, args ...interface{}) (int
 }
 
 // queryEntities executes a query and returns scanned entities using generic scanning
-func (q *queryHandler) queryEntities(query string, builder func() (interface{}, []interface{}), args ...interface{}) ([]interface{}, error) {
+func (q *queryHandler) queryEntities(query string, builder func() (any, []any), args ...any) ([]any, error) {
 	rows, err := q.Query(query, args...)
 	if err != nil {
 		log.Error("Query execution error: ", err.Error())
@@ -87,9 +87,9 @@ func (q *queryHandler) queryEntities(query string, builder func() (interface{}, 
 }
 
 // scanRowsInterfaceWrapper handles interface type conversion for generic scanRows
-func scanRowsInterfaceWrapper(rows *sql.Rows, builder func() (interface{}, []interface{})) ([]interface{}, error) {
+func scanRowsInterfaceWrapper(rows *sql.Rows, builder func() (any, []any)) ([]any, error) {
 	defer rows.Close()
-	var results []interface{}
+	var results []any
 
 	for rows.Next() {
 		entity, dest := builder()
@@ -152,9 +152,9 @@ func (repo *Repository) GetUserByUsername(username string) (*entities.User, *ent
 
 // GetClientsInstalled returns all installed clients
 func (repo *Repository) GetClientsInstalled() (clients []*entities.Client, length int, e error) {
-	clientBuilder := func() (interface{}, []interface{}) {
+	clientBuilder := func() (any, []any) {
 		c := &entities.Client{}
-		return c, []interface{}{
+		return c, []any{
 			&c.UserUUID,
 			&c.ClientUUID,
 			&c.Name,
@@ -183,9 +183,9 @@ func (repo *Repository) GetClientsInstalled() (clients []*entities.Client, lengt
 
 // GetClientCertsByUserID returns client certificates for a user
 func (repo *Repository) GetClientCertsByUserID(userUUID string) (certs []*entities.Cert, length int, e error) {
-	certBuilder := func() (interface{}, []interface{}) {
+	certBuilder := func() (any, []any) {
 		c := &entities.Cert{}
-		return c, []interface{}{
+		return c, []any{
 			&c.CertUUID,
 			&c.UserUUID,
 			&c.ClientUUID,
@@ -213,9 +213,9 @@ func (repo *Repository) GetClientCertsByUserID(userUUID string) (certs []*entiti
 
 // GetClientsInstalledByUserID returns paginated clients for a user
 func (repo *Repository) GetClientsInstalledByUserID(userUUID string, offset uint) (clients []*entities.Client, length int, e error) {
-	clientBuilder := func() (interface{}, []interface{}) {
+	clientBuilder := func() (any, []any) {
 		c := &entities.Client{}
-		return c, []interface{}{
+		return c, []any{
 			&c.UserUUID,
 			&c.ClientUUID,
 			&c.Name,
@@ -273,9 +273,9 @@ func (repo *Repository) CreateClient(userUUID, machineID, latestIP, name string)
 
 // UpdateClientTaskCommon contains shared logic for updating client tasks
 func (repo *Repository) updateClientTaskCommon(userUUID, handshakeUUID, assignedClientUUID, status, hashcatOptions, hashcatLogs, crackedHandshake string, restMode bool) (*entities.Handshake, error) {
-	handshakeBuilder := func() (interface{}, []interface{}) {
+	handshakeBuilder := func() (any, []any) {
 		h := &entities.Handshake{}
-		return h, []interface{}{
+		return h, []any{
 			&h.UserUUID,
 			&h.ClientUUID,
 			&h.UUID,
@@ -361,9 +361,9 @@ func (repo *Repository) DeleteClient(userUUID, clientUUID string) (bool, error) 
 
 // GetRaspberryPiByUserID returns paginated raspberry pi devices for a user
 func (repo *Repository) GetRaspberryPiByUserID(userUUID string, offset uint) (rsps []*entities.RaspberryPI, length int, e error) {
-	rspBuilder := func() (interface{}, []interface{}) {
+	rspBuilder := func() (any, []any) {
 		r := &entities.RaspberryPI{}
-		return r, []interface{}{
+		return r, []any{
 			&r.UserUUID,
 			&r.RaspberryPIUUID,
 			&r.MachineID,
@@ -395,9 +395,9 @@ func (repo *Repository) GetRaspberryPiByUserID(userUUID string, offset uint) (rs
 
 // GetHandshakesByUserID returns paginated handshakes for a user
 func (repo *Repository) GetHandshakesByUserID(userUUID string, offset uint) (handshakes []*entities.Handshake, length int, e error) {
-	handshakeBuilder := func() (interface{}, []interface{}) {
+	handshakeBuilder := func() (any, []any) {
 		h := &entities.Handshake{}
-		return h, []interface{}{
+		return h, []any{
 			&h.UserUUID,
 			&h.ClientUUID,
 			&h.UUID,
@@ -437,9 +437,9 @@ func (repo *Repository) GetHandshakesByUserID(userUUID string, offset uint) (han
 
 // GetHandshakesByStatus returns handshakes filtered by status
 func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes []*entities.Handshake, length int, e error) {
-	handshakeBuilder := func() (interface{}, []interface{}) {
+	handshakeBuilder := func() (any, []any) {
 		h := &entities.Handshake{}
-		return h, []interface{}{
+		return h, []any{
 			&h.UserUUID,
 			&h.ClientUUID,
 			&h.UUID,
@@ -473,9 +473,9 @@ func (repo *Repository) GetHandshakesByStatus(filterStatus string) (handshakes [
 
 // GetHandshakesByBSSIDAndSSID checks for existing handshake records
 func (repo *Repository) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string) (handshakes []*entities.Handshake, length int, e error) {
-	handshakeBuilder := func() (interface{}, []interface{}) {
+	handshakeBuilder := func() (any, []any) {
 		h := &entities.Handshake{}
-		return h, []interface{}{
+		return h, []any{
 			&h.UserUUID,
 			&h.ClientUUID,
 			&h.UUID,
@@ -570,9 +570,9 @@ func (repo *Repository) DeleteHandshake(userUUID, handshakeUUID string) (bool, e
 
 // GetClientInfo retrieves client information by machine ID
 func (repo *Repository) GetClientInfo(userUUID, machineID string) (*entities.Client, error) {
-	clientBuilder := func() (interface{}, []interface{}) {
+	clientBuilder := func() (any, []any) {
 		c := &entities.Client{}
-		return c, []interface{}{
+		return c, []any{
 			&c.UserUUID,
 			&c.ClientUUID,
 			&c.Name,
