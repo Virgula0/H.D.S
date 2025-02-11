@@ -1,8 +1,9 @@
-// #nosec G201
+// #nosec G201 for SQL false positives
 package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -16,6 +17,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Repository handles database operations using two separate connections
+type Repository struct {
+	dbUser  *sql.DB
+	dbCerts *sql.DB
+	certs   *generatedServerCerts
+}
+
 type generatedServerCerts struct {
 	caCert     []byte
 	caKey      []byte
@@ -25,13 +33,6 @@ type generatedServerCerts struct {
 
 type queryHandler struct {
 	*sql.DB
-}
-
-// Repository handles database operations using two separate connections
-type Repository struct {
-	dbUser  *sql.DB
-	dbCerts *sql.DB
-	certs   *generatedServerCerts
 }
 
 // NewRepository creates a new Repository instance with injected database connections
@@ -140,7 +141,7 @@ func (repo *Repository) GetUserByUsername(username string) (*entities.User, *ent
 	row := repo.dbUser.QueryRow(query, username)
 	err := row.Scan(&user.UserUUID, &user.Username, &user.Password, &role.RoleString)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil, customErrors.ErrInvalidCredentials
 		}
 		log.Error("User query error: ", err.Error())
