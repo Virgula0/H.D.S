@@ -17,7 +17,8 @@ var ErrInvalidType = errors.New("failed conversion while fetching db for type: "
 var ErrNoClientFound = errors.New("no client found")
 var ErrNotValidClientIP = errors.New("not valid client IP")
 var ErrClientIsBusy = errors.New("client is busy")
-var ErrCannotDeleteElement = errors.New("unable to delete element")
+var ErrOldPasswordMismatch = errors.New("old password is not correct")
+var ErrPasswordConfirmationDoNotMatch = errors.New("password confirmation does not match")
 
 var ErrCertsNotInitialized = errors.New("caCerts not initialized in repository ")
 var ErrFailToGeneratePrivateKey = errors.New("fail to generate private key ")

@@ -47,6 +47,7 @@ const (
 	DeleteHandshake  = "/delete-handshake"
 	CreateHandshake  = "/create-handshake"
 	UpdateEncryption = "/update-encryption"
+	UpdatePassword   = "/update-password"
 )
 
 // Endpoints BE
@@ -63,4 +64,5 @@ const (
 	BackendHandshake         = "manage/handshake"
 	BackendDeleteRaspberryPI = "delete/raspberrypi"
 	UpdateClientEncryption   = "encryption-status"
+	UpdateUserPassword       = "user/password"
 )

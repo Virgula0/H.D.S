@@ -229,8 +229,16 @@ func (uc *Usecase) GetUserByUsername(username string) (*entities.User, *entities
 	return uc.repo.GetUserByUsername(username)
 }
 
+func (uc *Usecase) GetUserByUserID(userUUID string) (*entities.User, error) {
+	return uc.repo.GetUserByUserID(userUUID)
+}
+
 func (uc *Usecase) CreateUser(userEntity *entities.User, role constants.Role) error {
 	return uc.repo.CreateUser(userEntity, role)
+}
+
+func (uc *Usecase) UpdateUserPassword(userUUID, password string) error {
+	return uc.repo.UpdateUserPassword(userUUID, password)
 }
 
 func (uc *Usecase) GetClientsInstalledByUserID(userUUID string, offset uint) ([]*entities.Client, int, error) {

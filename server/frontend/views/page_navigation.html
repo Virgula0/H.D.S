@@ -1,0 +1,26 @@
+<nav aria-label="Page navigation" class="d-flex justify-content-center">
+    <ul class="pagination">
+        {{ if gt .CurrentPage 1 }}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ sub .CurrentPage 1 }}">«</a>
+        </li>
+        {{ else }}
+        <li class="page-item disabled"><span class="page-link">«</span></li>
+        {{ end }}
+
+        {{ range $i := seq 1 .TotalPages }}
+        <li class="page-item {{ if eq $i $.CurrentPage }}active{{ end }}">
+            <a class="page-link" href="?page={{ $i }}">{{ $i }}</a>
+        </li>
+        {{ end }}
+
+        {{ if lt .CurrentPage .TotalPages }}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ add .CurrentPage 1 }}">»</a>
+        </li>
+        {{ else }}
+        <li class="page-item disabled"><span class="page-link">»</span></li>
+        {{ end }}
+    </ul>
+    <span class="align-self-center ml-3">Page {{ .CurrentPage }} of {{ .TotalPages }}</span>
+</nav>

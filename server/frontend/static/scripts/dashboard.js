@@ -475,10 +475,25 @@ $(function () {
         $("#crackModal").modal("show");
     });
 
-    $(document).on("click", ".delete-btn", function () {
+    // delete handshake modal
+    $(document).on("click", ".delete-btn-handshake", function () {
         const uuid = $(this).data("uuid");
-        $("#deleteUUID").val(uuid);
-        $("#deleteConfirmModal").modal("show");
+        $("#deleteUUIDHandshake").val(uuid);
+        $("#deleteConfirmModalHandshake").modal("show");
+    });
+
+    // delete client modal
+    $(document).on("click", ".delete-btn-client", function () {
+        const uuid = $(this).data("uuid");
+        $("#deleteUUIDClient").val(uuid);
+        $("#deleteConfirmModalClient").modal("show");
+    });
+
+    // delete rsp modal
+    $(document).on("click", ".delete-btn-rsp", function () {
+        const uuid = $(this).data("uuid");
+        $("#deleteUUIDRsp").val(uuid);
+        $("#deleteConfirmModalRsp").modal("show");
     });
 
     $(document).on("click", ".hashcat-options-btn", function () {
@@ -599,3 +614,30 @@ $(function () {
         this.form.submit();
     });
 });
+
+document.getElementById("settingsLink").addEventListener("click", (e) => {
+    e.preventDefault()
+    $("#settingsModal").modal("show")
+})
+
+// Show change password modal when change password button is clicked
+document.getElementById("changePasswordBtn").addEventListener("click", () => {
+    $("#settingsModal").modal("hide")
+    $("#changePasswordModal").modal("show")
+})
+
+// Handle change password form submission
+document.getElementById("changePasswordForm").addEventListener("submit", (e) => {
+    e.preventDefault()
+
+    const newPassword = document.getElementById("new_password").value
+    const confirmPassword = document.getElementById("confirm_password").value
+
+    if (newPassword !== confirmPassword) {
+        alert("New password and confirmation do not match")
+        return
+    }
+
+    // If passwords match, submit the form
+    e.target.submit();
+})
