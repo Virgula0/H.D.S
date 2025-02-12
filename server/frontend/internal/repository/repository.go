@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -44,7 +45,7 @@ func (repo *Repository) checkUniformError(responseBytes []byte) (int, error) {
 		return -1, err
 	}
 	if uniformResponse.Details != "" {
-		return uniformResponse.StatusCode, fmt.Errorf(uniformResponse.Details)
+		return uniformResponse.StatusCode, errors.New(uniformResponse.Details)
 	}
 	return -1, nil
 }
@@ -156,7 +157,7 @@ func (repo *Repository) GetUserDevices(token string, page int) (*entities.Return
 }
 
 // Common CRUD operation handler
-func (repo *Repository) executeAuthorizedRequest(method, endpoint string, token string, request, response interface{}) error {
+func (repo *Repository) executeAuthorizedRequest(method, endpoint, token string, request, response any) error {
 	headers := map[string]string{"Authorization": fmt.Sprintf("Bearer %s", token)}
 
 	jsonData, err := json.Marshal(request)

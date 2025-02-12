@@ -27,6 +27,7 @@ const ManageHandshake = "/manage/handshake"
 const UpdateClientEncryptionStatus = "/encryption-status"
 const UpdateUserPassword = "/user/password"
 
+//nolint:funlen // this function can be huge, it does not contain logic, only route directives
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
 	authenticateHandler := authenticate.Handler{Usecase: h.Usecase}
