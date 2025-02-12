@@ -152,8 +152,6 @@ func (s *GRPCServerTestSuite) Test_GetClientInfo_Method() {
 
 			resp, err := client.GetClientInfo(ctx, tt.request)
 
-			log.Error(resp)
-
 			// Use require to assert no errors in the RPC call
 			s.Require().NoError(err, "Test RPC failed")
 

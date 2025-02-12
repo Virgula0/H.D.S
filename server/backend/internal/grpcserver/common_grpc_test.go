@@ -10,7 +10,6 @@ import (
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
 	pb "github.com/Virgula0/progetto-dp/server/protobuf/hds"
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -52,8 +51,6 @@ func (s *GRPCServerTestSuite) SetupSuite() {
 
 	s.Require().NotNil(seed.NormalUserSeed.User)
 	s.NormalUserFixture = seed.NormalUserSeed.User
-
-	log.Error(s.UserFixture)
 
 	// Create a client known
 	s.UserClientRegistered = userClientRegistered{
