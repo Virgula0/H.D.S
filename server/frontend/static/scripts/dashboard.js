@@ -475,10 +475,25 @@ $(function () {
         $("#crackModal").modal("show");
     });
 
-    $(document).on("click", ".delete-btn", function () {
+    // delete handshake modal
+    $(document).on("click", ".delete-btn-handshake", function () {
         const uuid = $(this).data("uuid");
-        $("#deleteUUID").val(uuid);
-        $("#deleteConfirmModal").modal("show");
+        $("#deleteUUIDHandshake").val(uuid);
+        $("#deleteConfirmModalHandshake").modal("show");
+    });
+
+    // delete client modal
+    $(document).on("click", ".delete-btn-client", function () {
+        const uuid = $(this).data("uuid");
+        $("#deleteUUIDClient").val(uuid);
+        $("#deleteConfirmModalClient").modal("show");
+    });
+
+    // delete rsp modal
+    $(document).on("click", ".delete-btn-rsp", function () {
+        const uuid = $(this).data("uuid");
+        $("#deleteUUIDRsp").val(uuid);
+        $("#deleteConfirmModalRsp").modal("show");
     });
 
     $(document).on("click", ".hashcat-options-btn", function () {
