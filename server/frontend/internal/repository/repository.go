@@ -38,15 +38,15 @@ func NewRepository() (*Repository, error) {
 }
 
 // Helper function to check for UniformResponse errors
-func (repo *Repository) checkUniformError(responseBytes []byte) error {
+func (repo *Repository) checkUniformError(responseBytes []byte) (int, error) {
 	var uniformResponse entities.UniformResponse
 	if err := json.Unmarshal(responseBytes, &uniformResponse); err != nil {
-		return err
+		return -1, err
 	}
 	if uniformResponse.Details != "" {
-		return fmt.Errorf(uniformResponse.Details)
+		return uniformResponse.StatusCode, fmt.Errorf(uniformResponse.Details)
 	}
-	return nil
+	return -1, nil
 }
 
 func (repo *Repository) GenericHTTPRequest(baseURL, method, endpoint string, headers map[string]string, requestData []byte) ([]byte, error) {
@@ -130,7 +130,7 @@ func (repo *Repository) getPaginatedResource(token, endpoint string, page int, t
 		return err
 	}
 
-	if err := repo.checkUniformError(responseBytes); err != nil {
+	if statusCode, err := repo.checkUniformError(responseBytes); err != nil && statusCode != http.StatusNotFound {
 		return err
 	}
 
@@ -169,7 +169,7 @@ func (repo *Repository) executeAuthorizedRequest(method, endpoint string, token 
 		return err
 	}
 
-	if err := repo.checkUniformError(responseBytes); err != nil {
+	if statusCode, err := repo.checkUniformError(responseBytes); err != nil && statusCode != http.StatusNotFound {
 		return err
 	}
 
