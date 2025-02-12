@@ -28,6 +28,7 @@ const DeleteClient = constants.DeleteClient
 const DeleteHandshake = constants.DeleteHandshake
 const CreateHandshake = constants.CreateHandshake
 const UpdateClientEncryptionStatus = constants.UpdateEncryption
+const UpdateUserPassword = constants.UpdatePassword
 
 // InitRoutes
 //
@@ -51,6 +52,13 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	loginRouter.
 		HandleFunc(Login, loginInstance.PerformLogin).
 		Methods("POST")
+
+	// UPDATE USER PASSWORD
+	changePasswordRouter := router.PathPrefix(RouteIndex).Subrouter()
+	changePasswordRouter.
+		HandleFunc(UpdateUserPassword, loginInstance.UpdateUserPassword).
+		Methods("POST")
+	changePasswordRouter.Use(authenticated.TokenValidation)
 
 	loginRouterTemplate := router.PathPrefix(RouteIndex).Subrouter()
 	loginRouterTemplate.

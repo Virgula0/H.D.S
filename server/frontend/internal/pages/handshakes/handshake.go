@@ -157,12 +157,12 @@ func (u Page) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("%s?page=1&success=%s", constants.HandshakePage, url.QueryEscape(fmt.Sprintf("%s updated", crackingRequest.Handshake.UUID))), http.StatusFound)
 }
 
-type DeleteHandshakeReqeust struct {
+type DeleteHandshakeRequest struct {
 	UUID string `form:"uuid" validate:"required"`
 }
 
 func (u Page) DeleteHandshake(w http.ResponseWriter, r *http.Request) {
-	var request DeleteHandshakeReqeust
+	var request DeleteHandshakeRequest
 	token := r.Context().Value(constants.AuthToken)
 
 	// Check if the token exists

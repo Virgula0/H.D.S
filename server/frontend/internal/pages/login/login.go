@@ -2,13 +2,14 @@ package login
 
 import (
 	"fmt"
+	"github.com/Virgula0/progetto-dp/server/entities"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/utils"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/constants"
-	"github.com/Virgula0/progetto-dp/server/frontend/internal/errors"
+	customErrors "github.com/Virgula0/progetto-dp/server/frontend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/usecase"
 )
 
@@ -49,7 +50,7 @@ func (u Page) PerformLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if loginResponse.StatusCode != http.StatusOK {
-		errorQuery := url.QueryEscape(errors.ErrInvalidCredentials.Error()) // Ensures the string is URL-safe
+		errorQuery := url.QueryEscape(customErrors.ErrInvalidCredentials.Error()) // Ensures the string is URL-safe
 		http.Redirect(w, r, fmt.Sprintf("%s?error=%s", constants.Login, errorQuery), http.StatusFound)
 		return
 	}
@@ -65,4 +66,39 @@ func (u Page) PerformLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to posts
 	http.Redirect(w, r, fmt.Sprintf("%s?page=1", constants.HandshakePage), http.StatusFound)
+}
+
+type UpdateUserPassword struct {
+	OldPassword     string `form:"old_password" validate:"required"`
+	NewPassword     string `form:"new_password" validate:"required"`
+	ConfirmPassword string `form:"confirm_password" validate:"required"`
+}
+
+func (u Page) UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
+	token := r.Context().Value(constants.AuthToken)
+
+	// Check if the token exists
+	if token == nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.Login, url.QueryEscape(customErrors.ErrNotAuthenticated.Error())), http.StatusFound)
+		return
+	}
+
+	var request UpdateUserPassword
+	if err := utils.ValidatePOSTFormRequest(&request, r); err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?error=%s", constants.HandshakePage, err.Error()), http.StatusFound)
+		return
+	}
+
+	rr := &entities.UpdateUserPasswordRequest{
+		OldPassword:        request.OldPassword,
+		NewPassword:        request.NewPassword,
+		NewPasswordConfirm: request.ConfirmPassword,
+	}
+
+	if _, err := u.Usecase.UpdateUserPassword(token.(string), rr); err != nil {
+		http.Redirect(w, r, fmt.Sprintf("%s?error=%s", constants.HandshakePage, err.Error()), http.StatusFound)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("%s?page=1&success=updated", constants.HandshakePage), http.StatusFound)
 }

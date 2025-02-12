@@ -25,6 +25,7 @@ const DeleteClient = "/delete/client"
 const DeleteRaspberryPI = "/delete/raspberrypi"
 const ManageHandshake = "/manage/handshake"
 const UpdateClientEncryptionStatus = "/encryption-status"
+const UpdateUserPassword = "/user/password"
 
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
 
@@ -44,6 +45,12 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	loginRouter.
 		HandleFunc(RouteAuthenticate, authenticateHandler.LoginHandler).
 		Methods("POST")
+
+	updatePasswordRouter := router.PathPrefix(RouteIndex).Subrouter()
+	updatePasswordRouter.
+		HandleFunc(UpdateUserPassword, authenticateHandler.UpdateUserPassword).
+		Methods("POST")
+	updatePasswordRouter.Use(authMiddleware.EnsureTokenIsValid)
 
 	// SIGN-UP -- NOT AUTHENTICATED --
 	registerRouter := router.PathPrefix(RouteIndex).Subrouter()

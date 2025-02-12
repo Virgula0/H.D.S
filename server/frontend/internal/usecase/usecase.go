@@ -139,6 +139,10 @@ func (uc Usecase) UpdateClientEncryptionStatus(token string, request *entities.U
 	return uc.repo.UpdateClientEncryptionStatus(token, request)
 }
 
+func (uc Usecase) UpdateUserPassword(token string, request *entities.UpdateUserPasswordRequest) (*entities.UpdateUserPasswordResponse, error) {
+	return uc.repo.UpdateUserPassword(token, request)
+}
+
 func (uc Usecase) SendCrackingRequest(token string, request *entities.UpdateHandshakeTaskViaAPIRequest) (*entities.UpdateHandshakeTaskViaAPIResponse, error) {
 	return uc.repo.SendCrackingRequest(token, request)
 }

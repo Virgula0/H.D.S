@@ -151,6 +151,18 @@ func (repo *Repository) GetUserByUsername(username string) (*entities.User, *ent
 	return &user, &role, nil
 }
 
+// GetUserByUserID REST/API retrives the user by userID
+func (repo *Repository) GetUserByUserID(userUUID string) (*entities.User, error) {
+	var user entities.User
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid = ?", entities.UserTableName)
+
+	row := repo.dbUser.QueryRow(query, userUUID)
+	err := row.Scan(&user.UserUUID, &user.Username, &user.Password)
+
+	return &user, err
+}
+
 // GetClientsInstalled returns all installed clients
 func (repo *Repository) GetClientsInstalled() (clients []*entities.Client, length int, e error) {
 	clientBuilder := func() (any, []any) {
@@ -527,6 +539,19 @@ func (repo *Repository) UpdateCerts(client *entities.Client, caCert, clientCert,
 	_, err := repo.dbCerts.Exec(
 		fmt.Sprintf("UPDATE %s SET ca_cert = ?, client_cert = ?, client_key = ? WHERE client_uuid = ?", entities.CertTableName),
 		caCert, clientCert, clientKey, client.ClientUUID,
+	)
+	return err
+}
+
+// UpdateUserPassword REST/API update user password
+func (repo *Repository) UpdateUserPassword(userUUID, password string) error {
+	psw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	_, err = repo.dbUser.Exec(
+		fmt.Sprintf("UPDATE %s SET password = ? WHERE uuid = ?", entities.UserTableName),
+		string(psw), userUUID,
 	)
 	return err
 }
