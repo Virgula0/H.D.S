@@ -77,13 +77,15 @@ func (db *Database) CleanDB(tableNames []string) error {
 // `foreign:"user(UUID)"` | for foreign keys
 // `primary:"true"` | for primary keys
 // `default:"value"` | default value
-// `db:"table_name"` | table name`
+// `db:"table_name"` | table name
+// `unique:"true"` | unique key
 func (db *Database) CreateTable(tableName string, model any) error {
 	t := reflect.TypeOf(model)
 
 	var columns []string
 	var primaryKey string
 	var foreignKeys []string
+	var uniqueConstraints []string
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
@@ -100,6 +102,9 @@ func (db *Database) CreateTable(tableName string, model any) error {
 		if defaultValue := field.Tag.Get("default"); defaultValue != "" {
 			dataType += " DEFAULT " + defaultValue
 		}
+		if field.Tag.Get("unique") == "true" {
+			uniqueConstraints = append(uniqueConstraints, fmt.Sprintf("UNIQUE(%s)", columnName))
+		}
 
 		columns = append(columns, fmt.Sprintf("%s %s", columnName, dataType))
 	}
@@ -110,7 +115,10 @@ func (db *Database) CreateTable(tableName string, model any) error {
 	}
 
 	// Combine all parts into the final query
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n  %s\n);", tableName, strings.Join(append(columns, foreignKeys...), ",\n  "))
+	allConstraints := append(columns, foreignKeys...)
+	allConstraints = append(allConstraints, uniqueConstraints...) // Add UNIQUE constraints
+
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n  %s\n);", tableName, strings.Join(allConstraints, ",\n  "))
 
 	// Execute the query
 	_, err := db.Exec(query)
