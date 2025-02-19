@@ -11,6 +11,7 @@ const MachineIDFile = "/etc/machine-id"
 const HostnameFile = "/etc/hostname"
 const FileToCrackPlaceHolder = "FILE_TO_CRACK"
 const CertFileDir = "certs"
+const WordlistPath = "wordlists"
 
 var (
 	TempPCAPStorage    = filepath.Join(TempDir, "downloads")

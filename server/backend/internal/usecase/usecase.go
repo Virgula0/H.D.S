@@ -316,6 +316,14 @@ func (uc *Usecase) GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid string) (ha
 	return uc.repo.GetHandshakesByBSSIDAndSSID(userUUID, bssid, ssid)
 }
 
+func (uc *Usecase) GetWordlistByClientUUID(userUUID, clientUUID string) (list []*entities.Wordlist, length int, err error) {
+	return uc.repo.GetWordlistByClientUUID(userUUID, clientUUID)
+}
+
+func (uc *Usecase) CreateWordlist(wordlistEntity *entities.Wordlist) error {
+	return uc.repo.CreateWordlist(wordlistEntity)
+}
+
 func (uc *Usecase) DeleteClient(userUUID, clientUUID string) (bool, error) {
 	return uc.repo.DeleteClient(userUUID, clientUUID)
 }

@@ -30,6 +30,7 @@ var ErrInvalidToken = errors.New("[GRPC]: HashcatChat -> Invalid token -> ")
 var ErrOnUpdateTask = errors.New("[GRPC]: HashcatChat -> Cannot update client task -> ")
 var ErrCannotAnswerToClient = errors.New("[GRPC]: HashcatChat -> Cannot reply to the client -> ")
 var ErrGetHandshakeStatus = errors.New("[GRPC]: HashcatChat GetHandshakesByStatus -> ")
+var ErrWordlistAlreadyPresent = errors.New("error creating wordlist: wordlist already present")
 
 // Daemon
 var ErrHandshakeAlreadyPresent = errors.New("error creating handshake: handshake already present")

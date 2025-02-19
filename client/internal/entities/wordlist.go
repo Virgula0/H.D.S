@@ -9,6 +9,6 @@ type Wordlist struct {
 	ClientUUID           string `db:"CLIENT_UUID"`
 	WordlistName         string `db:"WORDLIST_NAME"`
 	WordlistHash         string `db:"WORDLIST_HASH" unique:"true"` // this is not unique server side
-	WordlistLines        int    `db:"WORDLIST_LINES"`
+	WordlistSize         int    `db:"WORDLIST_SIZE"`
 	WordlistLocationPath string `db:"WORDLIST_LOCATION_PATH" default:"'wordlists'"`
 }

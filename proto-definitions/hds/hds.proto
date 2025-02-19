@@ -9,4 +9,25 @@ service HDSTemplateService {
   rpc GetClientInfo (GetClientInfoRequest) returns (GetClientInfoResponse);
   rpc Login (AuthRequest) returns (UniformResponse);
   rpc HashcatTaskChat (stream ClientTaskMessageFromClient) returns (stream ClientTaskMessageFromServer); // stream for bi-directional communication instead of waiting for a client
+  rpc GetWordlistInfo (GetWordlistRequest) returns (GetWordlistResponse);
+
+  rpc ClientToServerWordlist (stream Chunk) returns (UploadStatus); // useful for syncing wordlist from the client to the server
+}
+
+message Chunk {
+  bytes Content = 1;
+  string client_uuid = 2;
+  string jwt = 3;
+  string wordlist_name = 4;
+}
+
+enum UploadStatusCode {
+  Unknown = 0;
+  Ok = 1;
+  Failed = 2;
+}
+
+message UploadStatus {
+  string Message = 1;
+  UploadStatusCode Code = 2;
 }

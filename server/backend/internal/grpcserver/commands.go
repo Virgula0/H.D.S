@@ -3,12 +3,15 @@ package grpcserver
 
 import (
 	"context"
+	"crypto/md5"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 	"time"
 
 	"google.golang.org/grpc/peer"
@@ -50,6 +53,100 @@ func (s *ServerContext) Login(_ context.Context, request *pb.AuthRequest) (*pb.U
 		Status:  "logged_in",
 		Details: token,
 	}, nil
+}
+
+// GetWordlistInfo returns all Wordlists known by the server which the client have
+func (s *ServerContext) GetWordlistInfo(_ context.Context, request *pb.GetWordlistRequest) (*pb.GetWordlistResponse, error) {
+	jwt := request.GetJwt()
+	data, err := s.Usecase.GetDataFromToken(jwt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	userID := data[constants.UserIDKey].(string)
+
+	list, _, err := s.Usecase.GetWordlistByClientUUID(userID, request.GetClientId())
+	if err != nil {
+		return nil, err
+	}
+
+	ll := make([]*pb.WordlistInfo, 0)
+
+	for _, v := range list {
+		ll = append(ll, &pb.WordlistInfo{
+			WordlistId:           v.UUID,
+			WordlistName:         v.WordlistName,
+			WordlistHash:         v.WordlistHash,
+			WordlistSize:         v.WordlistSize,
+			WordlistLocationPath: v.WordlistLocationPath,
+			WordlistContent:      v.WordlistFileContent,
+		})
+	}
+	return &pb.GetWordlistResponse{Info: ll}, nil
+}
+
+// ClientToServerWordlist sync wordlist from the client to the server
+func (s *ServerContext) ClientToServerWordlist(stream pb.HDSTemplateService_ClientToServerWordlistServer) error {
+	// while there are messages coming
+	var cliendUUID string
+	var token string
+	var wordlistName string
+	buffer := make([]byte, 0)
+	for {
+		chunk, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		buffer = append(buffer, chunk.GetContent()...)
+		if cliendUUID == "" {
+			cliendUUID = chunk.GetClientUuid()
+		}
+
+		if token == "" {
+			token = chunk.GetJwt()
+		}
+
+		if wordlistName == "" {
+			wordlistName = chunk.GetWordlistName()
+		}
+	}
+
+	data, err := s.Usecase.GetDataFromToken(token)
+
+	if err != nil {
+		return err
+	}
+
+	userID := data[constants.UserIDKey].(string)
+	// save the file
+	ww := &entities.Wordlist{
+		UUID:                uuid.New().String(),
+		UserUUID:            userID,
+		ClientUUID:          cliendUUID,
+		WordlistName:        wordlistName, // when uploaded by client we don't know
+		WordlistHash:        fmt.Sprintf("%x", md5.Sum(buffer)),
+		WordlistSize:        int64(len(buffer)),
+		WordlistFileContent: buffer,
+	}
+
+	if err := s.Usecase.CreateWordlist(ww); err != nil {
+		if errors.Is(err, customErrors.ErrWordlistAlreadyPresent) {
+			log.Infof("[gRPC] %v", customErrors.ErrWordlistAlreadyPresent)
+			return nil
+		}
+		return err
+	}
+
+	// once the transmission finished, send the
+	// confirmation if nothing went wrong
+	return stream.SendAndClose(&pb.UploadStatus{
+		Message: "Wordlist uploaded",
+		Code:    pb.UploadStatusCode_Ok,
+	})
 }
 
 // GetClientInfo - Creates a client if it does not exist otherwise returns the current one
