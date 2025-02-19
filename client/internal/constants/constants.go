@@ -3,6 +3,7 @@ package constants
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const TempDir = "/tmp/hds"
@@ -20,6 +21,8 @@ var (
 
 	GrpcURL     = os.Getenv("GRPC_URL")
 	GrpcTimeout = os.Getenv("GRPC_TIMEOUT")
+
+	WipeTables = strings.ToLower(os.Getenv("RESET")) == "true"
 )
 
 var ListOfDirToCreate = []string{TempPCAPStorage, TempHashcatFileDir}

@@ -86,7 +86,7 @@ func invokeClientStructInit(client *grpcclient.Client, info *pb.GetClientInfoRes
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	env, err := environment.InitEnvironment()
+	env, _, err := environment.InitEnvironment()
 	// Initialize application environment
 	if err != nil {
 		log.Fatalf("[CLIENT] %v", err.Error())
