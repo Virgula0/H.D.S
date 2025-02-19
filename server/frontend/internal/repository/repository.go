@@ -210,6 +210,12 @@ func (repo *Repository) CreateHandshake(token string, request *entities.CreateHa
 	return &response, err
 }
 
+func (repo *Repository) UploadWordlist(token string, request *entities.UploadWordlistRequest) (*entities.UploadWordlistResponse, error) {
+	var response entities.UploadWordlistResponse
+	err := repo.executeAuthorizedRequest(http.MethodPut, constants.UploadWordlistBackend, token, request, &response)
+	return &response, err
+}
+
 // Update operations
 func (repo *Repository) UpdateClientEncryptionStatus(token string, request *entities.UpdateEncryptionClientStatusRequest) (*entities.UpdateEncryptionClientStatusResponse, error) {
 	var response entities.UpdateEncryptionClientStatusResponse

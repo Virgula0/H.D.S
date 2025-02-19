@@ -12,63 +12,51 @@ $(function () {
     // DARK MODE
     // ------------------------------------------------
     const setDarkMode = (isDark) => {
-        document.documentElement.classList.toggle("dark-mode", isDark);
-        document.body.classList.toggle("dark-mode", isDark);
+        $('html, body').toggleClass("dark-mode", isDark);
         localStorage.setItem("darkMode", isDark);
 
-        const $themeToggle = $("#theme-toggle i");
-        if (isDark) {
-            $themeToggle.removeClass("fa-moon").addClass("fa-sun");
-        } else {
-            $themeToggle.removeClass("fa-sun").addClass("fa-moon");
-        }
+        $("#theme-toggle i")
+            .toggleClass("fa-sun", isDark)
+            .toggleClass("fa-moon", !isDark);
     };
 
     const isDarkMode = () => localStorage.getItem("darkMode") === "true";
 
-    // Apply dark mode without transition to avoid flicker on page load
     const applyDarkModeWithoutTransition = (isDark) => {
-        document.documentElement.style.transition = "none";
-        document.body.style.transition = "none";
+        $('html, body').css("transition", "none");
         setDarkMode(isDark);
-        // Force reflow to apply changes immediately
-        document.documentElement.offsetHeight;
-        document.documentElement.style.transition = "";
-        document.body.style.transition = "";
+        $('html')[0].offsetHeight; // Force reflow
+        $('html, body').css("transition", "");
     };
 
     applyDarkModeWithoutTransition(isDarkMode());
-
-    // Fade in main content
     $("#page-content-wrapper").addClass("loaded");
 
     // ------------------------------------------------
-    // SIDEBAR & THEME TOGGLES
+    // UI CONTROLS
     // ------------------------------------------------
-    $(document).on("click", "#menu-toggle", (e) => {
-        e.preventDefault();
-        $("#wrapper").toggleClass("toggled");
-        $("body").toggleClass("sidebar-open");
-    });
-
-    $(document).on("click", "#theme-toggle", () => {
-        setDarkMode(!isDarkMode());
-    });
+    $(document)
+        .on("click", "#menu-toggle", (e) => {
+            e.preventDefault();
+            $("#wrapper, body").toggleClass("toggled sidebar-open");
+        })
+        .on("click", "#theme-toggle", () => setDarkMode(!isDarkMode()))
+        .on("click", "#settingsLink", (e) => {
+            e.preventDefault();
+            $("#settingsModal").modal("show");
+        })
+        .on("click", "#changePasswordBtn", () => {
+            $("#settingsModal").modal("hide");
+            $("#changePasswordModal").modal("show");
+        });
 
     // ------------------------------------------------
-    // SELECT POPULATION (HANDSHAKE-RELATED)
+    // DYNAMIC SELECT POPULATION
     // ------------------------------------------------
     const populateSelect = (selector, options, placeholder = "") => {
-        const $select = $(selector);
-        if ($select.length) {
-            $select.empty();
-            if (placeholder) {
-                $select.append(`<option value="">${placeholder}</option>`);
-            }
-            options.forEach((opt) =>
-                $select.append(`<option value="${opt.value}">${opt.label}</option>`)
-            );
-        }
+        const $select = $(selector).empty();
+        placeholder && $select.append(`<option value="">${placeholder}</option>`);
+        options.forEach(opt => $select.append(`<option value="${opt.value}">${opt.label}</option>`));
     };
 
     const attackModes = [
@@ -445,199 +433,108 @@ $(function () {
     populateSelect("#attackMode", attackModes, "Select Attack Mode");
     populateSelect("#hashMode", hashModes, "Select Hash Mode");
 
-    // Enable/disable wordlist based on selected attack mode
     $("#attackMode").change(function () {
-        const selectedMode = parseInt($(this).val(), 10);
-        $("#wordlist").prop("disabled", ![0, 1, 6, 7].includes(selectedMode));
+        $("#wordlist").prop("disabled", ![0, 1, 6, 7].includes(parseInt($(this).val(), 10)));
     });
 
-    // Populate the client select if global clientUUIDs exists
-    if (typeof clientUUIDs === "string" && $("#clientUUID").length) {
-        const $clientSelect = $("#clientUUID").empty().append(
-            '<option value="">-- Select a client --</option>'
-        );
-        clientUUIDs.split(";").forEach((uuid) => {
-            const [name, realUUID] = uuid.split(":");
-            if (realUUID && realUUID.trim()) {
-                $clientSelect.append(
-                    `<option value="${realUUID.trim()}">${name.trim()}</option>`
-                );
-            }
+    // ------------------------------------------------
+    // CLIENT SELECT POPULATION
+    // ------------------------------------------------
+    if (typeof clientUUIDs === "string" && $(".clientUUID").length) {
+        $(".clientUUID").each(function() {
+            $(this).empty().append(
+                clientUUIDs.split(";").reduce((acc, uuid) => {
+                    const [name, realUUID] = uuid.split(":");
+                    return realUUID?.trim() ?
+                        acc + `<option value="${realUUID.trim()}">${name.trim()}</option>` : acc;
+                }, '<option value="">-- Select a client --</option>')
+            );
         });
     }
 
     // ------------------------------------------------
-    // MODAL & ACTION BUTTONS (HANDSHAKE)
+    // MODAL HANDLERS
     // ------------------------------------------------
-    $(document).on("click", ".crack-btn", function () {
-        const uuid = $(this).data("uuid");
-        $("#crackUUID").val(uuid);
-        $("#crackModal").modal("show");
-    });
+    const showModalWithData = (modalId, dataAttr, targetSelector) => {
+        $(document).on("click", `.${dataAttr}-btn`, function () {
+            $(targetSelector).val($(this).data("uuid"));
+            $(`#${modalId}`).modal("show");
+        });
+    };
 
-    // delete handshake modal
-    $(document).on("click", ".delete-btn-handshake", function () {
-        const uuid = $(this).data("uuid");
-        $("#deleteUUIDHandshake").val(uuid);
-        $("#deleteConfirmModalHandshake").modal("show");
-    });
+    showModalWithData("crackModal", "crack", "#crackUUID");
+    showModalWithData("deleteConfirmModalHandshake", "delete-btn-handshake", "#deleteUUIDHandshake");
+    showModalWithData("deleteConfirmModalClient", "delete-btn-client", "#deleteUUIDClient");
+    showModalWithData("deleteConfirmModalRsp", "delete-btn-rsp", "#deleteUUIDRsp");
 
-    // delete client modal
-    $(document).on("click", ".delete-btn-client", function () {
-        const uuid = $(this).data("uuid");
-        $("#deleteUUIDClient").val(uuid);
-        $("#deleteConfirmModalClient").modal("show");
-    });
+    $(document).on("click", ".hashcat-options-btn, .hashcat-logs-btn", function () {
+        const content = $(this).data("options") || $(this).data("logs");
+        const modalId = $(this).hasClass("hashcat-options-btn") ?
+            "#hashcatOptionsModal" : "#hashcatLogsModal";
 
-    // delete rsp modal
-    $(document).on("click", ".delete-btn-rsp", function () {
-        const uuid = $(this).data("uuid");
-        $("#deleteUUIDRsp").val(uuid);
-        $("#deleteConfirmModalRsp").modal("show");
-    });
-
-    $(document).on("click", ".hashcat-options-btn", function () {
-        const options = $(this).data("options");
-        $("#hashcatOptionsContent").text(options !== "<nil>" ? options : "No scan run");
-        $("#hashcatOptionsModal").modal("show");
-    });
-
-    $(document).on("click", ".hashcat-logs-btn", function () {
-        const logs = $(this).data("logs");
-        // Note: using .html here; ensure logs are sanitized to avoid XSS
-        $("#hashcatLogsContent").html(logs.replace(/\n/g, "<br>") || "No scan run");
-        $("#hashcatLogsModal").modal("show");
+        $(modalId).find(".modal-content").html(
+            content === "<nil>" ? "No scan run" : content.replace(/\n/g, "<br>")
+        ).end().modal("show");
     });
 
     // ------------------------------------------------
-    // TABLE SEARCH
+    // SEARCH FUNCTIONALITY
     // ------------------------------------------------
     $("#searchInput").on("keyup", function () {
-        const searchTerm = $(this).val().toLowerCase();
-        ["#handshakeTableBody", "#clientTableBody", "#raspberrypiTableBody"].forEach(
-            (selector) => {
-                $(selector)
-                    .find("tr")
-                    .each(function () {
-                        $(this).toggle($(this).text().toLowerCase().includes(searchTerm));
-                    });
-            }
+        const term = $(this).val().toLowerCase();
+        $("#handshakeTableBody, #clientTableBody, #raspberrypiTableBody tr").toggle(
+            (i, row) => $(row).text().toLowerCase().includes(term)
         );
     });
 
     // ------------------------------------------------
-    // TOOLTIP INITIALIZATION
+    // FORM HANDLERS
     // ------------------------------------------------
-    $('[data-toggle="tooltip"]').tooltip();
-
-    // Enable the wordlist by default (Straight mode)
-    if ($("#wordlist").length) {
-        $("#wordlist").prop("disabled", false);
-    }
+    $(document)
+        .on("change", "#wordlistFile", function () {
+            $("#fileName").val(this.files[0]?.name || "");
+        })
+        .on("submit", "#changePasswordForm", function (e) {
+            e.preventDefault();
+            if ($("#new_password").val() !== $("#confirm_password").val()) {
+                alert("New password and confirmation do not match");
+                return;
+            }
+            this.submit();
+        })
+        .on("change", ".encryption-toggle", function () {
+            $(this).closest("form").find('input[name="enabled"]').val(this.checked).end().submit();
+        });
 
     // ------------------------------------------------
-    // PAGINATION WITH AJAX (HANDSHAKE)
+    // COPY FUNCTIONALITY
+    // ------------------------------------------------
+    $(document).on("click", ".copy-btn", function () {
+        const $target = $("#" + $(this).data("target"));
+        $target.select();
+        document.execCommand("copy");
+
+        const $btn = $(this);
+        $btn.text("Copied!").delay(1500).queue(() => $btn.text("Copy to Clipboard").dequeue());
+    });
+
+    // ------------------------------------------------
+    // AJAX PAGINATION
     // ------------------------------------------------
     $(document).on("click", ".pagination .page-link", function (e) {
         e.preventDefault();
         const href = $(this).attr("href");
-        if (href) {
-            showLoading();
-            $("#page-content-wrapper").removeClass("loaded");
-            const currentDarkMode = isDarkMode();
-
-            $.ajax({
-                url: href,
-                success: function (data) {
-                    const $newContent = $(data).find("#page-content-wrapper").html();
-                    $("#page-content-wrapper").html($newContent);
-                    setDarkMode(currentDarkMode);
-                    setTimeout(() => {
-                        $("#page-content-wrapper").addClass("loaded");
-                        hideLoading();
-                    }, 100);
-                },
-                error: function () {
-                    hideLoading();
-                    alert("Failed to load page.");
-                },
-            });
-        }
+        href && showLoading() && $("#page-content-wrapper").removeClass("loaded").load(href + " #page-content-wrapper", () => {
+            setDarkMode(isDarkMode());
+            setTimeout(() => $("#page-content-wrapper").addClass("loaded"), 100);
+            hideLoading();
+        });
     });
 
     // ------------------------------------------------
-    // URL PARAMETER: DARK MODE
+    // INITIALIZATIONS
     // ------------------------------------------------
-    const urlParams = new URLSearchParams(window.location.search);
-    const darkModeParam = urlParams.get("darkMode");
-    if (darkModeParam !== null) {
-        setDarkMode(darkModeParam === "true");
-    }
-
-    // ------------------------------------------------
-    // ENCRYPTION DETAILS & COPY BUTTONS
-    // ------------------------------------------------
-    const showEncryptionDetails = (caCert, clientCert, clientKey) => {
-        $("#caCert").val(caCert);
-        $("#clientCert").val(clientCert);
-        $("#clientKey").val(clientKey);
-        $("#encryptionDetailsModal").modal("show");
-    };
-
-    $(document).on("click", ".copy-btn", function () {
-        const targetId = $(this).data("target");
-        const textArea = document.getElementById(targetId);
-        textArea.select();
-        document.execCommand("copy");
-
-        const $btn = $(this);
-        const originalText = $btn.text();
-        $btn.text("Copied!");
-        setTimeout(() => $btn.text(originalText), 1500);
-    });
-
-    $(document).on("click", ".show-certs-btn", function () {
-        const caCert = $(this).data("ca-cert");
-        const clientCert = $(this).data("client-cert");
-        const clientKey = $(this).data("client-key");
-        showEncryptionDetails(caCert, clientCert, clientKey);
-    });
-
-    // Toggle encryption state and update associated form field
-    $(document).on("change", ".encryption-toggle", function () {
-        const isEnabled = this.checked;
-
-        // Find the associated hidden input and update its value
-        $(this).closest("form").find('input[name="enabled"]').val(isEnabled ? "true" : "false");
-
-        // Submit the form automatically
-        this.form.submit();
-    });
+    $('[data-toggle="tooltip"]').tooltip();
+    new URLSearchParams(window.location.search).has("darkMode") &&
+    setDarkMode(urlParams.get("darkMode") === "true");
 });
-
-document.getElementById("settingsLink").addEventListener("click", (e) => {
-    e.preventDefault()
-    $("#settingsModal").modal("show")
-})
-
-// Show change password modal when change password button is clicked
-document.getElementById("changePasswordBtn").addEventListener("click", () => {
-    $("#settingsModal").modal("hide")
-    $("#changePasswordModal").modal("show")
-})
-
-// Handle change password form submission
-document.getElementById("changePasswordForm").addEventListener("submit", (e) => {
-    e.preventDefault()
-
-    const newPassword = document.getElementById("new_password").value
-    const confirmPassword = document.getElementById("confirm_password").value
-
-    if (newPassword !== confirmPassword) {
-        alert("New password and confirmation do not match")
-        return
-    }
-
-    // If passwords match, submit the form
-    e.target.submit();
-})

@@ -236,7 +236,7 @@ func (repo *Repository) GetWordlistByClientUUID(userUUID, clientUUID string) (li
 	return listResult, count, err
 }
 
-// CreateWordlist gRPC/REST-API
+// CreateWordlist gRPC
 func (repo *Repository) CreateWordlist(wordlistEntity *entities.Wordlist) error {
 	qq := queryHandler{repo.dbUser}
 	// check if exists first
