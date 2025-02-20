@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
+	jj "github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -86,13 +87,55 @@ func (s *ServerContext) GetWordlistInfo(_ context.Context, request *pb.GetWordli
 	return &pb.GetWordlistResponse{Info: ll}, nil
 }
 
+// ServerToClientWordlist send wordlist to client
+func (s *ServerContext) ServerToClientWordlist(request *pb.DownloadWordlist, stream pb.HDSTemplateService_ServerToClientWordlistServer) error {
+	jwt := request.GetJwt()
+	data, err := s.Usecase.GetDataFromToken(jwt)
+
+	if err != nil {
+		return err
+	}
+
+	userID := data[constants.UserIDKey].(string)
+
+	wordlist, err := s.Usecase.GetWordlistByClientAndWordlistUUID(userID, request.GetClientId(), request.GetWordlistId())
+
+	if err != nil {
+		return err
+	}
+
+	content := wordlist.WordlistFileContent
+	chunkSize := 4096
+	// send wordlist by chunking it
+	for offset := 0; offset < len(content); offset += chunkSize {
+		end := offset + chunkSize
+		if end > len(content) {
+			end = len(content)
+		}
+
+		chunk := &pb.Chunk{
+			Content:      content[offset:end],
+			ClientUuid:   wordlist.ClientUUID,
+			Jwt:          jwt,
+			WordlistName: wordlist.WordlistName,
+		}
+
+		if errSend := stream.Send(chunk); errSend != nil {
+			return fmt.Errorf("chunk send failed at offset %d: %w", offset, errSend)
+		}
+	}
+	return nil
+}
+
 // ClientToServerWordlist sync wordlist from the client to the server
 func (s *ServerContext) ClientToServerWordlist(stream pb.HDSTemplateService_ClientToServerWordlistServer) error {
 	// while there are messages coming
 	var cliendUUID string
 	var token string
+	var data jj.MapClaims
 	var wordlistName string
 	buffer := make([]byte, 0)
+
 	for {
 		chunk, err := stream.Recv()
 		if err != nil {
@@ -102,12 +145,17 @@ func (s *ServerContext) ClientToServerWordlist(stream pb.HDSTemplateService_Clie
 			return err
 		}
 		buffer = append(buffer, chunk.GetContent()...)
+
 		if cliendUUID == "" {
 			cliendUUID = chunk.GetClientUuid()
 		}
 
 		if token == "" {
+			// populate token JWT from stream. This can be improved in other to non-authorized to not send wordlist before checking
 			token = chunk.GetJwt()
+			if data, err = s.Usecase.GetDataFromToken(token); err != nil { // data declared outside
+				return err
+			}
 		}
 
 		if wordlistName == "" {
@@ -115,13 +163,8 @@ func (s *ServerContext) ClientToServerWordlist(stream pb.HDSTemplateService_Clie
 		}
 	}
 
-	data, err := s.Usecase.GetDataFromToken(token)
-
-	if err != nil {
-		return err
-	}
-
 	userID := data[constants.UserIDKey].(string)
+
 	// save the file
 	ww := &entities.Wordlist{
 		UUID:                uuid.New().String(),

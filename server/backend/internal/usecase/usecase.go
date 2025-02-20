@@ -320,6 +320,10 @@ func (uc *Usecase) GetWordlistByClientUUID(userUUID, clientUUID string) (list []
 	return uc.repo.GetWordlistByClientUUID(userUUID, clientUUID)
 }
 
+func (uc *Usecase) GetWordlistByClientAndWordlistUUID(userUUID, clientUUID, wordlistUUID string) (*entities.Wordlist, error) {
+	return uc.repo.GetWordlistByClientAndWordlistUUID(userUUID, clientUUID, wordlistUUID)
+}
+
 func (uc *Usecase) CreateWordlist(wordlistEntity *entities.Wordlist) error {
 	return uc.repo.CreateWordlist(wordlistEntity)
 }

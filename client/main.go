@@ -145,7 +145,7 @@ func main() {
 	go func() {
 		err = wordlistSyncer(client, &handler)
 		if err != nil {
-			log.Fatalf("[CLIENT] %v", err.Error())
+			log.Fatalf("[CLIENT] Sync cycle failed: %v", err.Error())
 		}
 	}()
 

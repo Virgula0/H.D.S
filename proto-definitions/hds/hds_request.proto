@@ -31,3 +31,8 @@ message GetWordlistRequest {
   string client_id = 2;
 }
 
+message DownloadWordlist {
+  string jwt = 1;
+  string client_id =2;
+  string wordlist_id = 3;
+}

@@ -11,7 +11,6 @@ import (
 	customErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
 	"github.com/Virgula0/progetto-dp/server/entities"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -234,6 +233,19 @@ func (repo *Repository) GetWordlistByClientUUID(userUUID, clientUUID string) (li
 		clientUUID,
 	)
 	return listResult, count, err
+}
+
+// GetWordlistByClientAndWordlistUUID returns wordlist for a given client uuid
+func (repo *Repository) GetWordlistByClientAndWordlistUUID(userUUID, clientUUID, wordlistUUID string) (*entities.Wordlist, error) {
+	var ww entities.Wordlist
+	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND client_uuid = ? AND uuid = ?", entities.WordlistTableName)
+
+	row := repo.dbUser.QueryRow(query, userUUID, clientUUID, wordlistUUID)
+	if err := row.Scan(&ww.UUID, &ww.UserUUID, &ww.ClientUUID, &ww.WordlistName, &ww.WordlistHash, &ww.WordlistSize, &ww.WordlistFileContent, &ww.WordlistLocationPath); err != nil {
+		return nil, err
+	}
+
+	return &ww, nil
 }
 
 // CreateWordlist gRPC

@@ -3,6 +3,7 @@ package wordlisthandler
 import (
 	"crypto/md5"
 	"fmt"
+	"io"
 	"io/fs"
 	"path/filepath"
 	"strings"
@@ -24,7 +25,7 @@ const (
 	hiddenFilePrefix = "."
 )
 
-var serverList = make(map[string]string, 0)
+var serverList = make(map[string]string)
 
 type Handler struct {
 	Handler *environment.ServiceHandler
@@ -35,19 +36,18 @@ func (h *Handler) WordlistSync() error {
 	ticker := time.NewTicker(syncInterval)
 	defer ticker.Stop()
 
-	for range ticker.C {
+	for {
 		log.Info("[CLIENT] Starting wordlist sync cycle")
 
 		if err := h.syncCycle(); err != nil {
-			log.Errorf("[CLIENT] Sync cycle failed: %v", err)
 			return err
 		}
+		<-ticker.C
 	}
-	return nil
 }
 
 func (h *Handler) syncCycle() error {
-	response, err := h.Client.GetWordlistInfo()
+	response, err := h.Client.GetWordlistInfo() // get wordlist from server first
 	if err != nil {
 		return fmt.Errorf("failed to get wordlist info: %w", err)
 	}
@@ -68,7 +68,7 @@ func (h *Handler) syncServerWordlists(response *pb.GetWordlistResponse) error {
 
 	for _, wordlistInfo := range response.GetInfo() {
 		wlEntity := &entities.Wordlist{
-			UUID:         wordlistInfo.GetWordlistName(),
+			UUID:         wordlistInfo.GetWordlistId(),
 			WordlistName: wordlistInfo.GetWordlistName(),
 			WordlistHash: wordlistInfo.GetWordlistHash(),
 			WordlistSize: int(wordlistInfo.GetWordlistSize()),
@@ -79,16 +79,57 @@ func (h *Handler) syncServerWordlists(response *pb.GetWordlistResponse) error {
 		case err == nil:
 			log.Infof("[CLIENT] Added new wordlist to local DB: %s", wlEntity.WordlistName)
 		case strings.Contains(err.Error(), "UNIQUE constraint failed: wordlist.WORDLIST_HASH"):
+			// wordlist already present client-side
 			log.Warnf("[CLIENT] Duplicate word list write attempt %s", err.Error())
 			continue
 		default:
 			return fmt.Errorf("database error for %s: %w", wlEntity.WordlistName, err)
 		}
 
+		// if here the client didn't have the wordlist, download it!
+		if err := h.streamDownloadWordlist(wlEntity); err != nil {
+			return err
+		}
+
 		serverList[wordlistInfo.GetWordlistHash()] = wlEntity.WordlistName
 	}
 
 	return nil
+}
+
+func (h *Handler) streamDownloadWordlist(ww *entities.Wordlist) error {
+	stream, err := h.Client.ServerToClientWordlist(&pb.DownloadWordlist{
+		Jwt:        *h.Client.Credentials.JWT,
+		ClientId:   h.Client.EntityClient.ClientUUID,
+		WordlistId: ww.UUID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Infof("[CLIENT] Downloading missing wordlist: %s (hash %s)", ww.WordlistName, ww.WordlistHash)
+
+	buffer := make([]byte, 0)
+	for {
+		chunk, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		buffer = append(buffer, chunk.GetContent()...)
+	}
+
+	if err := stream.CloseSend(); err != nil {
+		return err
+	}
+
+	// this format must be rebuilt before launching gocat in order to find the wordlist saved on the disk
+	saveName := filepath.Join(constants.WordlistPath, ww.WordlistHash, ww.WordlistName)
+
+	return utils.CreateFileWithBytes(saveName, buffer)
 }
 
 func (h *Handler) uploadNewWordlist() error {
@@ -129,10 +170,10 @@ func (h *Handler) processWordlistFile(path string, serverList map[string]string)
 	// update server list
 	serverList[fileHash] = fileName
 
-	return h.streamWordlist(fileName, fileBytes)
+	return h.streamSendWordlist(fileName, fileBytes)
 }
 
-func (h *Handler) streamWordlist(fileName string, content []byte) error {
+func (h *Handler) streamSendWordlist(fileName string, content []byte) error {
 	stream, err := h.Client.ClientToServerWordlist()
 	if err != nil {
 		return fmt.Errorf("stream creation failed: %w", err)

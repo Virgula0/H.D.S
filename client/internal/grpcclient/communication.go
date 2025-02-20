@@ -63,6 +63,15 @@ func (c *Client) ClientToServerWordlist() (pb.HDSTemplateService_ClientToServerW
 }
 
 /*
+ServerToClientWordlist
+
+Download a wordlist from server
+*/
+func (c *Client) ServerToClientWordlist(ww *pb.DownloadWordlist) (pb.HDSTemplateService_ServerToClientWordlistClient, error) {
+	return c.PBInstance.ServerToClientWordlist(c.ClientContext, ww)
+}
+
+/*
 GetClientInfo
 
 calls the gRPC method for retrieving info. If the client exists server side it will be no registered.
