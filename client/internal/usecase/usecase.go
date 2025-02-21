@@ -18,3 +18,7 @@ func NewUsecase(repo *repository.Repository) *Usecase {
 func (uc *Usecase) CreateWordlist(wordlist *entities.Wordlist) error {
 	return uc.repo.InsertWordlist(wordlist)
 }
+
+func (uc *Usecase) GetWordlistByHash(hash string) (*entities.Wordlist, error) {
+	return uc.repo.GetWordlistByHash(hash)
+}

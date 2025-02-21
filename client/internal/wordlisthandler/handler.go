@@ -2,7 +2,9 @@ package wordlisthandler
 
 import (
 	"crypto/md5"
+	"errors"
 	"fmt"
+	"github.com/Virgula0/progetto-dp/client/internal/customerrors"
 	"io"
 	"io/fs"
 	"path/filepath"
@@ -25,14 +27,12 @@ const (
 	hiddenFilePrefix = "."
 )
 
-var serverList = make(map[string]string)
-
 type Handler struct {
 	Handler *environment.ServiceHandler
 	Client  *grpcclient.Client
 }
 
-func (h *Handler) WordlistSync() error {
+func (h *Handler) WordlistSync() {
 	ticker := time.NewTicker(syncInterval)
 	defer ticker.Stop()
 
@@ -40,7 +40,7 @@ func (h *Handler) WordlistSync() error {
 		log.Info("[CLIENT] Starting wordlist sync cycle")
 
 		if err := h.syncCycle(); err != nil {
-			return err
+			log.Errorf("[CLIENT] Error syncing wordlist: %v", err)
 		}
 		<-ticker.C
 	}
@@ -90,8 +90,6 @@ func (h *Handler) syncServerWordlists(response *pb.GetWordlistResponse) error {
 		if err := h.streamDownloadWordlist(wlEntity); err != nil {
 			return err
 		}
-
-		serverList[wordlistInfo.GetWordlistHash()] = wlEntity.WordlistName
 	}
 
 	return nil
@@ -143,7 +141,7 @@ func (h *Handler) uploadNewWordlist() error {
 			return nil
 		}
 
-		return h.processWordlistFile(path, serverList)
+		return h.processWordlistFile(path)
 	})
 }
 
@@ -151,7 +149,7 @@ func shouldSkipFile(d fs.DirEntry) bool {
 	return d.IsDir() || strings.HasPrefix(d.Name(), hiddenFilePrefix)
 }
 
-func (h *Handler) processWordlistFile(path string, serverList map[string]string) error {
+func (h *Handler) processWordlistFile(path string) error {
 	fileBytes, err := utils.ReadFileBytes(path)
 	if err != nil {
 		return fmt.Errorf("read file error: %w", err)
@@ -160,15 +158,27 @@ func (h *Handler) processWordlistFile(path string, serverList map[string]string)
 	fileName := filepath.Base(path)
 	fileHash := fmt.Sprintf(hashAlgorithm, md5.Sum(fileBytes))
 
-	if _, exists := serverList[fileHash]; exists {
-		log.Infof("[CLIENT] Skipping existing wordlist from the upload: %s (hash: %s)", fileName, fileHash)
-		return nil
+	// check wordlist existence in db, returns error if it already exists
+	_, err = h.Handler.Usecase.GetWordlistByHash(fileHash)
+	if err != nil && !errors.Is(err, customerrors.ErrNoRowsFound) {
+		return err
 	}
 
 	log.Infof("[CLIENT] Uploading new wordlist: %s (hash: %s)", fileName, fileHash)
 
 	// update server list
-	serverList[fileHash] = fileName
+	ww := &entities.Wordlist{
+		UserUUID:             h.Client.EntityClient.UserUUID,
+		ClientUUID:           h.Client.EntityClient.ClientUUID,
+		WordlistName:         fileName,
+		WordlistHash:         fileHash,
+		WordlistSize:         len(fileBytes),
+		WordlistLocationPath: constants.WordlistPath,
+	}
+
+	if err := h.Handler.Usecase.CreateWordlist(ww); err != nil {
+		return err
+	}
 
 	return h.streamSendWordlist(fileName, fileBytes)
 }

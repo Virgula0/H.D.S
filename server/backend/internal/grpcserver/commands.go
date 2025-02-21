@@ -178,7 +178,7 @@ func (s *ServerContext) ClientToServerWordlist(stream pb.HDSTemplateService_Clie
 
 	if err := s.Usecase.CreateWordlist(ww); err != nil {
 		if errors.Is(err, customErrors.ErrWordlistAlreadyPresent) {
-			log.Infof("[gRPC] %v", customErrors.ErrWordlistAlreadyPresent)
+			log.Warnf("[gRPC] %v", customErrors.ErrWordlistAlreadyPresent)
 			return nil
 		}
 		return err

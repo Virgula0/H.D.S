@@ -4,6 +4,7 @@ import (
 	"github.com/Virgula0/progetto-dp/client/internal/constants"
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
 	"github.com/Virgula0/progetto-dp/client/internal/repository"
+	"github.com/Virgula0/progetto-dp/client/internal/seed"
 	"github.com/Virgula0/progetto-dp/client/internal/usecase"
 	"github.com/Virgula0/progetto-dp/client/internal/utils"
 	"path/filepath"
@@ -31,7 +32,7 @@ var tables = []*Table{
 	},
 }
 
-func (db *Database) initDB() error {
+func (db *Database) initDB(repo *repository.Repository) error {
 
 	var tableNames []string
 	for _, table := range tables {
@@ -50,6 +51,11 @@ func (db *Database) initDB() error {
 	}
 
 	go db.StartDBPinger()
+
+	// seed with known wordlist, comment this if you will delete rockyou.txt
+	if err := seed.LoadWordlist(repo); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -91,7 +97,7 @@ func InitEnvironment() (*Environment, ServiceHandler, error) {
 
 	repo := repository.NewRepository(db.DB) // init repository
 
-	if err := db.initDB(); err != nil {
+	if err := db.initDB(repo); err != nil {
 		return nil, ServiceHandler{}, err
 	}
 

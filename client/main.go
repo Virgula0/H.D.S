@@ -84,18 +84,13 @@ func invokeClientStructInit(client *grpcclient.Client, info *pb.GetClientInfoRes
 	}
 }
 
-func wordlistSyncer(client *grpcclient.Client, handler *environment.ServiceHandler) error {
+func wordlistSyncer(client *grpcclient.Client, handler *environment.ServiceHandler) {
 	syncer := wordlisthandler.Handler{
 		Handler: handler,
 		Client:  client,
 	}
 
-	err := syncer.WordlistSync()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	syncer.WordlistSync()
 }
 
 func main() {
@@ -142,12 +137,7 @@ func main() {
 	gocat := invokeClientStructInit(client, info)
 
 	// run wordlist syncer in background
-	go func() {
-		err = wordlistSyncer(client, &handler)
-		if err != nil {
-			log.Fatalf("[CLIENT] Sync cycle failed: %v", err.Error())
-		}
-	}()
+	go wordlistSyncer(client, &handler)
 
 	defer client.ClientCloser()
 

@@ -4,6 +4,7 @@ go 1.23.4
 
 require (
 	github.com/gen2brain/raylib-go/raylib v0.0.0-20241228120719-d58ffe1a3a73
+	github.com/google/uuid v1.6.0
 	github.com/mandiant/gocat/v6 v6.1.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/sirupsen/logrus v1.9.3
