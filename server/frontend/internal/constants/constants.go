@@ -18,7 +18,7 @@ var AuthToken = CustomType("token")
 const JSONContentType = "application/json"
 const HTMLContentType = "text/html;charset=UTF-8"
 const FileToCrackString = "FILE_TO_CRACK"
-const MaxUploadSize = 10 << 28 // 2,68435456 GB
+const MaxUploadSize = 295 << 20
 
 // Views
 

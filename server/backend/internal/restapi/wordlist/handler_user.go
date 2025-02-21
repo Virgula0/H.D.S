@@ -1,8 +1,9 @@
 package wordlist
 
 import (
-	"crypto/md5"
+	"crypto/md5" // #nosec G501 disable weak hash alert, it is not used for crypto stuff
 	"fmt"
+	"github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/response"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/usecase"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/utils"
@@ -39,14 +40,22 @@ func (u Handler) UploadWordlist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	genId := uuid.New().String()
+	if len(request.FileBytes) > errors.MaxUploadSize {
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
+			StatusCode: http.StatusBadRequest,
+			Details:    errors.ErrFileTooBig.Error(),
+		})
+		return
+	}
+
+	genID := uuid.New().String()
 
 	wordlist := &entities.Wordlist{
-		UUID:                genId,
+		UUID:                genID,
 		UserUUID:            userID.String(),
 		ClientUUID:          request.ClientUUID,
 		WordlistName:        request.FileName,
-		WordlistHash:        fmt.Sprintf("%x", md5.Sum(request.FileBytes)),
+		WordlistHash:        fmt.Sprintf("%x", md5.Sum(request.FileBytes)), // #nosec G401 disable weak hash alert, it is not used for crypto stuff
 		WordlistSize:        int64(len(request.FileBytes)),
 		WordlistFileContent: request.FileBytes,
 	}
@@ -61,6 +70,6 @@ func (u Handler) UploadWordlist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.JSON(http.StatusOK, entities.UploadWordlistResponse{
-		WordlistID: genId,
+		WordlistID: genID,
 	})
 }

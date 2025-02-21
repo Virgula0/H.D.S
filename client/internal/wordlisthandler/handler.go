@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	syncInterval     = 5 * time.Second
+	syncInterval     = 10 * time.Minute
 	chunkSize        = 4096
 	hashAlgorithm    = "%x" // Using MD5 for compatibility
 	hiddenFilePrefix = "."

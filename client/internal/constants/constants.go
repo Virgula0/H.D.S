@@ -13,6 +13,8 @@ const FileToCrackPlaceHolder = "FILE_TO_CRACK"
 const CertFileDir = "certs"
 const WordlistPath = "wordlists"
 
+var MaxGRPCFileSize = 295 << 20 // 295Mb
+
 var (
 	TempPCAPStorage    = filepath.Join(TempDir, "downloads")
 	TempHashcatFileDir = filepath.Join(TempDir, "converted")
