@@ -1,0 +1,58 @@
+name: Monthly Go Dependency Update
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # Runs at 00:00 UTC on 1st of every month
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.4
+
+      - name: Update server dependencies
+        run: |
+          cd server
+          go get -u ./...
+          go mod tidy
+
+      - name: Update client dependencies
+        run: |
+          cd client
+          go get -u ./...
+          go mod tidy
+
+      - name: Update rsp dependencies
+        run: |
+          cd raspberry-pi
+          go get -u ./...
+          go mod tidy
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          branch: chore/deps-update-$(date -u +%Y%m%d%H%M%S)
+          commit-message: "chore(deps): monthly dependency update"
+          title: "Monthly Dependency Update"
+          body: "Automated update of Go dependencies"
+          base: main
+          draft: false
+          labels: dependencies,automated
+          delete-branch: true
+          author: "GitHub Actions <actions@github.com>"
+          committer: "GitHub Actions <actions@github.com>"
+          signoff: true
