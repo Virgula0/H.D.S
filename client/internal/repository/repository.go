@@ -4,10 +4,7 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"github.com/Virgula0/progetto-dp/client/internal/customerrors"
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type Repository struct {
@@ -16,42 +13,6 @@ type Repository struct {
 
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db}
-}
-
-func scanRowsInterfaceWrapper(rows *sql.Rows, builder func() (any, []any)) ([]any, error) {
-	defer rows.Close()
-	var results []any
-
-	for rows.Next() {
-		entity, dest := builder()
-		if err := rows.Scan(dest...); err != nil {
-			log.Error("Row scan error: ", err.Error())
-			return nil, customerrors.ErrInternalServerError
-		}
-		results = append(results, entity)
-	}
-
-	if err := rows.Err(); err != nil {
-		log.Error("Rows iteration error: ", err.Error())
-		return nil, customerrors.ErrInternalServerError
-	}
-	return results, nil
-}
-
-func (repo *Repository) queryEntities(query string, builder func() (any, []any), args ...any) ([]any, error) {
-	rows, err := repo.Query(query, args...)
-	if err != nil {
-		log.Error("Query execution error: ", err.Error())
-		return nil, customerrors.ErrInternalServerError
-	}
-
-	// Use type-asserted scanRows wrapper to handle interface conversion
-	results, err := scanRowsInterfaceWrapper(rows, builder)
-	if err != nil {
-		return nil, err
-	}
-
-	return results, nil
 }
 
 // InsertWordlist creates a wordlist in the database

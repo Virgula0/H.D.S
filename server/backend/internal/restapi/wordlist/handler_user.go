@@ -43,7 +43,7 @@ func (u Handler) UploadWordlist(w http.ResponseWriter, r *http.Request) {
 	if len(request.FileBytes) > errors.MaxUploadSize {
 		c.JSON(http.StatusBadRequest, entities.UniformResponse{
 			StatusCode: http.StatusBadRequest,
-			Details:    errors.ErrFileTooBig.Error(),
+			Details:    errors.ErrFileTooBig,
 		})
 		return
 	}

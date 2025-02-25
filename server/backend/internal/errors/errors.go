@@ -24,7 +24,7 @@ var ErrNotValidClientIP = errors.New("not valid client IP")
 var ErrClientIsBusy = errors.New("client is busy")
 var ErrOldPasswordMismatch = errors.New("old password is not correct")
 var ErrPasswordConfirmationDoNotMatch = errors.New("password confirmation does not match")
-var ErrFileTooBig = errors.New(fmt.Sprintf("file is too big max allowed is %v", MaxUploadSize))
+var ErrFileTooBig = fmt.Sprintf("file is too big max allowed is %v", MaxUploadSize)
 var ErrCertsNotInitialized = errors.New("caCerts not initialized in repository ")
 var ErrFailToGeneratePrivateKey = errors.New("fail to generate private key ")
 

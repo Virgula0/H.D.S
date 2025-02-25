@@ -1,7 +1,7 @@
 package wordlisthandler
 
 import (
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec // allow md5
 	"errors"
 	"fmt"
 	"io"
@@ -137,7 +137,7 @@ func (h *Handler) streamDownloadWordlist(ww *entities.Wordlist) error {
 	}
 
 	saveName := filepath.Join(constants.WordlistPath, ww.WordlistHash, ww.WordlistName)
-	hash := fmt.Sprintf("%x", md5.Sum(buffer))
+	hash := fmt.Sprintf("%x", md5.Sum(buffer)) //nolint:gosec // allow md5
 
 	if ww.WordlistHash != hash {
 		return fmt.Errorf("error downloading wordlist, expected hash to be %s but got %s", ww.WordlistHash, hash)
@@ -172,7 +172,7 @@ func (h *Handler) processWordlistFile(path string, serverHashes map[string]bool)
 	}
 
 	fileName := filepath.Base(path)
-	fileHash := fmt.Sprintf(hashAlgorithm, md5.Sum(fileBytes))
+	fileHash := fmt.Sprintf(hashAlgorithm, md5.Sum(fileBytes)) //nolint:gosec // allow md5
 
 	// Skip if server already has this hash
 	if serverHashes[fileHash] {
@@ -237,7 +237,7 @@ func (h *Handler) streamUploadWordlist(fileName string, content []byte) error {
 		return fmt.Errorf("stream closure failed: %w", err)
 	}
 
-	hash := fmt.Sprintf("%x", md5.Sum(content))
+	hash := fmt.Sprintf("%x", md5.Sum(content)) //nolint:gosec // allow md5
 
 	if response.GetHash() != hash {
 		return fmt.Errorf("error uploading wordlist, expected hash to be %s but got %s", hash, response.GetHash())

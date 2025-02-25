@@ -48,7 +48,7 @@ func (u Page) UploadWordlist(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	// Parse remaining normal post
-	if err := utils.ValidatePOSTFieldsFromMultipartFormData(&request, r); err != nil {
+	if err = utils.ValidatePOSTFieldsFromMultipartFormData(&request, r); err != nil {
 		http.Redirect(w, r, fmt.Sprintf("%s?page=1&error=%s", constants.HandshakePage, url.QueryEscape("failed to parse post data from multipart")), http.StatusFound)
 		return
 	}

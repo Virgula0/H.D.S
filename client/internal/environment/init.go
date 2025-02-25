@@ -33,7 +33,7 @@ var tables = []*Table{
 
 func (db *Database) initDB() error {
 
-	var tableNames []string
+	var tableNames = make([]string, len(tables))
 	for _, table := range tables {
 		if err := db.CreateTable(table.TableName, table.Entity); err != nil {
 			return err

@@ -115,10 +115,10 @@ func (db *Database) CreateTable(tableName string, model any) error {
 	}
 
 	// Combine all parts into the final query
-	allConstraints := append(columns, foreignKeys...)
-	allConstraints = append(allConstraints, uniqueConstraints...) // Add UNIQUE constraints
+	columns = append(columns, foreignKeys...)
+	columns = append(columns, uniqueConstraints...) // Add UNIQUE constraints
 
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n  %s\n);", tableName, strings.Join(allConstraints, ",\n  "))
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n  %s\n);", tableName, strings.Join(columns, ",\n  "))
 
 	// Execute the query
 	_, err := db.Exec(query)

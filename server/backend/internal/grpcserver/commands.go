@@ -3,7 +3,7 @@ package grpcserver
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec // allow md5
 	"errors"
 	"fmt"
 	jj "github.com/golang-jwt/jwt"
@@ -170,8 +170,8 @@ func (s *ServerContext) ClientToServerWordlist(stream pb.HDSTemplateService_Clie
 		UUID:                uuid.New().String(),
 		UserUUID:            userID,
 		ClientUUID:          cliendUUID,
-		WordlistName:        wordlistName, // when uploaded by client we don't know
-		WordlistHash:        fmt.Sprintf("%x", md5.Sum(buffer)),
+		WordlistName:        wordlistName,                       // when uploaded by client we don't know
+		WordlistHash:        fmt.Sprintf("%x", md5.Sum(buffer)), //nolint:gosec // allow md5
 		WordlistSize:        int64(len(buffer)),
 		WordlistFileContent: buffer,
 	}
@@ -189,7 +189,7 @@ func (s *ServerContext) ClientToServerWordlist(stream pb.HDSTemplateService_Clie
 	return stream.SendAndClose(&pb.UploadStatus{
 		Message: "Wordlist uploaded",
 		Code:    pb.UploadStatusCode_Ok,
-		Hash:    fmt.Sprintf("%x", md5.Sum(buffer)),
+		Hash:    fmt.Sprintf("%x", md5.Sum(buffer)), //nolint:gosec // allow md5
 	})
 }
 

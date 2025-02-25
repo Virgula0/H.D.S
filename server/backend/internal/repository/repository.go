@@ -220,7 +220,7 @@ func (repo *Repository) GetWordlistByClientUUID(userUUID, clientUUID string) (li
 		return nil, -1, err
 	}
 
-	var listResult []*entities.Wordlist
+	var listResult = make([]*entities.Wordlist, 0)
 
 	// Convert interface slice to concrete type
 	for _, item := range results {

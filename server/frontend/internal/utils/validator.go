@@ -103,7 +103,7 @@ type FormData struct {
 	Files  map[string][]*multipart.FileHeader
 }
 
-// bindAndValidateMultipart binds and validates both form values and files
+// bindAndValidateMultipart binds form values and files to the provided object and validates it.
 func bindAndValidateMultipart(obj any, data FormData, tagKey string) error {
 	val := reflect.ValueOf(obj).Elem()
 	typ := val.Type()
@@ -121,29 +121,38 @@ func bindAndValidateMultipart(obj any, data FormData, tagKey string) error {
 			continue
 		}
 
-		currentType := field.Type()
-
-		// Handle file fields
-		switch {
-		case currentType == fileHeaderType:
-			if files, exists := data.Files[tag]; exists && len(files) > 0 {
-				field.Set(reflect.ValueOf(files[0]))
-			}
-		case currentType == reflect.SliceOf(fileHeaderType):
-			if files, exists := data.Files[tag]; exists {
-				field.Set(reflect.ValueOf(files))
-			}
-		default:
-			// Handle regular form values
-			if values, exists := data.Values[tag]; exists && len(values) > 0 {
-				if err := setFieldValue(field, values[0], tag); err != nil {
-					return err
-				}
-			}
+		if err := bindField(field, tag, data, fileHeaderType); err != nil {
+			return err
 		}
 	}
 
-	// Validation using go-playground/validator
+	return validateObject(obj)
+}
+
+// bindField binds a single field based on its type and form tag.
+func bindField(field reflect.Value, tag string, data FormData, fileHeaderType reflect.Type) error {
+	currentType := field.Type()
+	switch {
+	case currentType == fileHeaderType:
+		if files, exists := data.Files[tag]; exists && len(files) > 0 {
+			field.Set(reflect.ValueOf(files[0]))
+		}
+	case currentType == reflect.SliceOf(fileHeaderType):
+		if files, exists := data.Files[tag]; exists {
+			field.Set(reflect.ValueOf(files))
+		}
+	default:
+		if values, exists := data.Values[tag]; exists && len(values) > 0 {
+			if err := setFieldValue(field, values[0], tag); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// validateObject validates the object using go-playground/validator.
+func validateObject(obj any) error {
 	if err := validate.Struct(obj); err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
@@ -151,7 +160,6 @@ func bindAndValidateMultipart(obj any, data FormData, tagKey string) error {
 		}
 		return fmt.Errorf("validation error: %w", err)
 	}
-
 	return nil
 }
 
