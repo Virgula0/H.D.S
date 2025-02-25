@@ -189,6 +189,7 @@ func (s *ServerContext) ClientToServerWordlist(stream pb.HDSTemplateService_Clie
 	return stream.SendAndClose(&pb.UploadStatus{
 		Message: "Wordlist uploaded",
 		Code:    pb.UploadStatusCode_Ok,
+		Hash:    fmt.Sprintf("%x", md5.Sum(buffer)),
 	})
 }
 

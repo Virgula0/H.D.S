@@ -26,6 +26,20 @@ var (
 	GrpcTimeout = os.Getenv("GRPC_TIMEOUT")
 
 	WipeTables = strings.ToLower(os.Getenv("RESET")) == "true"
+
+	// Database path
+
+	DBPath = func() string {
+		home := os.Getenv("HOME")
+		_, err := os.ReadDir(home)
+
+		path, errPath := filepath.Abs(home)
+		if errPath != nil || err != nil || home == "" {
+			return "database.sqlite"
+		}
+
+		return filepath.Join(path, ".HDS", "database.sqlite")
+	}()
 )
 
 var ListOfDirToCreate = []string{TempPCAPStorage, TempHashcatFileDir}

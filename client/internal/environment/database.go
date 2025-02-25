@@ -16,14 +16,14 @@ type Database struct {
 
 // NewSQLiteConnection creates a connection to an SQLite database
 func NewSQLiteConnection(dbPath string) (*Database, error) {
-	dbConnector, err := sql.Open("sqlite3", fmt.Sprintf("%s&_foreign_keys=1&mode=rwc", dbPath))
+	dbConnector, err := sql.Open("sqlite3", fmt.Sprintf("%s?_foreign_keys=1&mode=rwc", dbPath))
 	if err != nil {
 		return nil, err
 	}
 
 	// Verify we can access the database file
 	if err := dbConnector.Ping(); err != nil {
-		dbConnector.Close()
+		defer dbConnector.Close()
 		return nil, fmt.Errorf("failed to access SQLite database: %w", err)
 	}
 

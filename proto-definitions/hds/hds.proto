@@ -30,5 +30,6 @@ enum UploadStatusCode {
 
 message UploadStatus {
   string Message = 1;
-  UploadStatusCode Code = 2;
+  string Hash = 2;
+  UploadStatusCode Code = 3;
 }

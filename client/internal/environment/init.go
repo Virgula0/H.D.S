@@ -4,7 +4,6 @@ import (
 	"github.com/Virgula0/progetto-dp/client/internal/constants"
 	"github.com/Virgula0/progetto-dp/client/internal/entities"
 	"github.com/Virgula0/progetto-dp/client/internal/repository"
-	"github.com/Virgula0/progetto-dp/client/internal/seed"
 	"github.com/Virgula0/progetto-dp/client/internal/usecase"
 	"github.com/Virgula0/progetto-dp/client/internal/utils"
 	"path/filepath"
@@ -32,7 +31,7 @@ var tables = []*Table{
 	},
 }
 
-func (db *Database) initDB(repo *repository.Repository) error {
+func (db *Database) initDB() error {
 
 	var tableNames []string
 	for _, table := range tables {
@@ -51,11 +50,6 @@ func (db *Database) initDB(repo *repository.Repository) error {
 	}
 
 	go db.StartDBPinger()
-
-	// seed with known wordlist, comment this if you will delete rockyou.txt
-	if err := seed.LoadWordlist(repo); err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -88,8 +82,19 @@ func InitEnvironment() (*Environment, ServiceHandler, error) {
 		return nil, ServiceHandler{}, err
 	}
 
+	// create db file
+	dbPath := constants.DBPath
+	if exists, err := utils.DirOrFileExists(dbPath); !exists || err != nil {
+		if err != nil {
+			return nil, ServiceHandler{}, err
+		}
+		if err := utils.CreateFileWithBytes(dbPath, []byte("")); err != nil {
+			return nil, ServiceHandler{}, err
+		}
+	}
+
 	// init db
-	db, err := NewSQLiteConnection("file::memory:?cache=shared") // in memory database
+	db, err := NewSQLiteConnection(dbPath) // Using the fixed DBPath from earlier
 
 	if err != nil {
 		return nil, ServiceHandler{}, err
@@ -97,7 +102,7 @@ func InitEnvironment() (*Environment, ServiceHandler, error) {
 
 	repo := repository.NewRepository(db.DB) // init repository
 
-	if err := db.initDB(repo); err != nil {
+	if err := db.initDB(); err != nil {
 		return nil, ServiceHandler{}, err
 	}
 
