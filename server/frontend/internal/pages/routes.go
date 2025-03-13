@@ -5,6 +5,7 @@ import (
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/pages/clients"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/pages/raspberrypi"
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/pages/welcome"
+	"github.com/Virgula0/progetto-dp/server/frontend/internal/pages/wordlist"
 	"github.com/gorilla/mux"
 
 	"github.com/Virgula0/progetto-dp/server/frontend/internal/constants"
@@ -29,6 +30,7 @@ const DeleteHandshake = constants.DeleteHandshake
 const CreateHandshake = constants.CreateHandshake
 const UpdateClientEncryptionStatus = constants.UpdateEncryption
 const UpdateUserPassword = constants.UpdatePassword
+const UploadWordlist = constants.UploadWordlist
 
 // InitRoutes
 //
@@ -44,6 +46,7 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	devicesInstance := raspberrypi.Page{Usecase: h.Usecase}
 	welcomeInstance := welcome.Page{Usecase: h.Usecase}
 	authenticated := middlewares.TokenAuth{Usecase: h.Usecase}
+	wordlistInstance := wordlist.Page{Usecase: h.Usecase}
 
 	router.Use(middlewares.LoggingMiddleware)
 
@@ -59,6 +62,13 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 		HandleFunc(UpdateUserPassword, loginInstance.UpdateUserPassword).
 		Methods("POST")
 	changePasswordRouter.Use(authenticated.TokenValidation)
+
+	// upload wordlist
+	uploadWordlistRouter := router.PathPrefix(RouteIndex).Subrouter()
+	uploadWordlistRouter.
+		HandleFunc(UploadWordlist, wordlistInstance.UploadWordlist).
+		Methods("POST")
+	uploadWordlistRouter.Use(authenticated.TokenValidation)
 
 	loginRouterTemplate := router.PathPrefix(RouteIndex).Subrouter()
 	loginRouterTemplate.

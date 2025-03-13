@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	log "github.com/sirupsen/logrus"
+	"mime/multipart"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -24,6 +25,20 @@ func ValidatePOSTFormRequest(obj any, r *http.Request) error {
 	}
 
 	return bindAndValidate(obj, r.PostForm, "form")
+}
+
+// ValidatePOSTFieldsFromMultipartFormData binds and validates form fields from the request body.
+func ValidatePOSTFieldsFromMultipartFormData(obj any, r *http.Request) error {
+	if err := ensurePointer(obj); err != nil {
+		return err
+	}
+
+	formData := FormData{
+		Values: r.Form,
+		Files:  r.MultipartForm.File,
+	}
+
+	return bindAndValidateMultipart(obj, formData, "form")
 }
 
 // ValidateQueryParameters validates query parameters against struct 'query' tags.
@@ -80,6 +95,71 @@ func bindAndValidate(obj any, data map[string][]string, tagKey string) error {
 		return err
 	}
 
+	return nil
+}
+
+type FormData struct {
+	Values map[string][]string
+	Files  map[string][]*multipart.FileHeader
+}
+
+// bindAndValidateMultipart binds form values and files to the provided object and validates it.
+func bindAndValidateMultipart(obj any, data FormData, tagKey string) error {
+	val := reflect.ValueOf(obj).Elem()
+	typ := val.Type()
+	fileHeaderType := reflect.TypeOf((*multipart.FileHeader)(nil))
+
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Field(i)
+		if !field.CanSet() {
+			continue
+		}
+
+		fieldType := typ.Field(i)
+		tag := fieldType.Tag.Get(tagKey)
+		if tag == "" {
+			continue
+		}
+
+		if err := bindField(field, tag, data, fileHeaderType); err != nil {
+			return err
+		}
+	}
+
+	return validateObject(obj)
+}
+
+// bindField binds a single field based on its type and form tag.
+func bindField(field reflect.Value, tag string, data FormData, fileHeaderType reflect.Type) error {
+	currentType := field.Type()
+	switch {
+	case currentType == fileHeaderType:
+		if files, exists := data.Files[tag]; exists && len(files) > 0 {
+			field.Set(reflect.ValueOf(files[0]))
+		}
+	case currentType == reflect.SliceOf(fileHeaderType):
+		if files, exists := data.Files[tag]; exists {
+			field.Set(reflect.ValueOf(files))
+		}
+	default:
+		if values, exists := data.Values[tag]; exists && len(values) > 0 {
+			if err := setFieldValue(field, values[0], tag); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// validateObject validates the object using go-playground/validator.
+func validateObject(obj any) error {
+	if err := validate.Struct(obj); err != nil {
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			return fmt.Errorf("validation error: %s", ve[0].Error())
+		}
+		return fmt.Errorf("validation error: %w", err)
+	}
 	return nil
 }
 

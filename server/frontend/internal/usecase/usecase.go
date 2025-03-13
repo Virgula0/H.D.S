@@ -162,3 +162,7 @@ func (uc Usecase) DeleteHandshakeRequest(token string, request *entities.DeleteH
 func (uc Usecase) CreateHandshake(token string, request *entities.CreateHandshakeRequest) (*entities.CreateHandshakeResponse, error) {
 	return uc.repo.CreateHandshake(token, request)
 }
+
+func (uc Usecase) UploadWordlist(token string, request *entities.UploadWordlistRequest) (*entities.UploadWordlistResponse, error) {
+	return uc.repo.UploadWordlist(token, request)
+}

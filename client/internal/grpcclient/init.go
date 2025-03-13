@@ -42,7 +42,7 @@ func InitClient(env *environment.Environment) (*Client, error) {
 		return nil, err
 	}
 
-	conn, err = grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(creds))
+	conn, err = grpc.NewClient(constants.GrpcURL, grpc.WithTransportCredentials(creds), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(constants.MaxGRPCFileSize)))
 
 	if err != nil {
 		log.Fatalf("[CLIENT] Cannot enstablish a connection with server %s %v", constants.GrpcURL, err)

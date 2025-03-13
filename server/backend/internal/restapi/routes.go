@@ -1,6 +1,7 @@
 package restapi
 
 import (
+	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/wordlist"
 	"github.com/gorilla/mux"
 
 	"github.com/Virgula0/progetto-dp/server/backend/internal/restapi/authenticate"
@@ -26,6 +27,7 @@ const DeleteRaspberryPI = "/delete/raspberrypi"
 const ManageHandshake = "/manage/handshake"
 const UpdateClientEncryptionStatus = "/encryption-status"
 const UpdateUserPassword = "/user/password"
+const UploadWordlist = "/upload/wordlist"
 
 //nolint:funlen // this function can be huge, it does not contain logic, only route directives
 func (h ServiceHandler) InitRoutes(router *mux.Router) {
@@ -37,7 +39,7 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	installedClientsHandler := client.Handler{Usecase: h.Usecase}
 	installedDevicesHandler := raspberrypi.Handler{Usecase: h.Usecase}
 	handshakesHandler := handshake.Handler{Usecase: h.Usecase}
-
+	wordlistHandler := wordlist.Handler{Usecase: h.Usecase}
 	// Global middleware for loggin requests
 	router.Use(middlewares.LoggingMiddleware)
 
@@ -81,6 +83,12 @@ func (h ServiceHandler) InitRoutes(router *mux.Router) {
 	updateEncryptionStatusRouter.HandleFunc(UpdateClientEncryptionStatus, installedClientsHandler.UpdateEncryptionClientStatus).
 		Methods("POST")
 	updateEncryptionStatusRouter.Use(authMiddleware.EnsureTokenIsValid)
+
+	// upload wordlist
+	uploadWordlistRouter := router.PathPrefix(RouteIndex).Subrouter()
+	uploadWordlistRouter.HandleFunc(UploadWordlist, wordlistHandler.UploadWordlist).
+		Methods("PUT")
+	uploadWordlistRouter.Use(authMiddleware.EnsureTokenIsValid)
 
 	// Get raspberry-pi installed by user -- AUTHENTICATED --
 	installedDevicesRouter := router.PathPrefix(RouteIndex).Subrouter()

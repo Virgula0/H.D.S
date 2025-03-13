@@ -47,7 +47,7 @@
                     <!-- Assigned Client -->
                     <div class="form-group">
                         <label for="clientUUID">Assign Client</label>
-                        <select class="form-control" id="clientUUID" name="clientUUID">
+                        <select class="form-control clientUUID" id="clientUUID" name="clientUUID">
                             <!-- We'll populate this from the var clientUUIDs in dashboard.js -->
                         </select>
                     </div>
@@ -119,6 +119,39 @@
             </div>
         </div>
     </form>
+</div>
+
+<div class="modal fade" id="uploadWordlistModal" tabindex="-1" role="dialog" aria-labelledby="uploadWordlistModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadWordlistModalLabel">Upload Wordlist</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="/upload-wordlist" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <!-- Assigned Client -->
+                        <label for="clientUUID">Assign Client</label>
+                        <select class="form-control clientUUID" id="clientUUIDWordlist" name="clientUUID">
+                            <!-- We'll populate this from the var clientUUIDs in dashboard.js -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="wordlistFile">Upload Wordlist</label>
+                        <input type="file" class="form-control-file" id="wordlistFile" name="fileBytes" required>
+                    </div>
+                    <input type="hidden" id="fileName" name="fileName">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <div class="modal fade" id="addHashModal" tabindex="-1" role="dialog" aria-labelledby="addHashModalLabel" aria-hidden="true">
