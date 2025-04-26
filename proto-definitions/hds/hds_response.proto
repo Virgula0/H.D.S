@@ -36,3 +36,16 @@ message ClientTask {
   string SSID = 7;
   string BSSID = 8;
 }
+
+message WordlistInfo {
+  string wordlist_id = 1;
+  string wordlist_name = 2;
+  string wordlist_hash = 3;
+  int64 wordlist_size = 4;
+  string wordlist_location_path = 5;
+  bytes wordlist_content = 6;
+}
+
+message GetWordlistResponse {
+  repeated WordlistInfo info = 1;
+}

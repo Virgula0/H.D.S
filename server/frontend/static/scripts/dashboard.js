@@ -451,18 +451,20 @@ $(function () {
         $("#wordlist").prop("disabled", ![0, 1, 6, 7].includes(selectedMode));
     });
 
-    // Populate the client select if global clientUUIDs exists
-    if (typeof clientUUIDs === "string" && $("#clientUUID").length) {
-        const $clientSelect = $("#clientUUID").empty().append(
-            '<option value="">-- Select a client --</option>'
-        );
-        clientUUIDs.split(";").forEach((uuid) => {
-            const [name, realUUID] = uuid.split(":");
-            if (realUUID && realUUID.trim()) {
-                $clientSelect.append(
-                    `<option value="${realUUID.trim()}">${name.trim()}</option>`
-                );
-            }
+// Populate the client select if global clientUUIDs exists
+    if (typeof clientUUIDs === "string" && $(".clientUUID").length) {
+        $(".clientUUID").each(function() {
+            const $clientSelect = $(this).empty().append(
+                '<option value="">-- Select a client --</option>'
+            );
+            clientUUIDs.split(";").forEach((uuid) => {
+                const [name, realUUID] = uuid.split(":");
+                if (realUUID && realUUID.trim()) {
+                    $clientSelect.append(
+                        `<option value="${realUUID.trim()}">${name.trim()}</option>`
+                    );
+                }
+            });
         });
     }
 
@@ -625,6 +627,13 @@ document.getElementById("changePasswordBtn").addEventListener("click", () => {
     $("#settingsModal").modal("hide")
     $("#changePasswordModal").modal("show")
 })
+
+document.getElementById('wordlistFile').addEventListener('change', function(event) {
+    let fileInput = event.target;
+    if (fileInput.files.length > 0) {
+        document.getElementById('fileName').value = fileInput.files[0].name;
+    }
+});
 
 // Handle change password form submission
 document.getElementById("changePasswordForm").addEventListener("submit", (e) => {

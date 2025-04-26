@@ -25,3 +25,14 @@ message ClientTaskMessageFromClient {
   string handshake_uuid = 6;
   string client_uuid =7;
 }
+
+message GetWordlistRequest {
+  string jwt = 1;
+  string client_id = 2;
+}
+
+message DownloadWordlist {
+  string jwt = 1;
+  string client_id =2;
+  string wordlist_id = 3;
+}

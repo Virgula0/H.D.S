@@ -8,6 +8,7 @@ import (
 	"github.com/Virgula0/progetto-dp/client/internal/gui"
 	"github.com/Virgula0/progetto-dp/client/internal/mygocat"
 	"github.com/Virgula0/progetto-dp/client/internal/utils"
+	"github.com/Virgula0/progetto-dp/client/internal/wordlisthandler"
 	pb "github.com/Virgula0/progetto-dp/client/protobuf/hds"
 	log "github.com/sirupsen/logrus"
 	"os"
@@ -83,10 +84,19 @@ func invokeClientStructInit(client *grpcclient.Client, info *pb.GetClientInfoRes
 	}
 }
 
+func wordlistSyncer(client *grpcclient.Client, handler *environment.ServiceHandler) {
+	syncer := wordlisthandler.Handler{
+		Handler: handler,
+		Client:  client,
+	}
+
+	syncer.WordlistSync()
+}
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	env, err := environment.InitEnvironment()
+	env, handler, err := environment.InitEnvironment()
 	// Initialize application environment
 	if err != nil {
 		log.Fatalf("[CLIENT] %v", err.Error())
@@ -123,7 +133,11 @@ func main() {
 		log.Fatal("[CLIENT] Encryption is enabled but certs are missing")
 	}
 
+	// anything which calls client must be invoked after this
 	gocat := invokeClientStructInit(client, info)
+
+	// run wordlist syncer in background
+	go wordlistSyncer(client, &handler)
 
 	defer client.ClientCloser()
 

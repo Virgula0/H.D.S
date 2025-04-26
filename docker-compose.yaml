@@ -13,6 +13,7 @@ services:
       - DISPLAY=${DISPLAY} # Pass display variable from terminal
       - GRPC_URL=dp-server:7777
       - GRPC_TIMEOUT=10s
+      - RESET=False
     depends_on:
       server:
         condition: service_healthy

@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	customErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	pb "github.com/Virgula0/progetto-dp/server/protobuf/hds"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -100,6 +101,8 @@ func (s *Server) Run(ctx context.Context, opt *Option) error {
 	options := []grpc.ServerOption{
 		grpc.Creds(credentials.NewTLS(tlsConfig)),
 		grpc.ConnectionTimeout(opt.GrpcConnTimeout),
+		grpc.MaxRecvMsgSize(customErrors.MaxUploadSize), // limit for receiving
+		grpc.MaxSendMsgSize(customErrors.MaxUploadSize), // limit for sending
 	}
 
 	if opt.Debug {

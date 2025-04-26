@@ -18,8 +18,7 @@ var AuthToken = CustomType("token")
 const JSONContentType = "application/json"
 const HTMLContentType = "text/html;charset=UTF-8"
 const FileToCrackString = "FILE_TO_CRACK"
-
-const MaxUploadSize = 10 << 28 // 2,68435456 GB
+const MaxUploadSize = 295 << 20
 
 // Views
 
@@ -48,6 +47,7 @@ const (
 	CreateHandshake  = "/create-handshake"
 	UpdateEncryption = "/update-encryption"
 	UpdatePassword   = "/update-password"
+	UploadWordlist   = "/upload-wordlist"
 )
 
 // Endpoints BE
@@ -65,4 +65,5 @@ const (
 	BackendDeleteRaspberryPI = "delete/raspberrypi"
 	UpdateClientEncryption   = "encryption-status"
 	UpdateUserPassword       = "user/password"
+	UploadWordlistBackend    = "upload/wordlist"
 )

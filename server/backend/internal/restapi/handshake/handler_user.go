@@ -169,6 +169,14 @@ func (u Handler) CreateHandshake(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(request.HandshakePCAP) > errors.MaxUploadSize {
+		c.JSON(http.StatusBadRequest, entities.UniformResponse{
+			StatusCode: http.StatusBadRequest,
+			Details:    errors.ErrFileTooBig,
+		})
+		return
+	}
+
 	handshake, err := u.Usecase.CreateHandshake(userID.String(), "", "", constants.NothingStatus, utils.BytesToBase64String(request.HandshakePCAP))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entities.UniformResponse{

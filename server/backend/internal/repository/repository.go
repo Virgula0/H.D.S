@@ -11,7 +11,6 @@ import (
 	customErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/infrastructure"
 	"github.com/Virgula0/progetto-dp/server/entities"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -192,6 +191,95 @@ func (repo *Repository) GetClientsInstalled() (clients []*entities.Client, lengt
 		clients = append(clients, item.(*entities.Client))
 	}
 	return clients, len(clients), nil
+}
+
+// GetWordlistByClientUUID returns wordlist for a given client uuid
+func (repo *Repository) GetWordlistByClientUUID(userUUID, clientUUID string) (list []*entities.Wordlist, length int, err error) {
+	wordlistBuilder := func() (any, []any) {
+		c := &entities.Wordlist{}
+		return c, []any{
+			&c.UUID,
+			&c.UserUUID,
+			&c.ClientUUID,
+			&c.WordlistName,
+			&c.WordlistHash,
+			&c.WordlistSize,
+			&c.WordlistFileContent,
+			&c.WordlistLocationPath,
+		}
+	}
+
+	qq := queryHandler{repo.dbUser}
+	results, err := qq.queryEntities(
+		fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND client_uuid = ?", entities.WordlistTableName),
+		wordlistBuilder,
+		userUUID,
+		clientUUID,
+	)
+	if err != nil {
+		return nil, -1, err
+	}
+
+	var listResult = make([]*entities.Wordlist, 0)
+
+	// Convert interface slice to concrete type
+	for _, item := range results {
+		listResult = append(listResult, item.(*entities.Wordlist))
+	}
+
+	count, err := qq.countQueryResults(
+		fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? AND client_uuid = ? ", entities.WordlistTableName),
+		userUUID,
+		clientUUID,
+	)
+	return listResult, count, err
+}
+
+// GetWordlistByClientAndWordlistUUID returns wordlist for a given client uuid
+func (repo *Repository) GetWordlistByClientAndWordlistUUID(userUUID, clientUUID, wordlistUUID string) (*entities.Wordlist, error) {
+	var ww entities.Wordlist
+	query := fmt.Sprintf("SELECT * FROM %s WHERE uuid_user = ? AND client_uuid = ? AND uuid = ?", entities.WordlistTableName)
+
+	row := repo.dbUser.QueryRow(query, userUUID, clientUUID, wordlistUUID)
+	if err := row.Scan(&ww.UUID, &ww.UserUUID, &ww.ClientUUID, &ww.WordlistName, &ww.WordlistHash, &ww.WordlistSize, &ww.WordlistFileContent, &ww.WordlistLocationPath); err != nil {
+		return nil, err
+	}
+
+	return &ww, nil
+}
+
+// CreateWordlist gRPC
+func (repo *Repository) CreateWordlist(wordlistEntity *entities.Wordlist) error {
+	qq := queryHandler{repo.dbUser}
+	// check if exists first
+	count, err := qq.countQueryResults(
+		fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE uuid_user = ? AND wordlist_hash = ? ", entities.WordlistTableName),
+		wordlistEntity.UserUUID,
+		wordlistEntity.WordlistHash,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return customErrors.ErrWordlistAlreadyPresent
+	}
+
+	// Wordlist insert
+	userQuery := fmt.Sprintf("INSERT INTO %s(uuid, uuid_user, client_uuid, wordlist_name, wordlist_hash, wordlist_size, file_content ) VALUES(?,?,?,?,?,?,?)", entities.WordlistTableName)
+	if _, err := repo.dbUser.Exec(userQuery,
+		uuid.New().String(),
+		wordlistEntity.UserUUID,
+		wordlistEntity.ClientUUID,
+		wordlistEntity.WordlistName,
+		wordlistEntity.WordlistHash,
+		wordlistEntity.WordlistSize,
+		wordlistEntity.WordlistFileContent,
+	); err != nil {
+		return fmt.Errorf("wordlist insert failed: %w", err)
+	}
+	return nil
 }
 
 // GetClientCertsByUserID returns client certificates for a user

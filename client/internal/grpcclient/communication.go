@@ -54,6 +54,24 @@ func (c *Client) HashcatChat() (grpc.BidiStreamingClient[pb.ClientTaskMessageFro
 }
 
 /*
+ClientToServerWordlist
+
+Send wordlist over streaming channel
+*/
+func (c *Client) ClientToServerWordlist() (pb.HDSTemplateService_ClientToServerWordlistClient, error) {
+	return c.PBInstance.ClientToServerWordlist(c.ClientContext)
+}
+
+/*
+ServerToClientWordlist
+
+Download a wordlist from server
+*/
+func (c *Client) ServerToClientWordlist(ww *pb.DownloadWordlist) (pb.HDSTemplateService_ServerToClientWordlistClient, error) {
+	return c.PBInstance.ServerToClientWordlist(c.ClientContext, ww)
+}
+
+/*
 GetClientInfo
 
 calls the gRPC method for retrieving info. If the client exists server side it will be no registered.
@@ -63,6 +81,18 @@ func (c *Client) GetClientInfo(name, machineID string) (*pb.GetClientInfoRespons
 		Jwt:       *c.Credentials.JWT,
 		MachineId: machineID,
 		Name:      name,
+	})
+}
+
+/*
+GetWordlistInfo
+
+calls the gRPC method for retrieving info wordlist available for the current client instance
+*/
+func (c *Client) GetWordlistInfo() (*pb.GetWordlistResponse, error) {
+	return c.PBInstance.GetWordlistInfo(c.ClientContext, &pb.GetWordlistRequest{
+		Jwt:      *c.Credentials.JWT,
+		ClientId: c.EntityClient.ClientUUID,
 	})
 }
 
