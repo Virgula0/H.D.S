@@ -3,12 +3,16 @@ package grpcserver
 
 import (
 	"context"
+	"crypto/md5" //nolint:gosec // allow md5
 	"errors"
 	"fmt"
+	jj "github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 	"time"
 
 	"google.golang.org/grpc/peer"
@@ -50,6 +54,143 @@ func (s *ServerContext) Login(_ context.Context, request *pb.AuthRequest) (*pb.U
 		Status:  "logged_in",
 		Details: token,
 	}, nil
+}
+
+// GetWordlistInfo returns all Wordlists known by the server which the client have
+func (s *ServerContext) GetWordlistInfo(_ context.Context, request *pb.GetWordlistRequest) (*pb.GetWordlistResponse, error) {
+	jwt := request.GetJwt()
+	data, err := s.Usecase.GetDataFromToken(jwt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	userID := data[constants.UserIDKey].(string)
+
+	list, _, err := s.Usecase.GetWordlistByClientUUID(userID, request.GetClientId())
+	if err != nil {
+		return nil, err
+	}
+
+	ll := make([]*pb.WordlistInfo, 0)
+
+	for _, v := range list {
+		ll = append(ll, &pb.WordlistInfo{
+			WordlistId:           v.UUID,
+			WordlistName:         v.WordlistName,
+			WordlistHash:         v.WordlistHash,
+			WordlistSize:         v.WordlistSize,
+			WordlistLocationPath: v.WordlistLocationPath,
+			WordlistContent:      v.WordlistFileContent,
+		})
+	}
+	return &pb.GetWordlistResponse{Info: ll}, nil
+}
+
+// ServerToClientWordlist send wordlist to client
+func (s *ServerContext) ServerToClientWordlist(request *pb.DownloadWordlist, stream pb.HDSTemplateService_ServerToClientWordlistServer) error {
+	jwt := request.GetJwt()
+	data, err := s.Usecase.GetDataFromToken(jwt)
+
+	if err != nil {
+		return err
+	}
+
+	userID := data[constants.UserIDKey].(string)
+
+	wordlist, err := s.Usecase.GetWordlistByClientAndWordlistUUID(userID, request.GetClientId(), request.GetWordlistId())
+
+	if err != nil {
+		return err
+	}
+
+	content := wordlist.WordlistFileContent
+	chunkSize := 4096
+	// send wordlist by chunking it
+	for offset := 0; offset < len(content); offset += chunkSize {
+		end := offset + chunkSize
+		if end > len(content) {
+			end = len(content)
+		}
+
+		chunk := &pb.Chunk{
+			Content:      content[offset:end],
+			ClientUuid:   wordlist.ClientUUID,
+			Jwt:          jwt,
+			WordlistName: wordlist.WordlistName,
+		}
+
+		if errSend := stream.Send(chunk); errSend != nil {
+			return fmt.Errorf("chunk send failed at offset %d: %w", offset, errSend)
+		}
+	}
+	return nil
+}
+
+// ClientToServerWordlist sync wordlist from the client to the server
+func (s *ServerContext) ClientToServerWordlist(stream pb.HDSTemplateService_ClientToServerWordlistServer) error {
+	// while there are messages coming
+	var cliendUUID string
+	var token string
+	var data jj.MapClaims
+	var wordlistName string
+	buffer := make([]byte, 0)
+
+	for {
+		chunk, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		buffer = append(buffer, chunk.GetContent()...)
+
+		if cliendUUID == "" {
+			cliendUUID = chunk.GetClientUuid()
+		}
+
+		if token == "" {
+			// populate token JWT from stream. This can be improved in other to non-authorized to not send wordlist before checking
+			token = chunk.GetJwt()
+			if data, err = s.Usecase.GetDataFromToken(token); err != nil { // data declared outside
+				return err
+			}
+		}
+
+		if wordlistName == "" {
+			wordlistName = chunk.GetWordlistName()
+		}
+	}
+
+	userID := data[constants.UserIDKey].(string)
+
+	// save the file
+	ww := &entities.Wordlist{
+		UUID:                uuid.New().String(),
+		UserUUID:            userID,
+		ClientUUID:          cliendUUID,
+		WordlistName:        wordlistName,                       // when uploaded by client we don't know
+		WordlistHash:        fmt.Sprintf("%x", md5.Sum(buffer)), //nolint:gosec // allow md5
+		WordlistSize:        int64(len(buffer)),
+		WordlistFileContent: buffer,
+	}
+
+	if err := s.Usecase.CreateWordlist(ww); err != nil {
+		if errors.Is(err, customErrors.ErrWordlistAlreadyPresent) {
+			log.Warnf("[gRPC] %v", customErrors.ErrWordlistAlreadyPresent)
+			return nil
+		}
+		return err
+	}
+
+	// once the transmission finished, send the
+	// confirmation if nothing went wrong
+	return stream.SendAndClose(&pb.UploadStatus{
+		Message: "Wordlist uploaded",
+		Code:    pb.UploadStatusCode_Ok,
+		Hash:    fmt.Sprintf("%x", md5.Sum(buffer)), //nolint:gosec // allow md5
+	})
 }
 
 // GetClientInfo - Creates a client if it does not exist otherwise returns the current one

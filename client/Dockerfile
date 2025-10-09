@@ -12,6 +12,8 @@ RUN apt update -y && \
     libz-dev \
     libssl-dev \
     dbus \
+    sqlite3 \
+    sqlite-utils \
     # Graphic libraries for raylib
     libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev \
     protobuf-compiler # install protoc
