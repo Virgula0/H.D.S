@@ -17,7 +17,7 @@ import (
 	customErrors "github.com/Virgula0/progetto-dp/server/backend/internal/errors"
 	"github.com/Virgula0/progetto-dp/server/backend/internal/repository"
 	"github.com/Virgula0/progetto-dp/server/entities"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
