@@ -6,7 +6,7 @@ build:
 .PHONY: build
 
 install-linter:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.62.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.8
 .PHONY: install-linter
 
 # run with make run USERNAME=XXXX PASSWORD=XXX
@@ -18,6 +18,6 @@ go-vuln:
 	govulncheck ./...
 .PHONY: go-vuln
 
-lint:	
+lint:
 	@golangci-lint run
 .PHONY: lint

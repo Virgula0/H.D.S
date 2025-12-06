@@ -57,14 +57,14 @@ clean:
 	rm -rf OpenCL
 	rm -rf modules
 	rm -rf kernels
-	rm -f *.hctune 
+	rm -f *.hctune
 	rm -f hashcat.hcstat2
 	rm -f *.dictstat*
 	rm -f main
 .PHONY: clean
 
 install-linter:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.62.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.8
 .PHONY: install-linter
 
 run-compiled:
@@ -77,7 +77,7 @@ go-vuln:
 	govulncheck ./...
 .PHONY: go-vuln
 
-lint:	
+lint:
 	@golangci-lint run
 .PHONY: lint
 

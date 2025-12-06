@@ -1,4 +1,4 @@
-FROM golang:1.23.4-bookworm
+FROM golang:1.24.0-bookworm
 
 COPY server /app/server
 COPY proto-definitions /app/proto-definitions
