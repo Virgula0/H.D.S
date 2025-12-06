@@ -44,7 +44,7 @@ cc -fPIC -shared -o /app/client/libhcxpcapngtool.so /app/hcxtools/hcxpcapngtool.
 
 This shared library can now be directly imported and used in Go:
 
-> [!NOTE]  
+> [!NOTE]
 > **File:** `client/internal/hcxtools/hcxpcapngtool.go`
 
 ```go
@@ -89,7 +89,7 @@ While this solution works for our current requirements, future improvements coul
 
 ## **Compile and Run**
 
-> [!IMPORTANT]  
+> [!IMPORTANT]
 > The following dependencies needs to be installed before proceeding, even if you're using compiled binaries from releases
 
 ```bash
@@ -100,7 +100,7 @@ sudo apt install -y --no-install-recommends \
     ocl-icd-libopencl1 \
     opencl-headers \
     git \
-    git-lfs \ 
+    git-lfs \
     pocl-opencl-icd \
     build-essential \
     ca-certificates \
@@ -110,14 +110,14 @@ sudo apt install -y --no-install-recommends \
     libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev libwayland-dev libxkbcommon-dev
 ```
 
-> [!IMPORTANT]  
+> [!IMPORTANT]
 > The file `/etc/machine-id` must exist on your machine.
 
 Follow these steps to compile and run the client, run it from project root dir
 
 ```bash
 git submodule update --init --remote --recursive && \
-git lfs install && \  
+git lfs install && \
 git lfs pull
 ```
 
@@ -133,7 +133,7 @@ cd ../../
 2. **Install protobuf**
 
 > [!NOTE]
-> This was tested out using go `1.23.4`. Other version may have problems.
+> This was tested out using go `1.24.0`. Other version may have problems.
 
 ```bash
 go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0 &&
@@ -169,5 +169,5 @@ but remember to set these env variables first
 ```bash
 export GRPC_URL=localhost:7777 # change with gRPC address
 export GRPC_TIMEOUT=10s #leave this timeout by default
-export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH 
+export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 ```

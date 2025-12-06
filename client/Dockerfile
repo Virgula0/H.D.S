@@ -1,4 +1,4 @@
-FROM golang:1.23.4-bookworm
+FROM golang:1.24.0-bookworm
 
 # Install required dependencies
 RUN apt update -y && \
@@ -18,13 +18,13 @@ RUN apt update -y && \
 
 RUN dbus-uuidgen > /etc/machine-id
 
-WORKDIR /app 
+WORKDIR /app
 
 # you need to have dont a git recursive pull first
 COPY externals/gocat /app/externals/gocat
 COPY externals/hcxtools /app/externals/hcxtools
 
-# this trick needs to be improved, but needed for git commands in 
+# this trick needs to be improved, but needed for git commands in
 # gocat Makefile. this copies a ton of GB inside the container
 COPY .git /app/.git
 
@@ -37,7 +37,7 @@ RUN make install && \
     make set-user-permissions USER=client && \
     chown client:client /app/externals/hcxtools && \
     # IMPORTANT! RUN TEST IN ORDER TO LET HASHCAT TO CREATE KERNELS
-    make test 
+    make test
 
 COPY client /app/client
 COPY proto-definitions /app/proto-definitions
