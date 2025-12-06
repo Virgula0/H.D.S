@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"time"
 
 	"google.golang.org/grpc/peer"
 
@@ -259,9 +260,9 @@ func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_Has
 		if err != nil {
 			// check if client has disconnected
 			if status.Code(err) == codes.Canceled {
-				return status.Errorf(codes.NotFound, customErrors.ErrGRPCClosedConnection.Error())
+				return status.Errorf(codes.NotFound, "%v", customErrors.ErrGRPCClosedConnection.Error())
 			}
-			return status.Errorf(codes.Unknown, fmt.Sprintf("%s %v", customErrors.ErrGRPCFailedToReceive, err))
+			return status.Errorf(codes.Unknown, "%v", fmt.Sprintf("%s %v", customErrors.ErrGRPCFailedToReceive, err))
 		}
 
 		log.Printf("[GRPC]: HashcatChat ->Received from client: %v", msg)
@@ -269,7 +270,7 @@ func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_Has
 		// Process the received message
 		data, err := s.Usecase.GetDataFromToken(msg.GetJwt())
 		if err != nil {
-			return status.Errorf(codes.Unauthenticated, fmt.Sprintf("%s %v", customErrors.ErrInvalidToken, err))
+			return status.Errorf(codes.Unauthenticated, "%v", fmt.Sprintf("%s %v", customErrors.ErrInvalidToken, err))
 		}
 
 		userID := data[constants.UserIDKey].(string)
@@ -283,7 +284,7 @@ func (s *ServerContext) listenToTasksFromClient(stream pb.HDSTemplateService_Has
 			msg.GetCrackedHandshake(),
 		)
 		if err != nil {
-			return status.Errorf(codes.Internal, fmt.Sprintf("%s %v", customErrors.ErrOnUpdateTask, err))
+			return status.Errorf(codes.Internal, "%v", fmt.Sprintf("%s %v", customErrors.ErrOnUpdateTask, err))
 		}
 	}
 }

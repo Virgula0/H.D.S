@@ -25,8 +25,11 @@ proto: ## Builds proto files
 	@../proto.sh
 .PHONY: proto
 
-test: ## Starts tests locally
+test-run: ## Starts tests locally
+	go mod verify
+	go mod tidy
 	go test ./... --count=1 -p 1 # -p 1 do not run tests parallel. Avoid race conditions when starting/tearing down tests
-.PHONY: test
+.PHONY: test-run
 
 build: proto build-server
+test: proto test-run
